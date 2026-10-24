@@ -1,0 +1,14 @@
+.env
+.env.local
+.venv/
+data/
+instance/
+tests/
+deploy/
+__pycache__/
+*.pyc
+*.bat
+Dockerfile
+docker-compose.yml
+render.yaml
+railway.toml

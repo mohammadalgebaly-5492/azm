@@ -30,6 +30,32 @@
 - **سجل العمليات:** للإضافة فقط. ما ينفعش يتعدل أو يتحذف، حتى من قاعدة البيانات مباشرة.
 - **الصلاحيات:** بتتفحص على الخادم في كل طلب، مش في الواجهة بس.
 
+## النشر على Vercel مع Supabase
+
+قاعدة البيانات على Supabase (PostgreSQL)، والتطبيق على Vercel كـ Python Function (`api/index.py` و `vercel.json`).
+
+**1. قاعدة البيانات:** المهاجرات في `app/migrations/postgres/` وتتطبق تلقائيًا عند أول تشغيل، أو يدويًا:
+```bash
+python manage.py migrate      # يقرأ DATABASE_URL من .env.local
+```
+الجداول كلها عليها RLS ومقفولة أمام مفاتيح Supabase العامة (anon). التطبيق وحده يتصل بقاعدة البيانات مباشرة.
+
+**2. متغيرات البيئة على Vercel** (Project → Settings → Environment Variables):
+
+| المتغير | القيمة |
+|---|---|
+| `DATABASE_URL` | رابط Supabase من Connect → **Transaction pooler** (المنفذ 6543)، مع `?sslmode=require`. الرابط المباشر `db.xxx.supabase.co` لا يعمل على Vercel لأنه IPv6 فقط |
+| `CC_SECRET_KEY` | مفتاح عشوائي ثابت، وهو إلزامي مع Postgres |
+| `CC_SETUP_TOKEN` | رمز صفحة الإعداد الأول |
+| `CC_COOKIE_SECURE` / `CC_BEHIND_PROXY` | `1` / `1` |
+| `CC_PLATFORM_NAME` / `CC_COMPANY_NAME` | اسم المنصة والشركة |
+
+**3. النشر:** اربط المستودع بـ Vercel (Framework Preset: Other)، أو استخدم `vercel --prod`.
+
+**4. أول أدمن:** افتح `https://YOUR-APP.vercel.app/setup?token=CC_SETUP_TOKEN`.
+
+ملاحظة: Vercel يرفض الطلبات الأكبر من 4.5 ميجا، فملف Excel للاستيراد لازم يكون أصغر من كده.
+
 ## التشغيل على السيرفر (VPS)
 
 المطلوب: سيرفر Linux (Ubuntu 22.04 أو أحدث)، ودومين موجّه لعنوان السيرفر.

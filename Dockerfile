@@ -9,3 +9,4 @@ ENV CC_DATABASE=/data/costcontrol.sqlite3
 EXPOSE 8000
 # عامل واحد مع عدة خيوط: SQLite يعمل بأمان مع كاتب واحد في نفس الوقت
 CMD gunicorn -w 1 --threads 8 -b "0.0.0.0:${PORT:-8000}" --forwarded-allow-ips "*" wsgi:app
+ 

@@ -88,11 +88,11 @@ def create_user(db, *, username, email, full_name, role, created_by=None, phone=
         code = f"USR-{role_code(role)}-{n:02d}"
         cur = db.execute(
             "INSERT INTO users(code, username, email, full_name, role, password_hash, must_change_password, "
-            "phone, job_title, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (code, username, email, full_name, role, hash_password(pw), 0 if password else 1,
+            "phone, job_title, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING id",
+            (code, username, email, full_name, role, hash_password(pw), not password,
              phone, job_title, utcnow(), created_by),
         )
-        uid = cur.lastrowid
+        uid = cur.fetchone()[0]
         audit.log(db, created_by, "user_created", "user", uid, code=code, username=username, role=role)
     return uid, code, pw
 
@@ -101,7 +101,7 @@ def reset_password(db, user_id: int, actor_id: int) -> str:
     pw = temp_password()
     with tx(db):
         db.execute(
-            "UPDATE users SET password_hash = ?, must_change_password = 1, failed_attempts = 0, locked_until = NULL "
+            "UPDATE users SET password_hash = ?, must_change_password = TRUE, failed_attempts = 0, locked_until = NULL "
             "WHERE id = ?", (hash_password(pw), user_id))
         db.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
         audit.log(db, actor_id, "password_reset", "user", user_id)
@@ -244,7 +244,7 @@ def change_password(db, user, current: str, new: str, keep_session_id: int):
     if errs:
         raise AuthError(" ".join(errs))
     with tx(db):
-        db.execute("UPDATE users SET password_hash = ?, must_change_password = 0, password_changed_at = ? WHERE id = ?",
+        db.execute("UPDATE users SET password_hash = ?, must_change_password = FALSE, password_changed_at = ? WHERE id = ?",
                    (hash_password(new), utcnow(), user["id"]))
         # إنهاء أي جلسة أخرى مفتوحة على أجهزة ثانية
         db.execute("DELETE FROM sessions WHERE user_id = ? AND id != ?", (user["id"], keep_session_id))
@@ -254,6 +254,9 @@ def change_password(db, user, current: str, new: str, keep_session_id: int):
 # ---------- ربط Flask ----------
 
 def init_request():
+    if request.endpoint == "static":  # الملفات الثابتة لا تحتاج جلسة ولا اتصالًا بقاعدة البيانات
+        g.user = g.session = None
+        return
     db = get_db()
     g.user, g.session = load_session(db, request.cookies.get(COOKIE))
 

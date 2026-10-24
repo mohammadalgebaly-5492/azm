@@ -4,3 +4,6 @@ instance/
 data/
 .env
 .venv/
+.env.local
+.env*.local
+.vercel/

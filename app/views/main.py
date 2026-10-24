@@ -2,7 +2,7 @@ from flask import Blueprint, abort, g, render_template
 
 from .. import projects as P
 from ..auth import login_required
-from ..db import get_db
+from ..db import get_db, utcnow
 from ..rbac import can, can_view_project
 
 bp = Blueprint("main", __name__)
@@ -18,9 +18,9 @@ def home():
         stats = {
             "users": db.execute("SELECT COUNT(*) FROM users WHERE status = 'active'").fetchone()[0],
             "pending_first_login": db.execute(
-                "SELECT COUNT(*) FROM users WHERE status = 'active' AND must_change_password = 1").fetchone()[0],
+                "SELECT COUNT(*) FROM users WHERE status = 'active' AND must_change_password = TRUE").fetchone()[0],
             "locked": db.execute(
-                "SELECT COUNT(*) FROM users WHERE locked_until > strftime('%Y-%m-%dT%H:%M:%S', 'now')").fetchone()[0],
+                "SELECT COUNT(*) FROM users WHERE locked_until > ?", (utcnow(),)).fetchone()[0],
         }
     team_counts = {r[0]: r[1] for r in db.execute(
         "SELECT project_id, COUNT(*) FROM project_members GROUP BY project_id")}
@@ -43,7 +43,7 @@ def project(pid):
     activity = db.execute(
         "SELECT a.*, u.full_name AS actor FROM audit_log a LEFT JOIN users u ON u.id = a.actor_id "
         "WHERE a.project_id = ? ORDER BY a.id DESC LIMIT 20", (pid,)).fetchall()
-    boq_count, boq_total = db.execute("SELECT COUNT(*), COALESCE(SUM(amount), 0) FROM boq_items WHERE project_id = ?",
+    boq_count, boq_total = db.execute("SELECT COUNT(*), CAST(COALESCE(SUM(amount), 0) AS BIGINT) FROM boq_items WHERE project_id = ?",
                                       (pid,)).fetchone()
     return render_template("project.html", p=p, team=team, candidates=candidates, activity=activity,
                            boq_count=boq_count, boq_total=boq_total)

@@ -2,7 +2,6 @@
 import io
 import os
 import re
-import sqlite3
 import tempfile
 import unittest
 
@@ -11,14 +10,16 @@ import openpyxl
 from app import boq as B
 from app import create_app
 from app.auth import AuthError, create_user
-from app.db import connect
+from app.db import IntegrityError, connect
+
+from _db import fresh_database
 from app.projects import add_member, create_project
 
 
 class BoqBase(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.app = create_app({"DATABASE": os.path.join(self.tmp.name, "b.sqlite3"), "SESSION_COOKIE_SECURE": False,
+        self.app = create_app({"DATABASE": fresh_database(self.tmp.name, "b.sqlite3"), "SESSION_COOKIE_SECURE": False,
                                "SECRET_KEY": "t"})
         self.db = connect(self.app.config["DATABASE"])
         with self.app.app_context():
@@ -62,10 +63,10 @@ class Codes(BoqBase):
             B.parse_qty("0")
         with self.app.app_context():
             w, _ = B.add_wbs(self.db, self.pid, "قسم", None, self.admin)
-            with self.assertRaises(sqlite3.IntegrityError):  # الإجمالي لازم يساوي الكمية × السعر
+            with self.assertRaises(IntegrityError):  # الإجمالي لازم يساوي الكمية × السعر
                 self.db.execute("INSERT INTO boq_items(project_id, wbs_id, code, description, item_type, unit, qty_milli,"
                                 " unit_rate, amount, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                                (self.pid, w, "X", "تلاعب", "both", "م", 1000, 100, 999, "t", self.admin))
+                                (self.pid, w, "X", "تلاعب", "both", "م", 1000, 100, 999, "2026-01-01T00:00:00+00:00", self.admin))
 
     def test_wbs_depth_limit_and_delete_rules(self):
         with self.app.app_context():
@@ -155,7 +156,7 @@ class BaselineAndPermissions(BoqBase):
                        lambda: B.approve_baseline(self.db, self.pid, self.admin)):
                 with self.assertRaises(AuthError):
                     fn()
-        with self.assertRaises(sqlite3.IntegrityError):  # التجميد مفروض في قاعدة البيانات نفسها
+        with self.assertRaises(IntegrityError):  # التجميد مفروض في قاعدة البيانات نفسها
             self.db.execute("UPDATE boq_items SET unit_rate = 1, amount = 100 WHERE id = ?", (iid,))
 
     def test_baseline_blocked_without_items(self):
@@ -166,7 +167,7 @@ class BaselineAndPermissions(BoqBase):
     def test_pm_reads_but_cannot_edit(self):
         w, iid = self._seed()
         pm = self.app.test_client()
-        self.db.execute("UPDATE users SET must_change_password = 0")
+        self.db.execute("UPDATE users SET must_change_password = FALSE")
         pm.post("/login", data={"username": "pm.one", "password": "PmPass12345"})
         page = pm.get(f"/projects/{self.pid}/boq")
         self.assertEqual(page.status_code, 200)
@@ -182,7 +183,7 @@ class BaselineAndPermissions(BoqBase):
     def test_non_member_gets_404(self):
         with self.app.app_context():
             create_user(self.db, username="other", email="o@co.sa", full_name="غريب", role="pm", password="OtherPass123")
-        self.db.execute("UPDATE users SET must_change_password = 0")
+        self.db.execute("UPDATE users SET must_change_password = FALSE")
         cl = self.app.test_client()
         cl.post("/login", data={"username": "other", "password": "OtherPass123"})
         self.assertEqual(cl.get(f"/projects/{self.pid}/boq").status_code, 404)

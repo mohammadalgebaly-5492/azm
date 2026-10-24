@@ -27,8 +27,9 @@ def users():
            "FROM users u WHERE 1=1")
     args = []
     if q:
-        sql += " AND (u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.code LIKE ?)"
-        args += [f"%{q}%"] * 4
+        sql += (" AND (LOWER(u.full_name) LIKE ? OR LOWER(u.username) LIKE ? OR LOWER(u.email) LIKE ?"
+                " OR LOWER(u.code) LIKE ?)")
+        args += [f"%{q.lower()}%"] * 4
     if role in ROLES:
         sql += " AND u.role = ?"
         args.append(role)

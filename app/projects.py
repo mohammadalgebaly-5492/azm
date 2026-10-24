@@ -64,10 +64,10 @@ def create_project(db, form, actor_id) -> tuple[int, str]:
         code = f"P-{year}-{n:03d}"
         cur = db.execute(
             "INSERT INTO projects(code, name, client, consultant, location, contract_no, contract_value, "
-            "start_date, end_date, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "start_date, end_date, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING id",
             (code, data["name"], data["client"], data["consultant"], data["location"], data["contract_no"],
              data["contract_value"], data["start_date"], data["end_date"], utcnow(), actor_id))
-        pid = cur.lastrowid
+        pid = cur.fetchone()[0]
         audit.log(db, actor_id, "project_created", "project", pid, pid, code=code, name=data["name"])
     return pid, code
 
@@ -94,8 +94,8 @@ def add_member(db, pid, user_id, actor_id):
     if u is None or u["status"] != "active":
         raise AuthError("الحساب غير موجود أو موقوف.")
     with tx(db):
-        cur = db.execute("INSERT OR IGNORE INTO project_members(project_id, user_id, assigned_at, assigned_by) "
-                         "VALUES (?,?,?,?)", (pid, user_id, utcnow(), actor_id))
+        cur = db.execute("INSERT INTO project_members(project_id, user_id, assigned_at, assigned_by) "
+                         "VALUES (?,?,?,?) ON CONFLICT DO NOTHING", (pid, user_id, utcnow(), actor_id))
         if cur.rowcount:
             audit.log(db, actor_id, "member_added", "user", user_id, pid)
 

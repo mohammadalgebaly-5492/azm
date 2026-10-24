@@ -14,7 +14,9 @@ from .rbac import ROLES, can, role_label
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.update(
-        DATABASE=os.environ.get("CC_DATABASE", os.path.join(app.instance_path, "costcontrol.sqlite3")),
+        # DATABASE_URL (Postgres/Supabase) له الأولوية، وإلا ملف SQLite محلي
+        DATABASE=(os.environ.get("DATABASE_URL")
+                  or os.environ.get("CC_DATABASE", os.path.join(app.instance_path, "costcontrol.sqlite3"))),
         SECRET_KEY=os.environ.get("CC_SECRET_KEY") or secrets.token_hex(32),
         SESSION_IDLE_MINUTES=int(os.environ.get("CC_SESSION_IDLE_MINUTES", "120")),
         SESSION_ABSOLUTE_HOURS=int(os.environ.get("CC_SESSION_ABSOLUTE_HOURS", "12")),
@@ -25,7 +27,12 @@ def create_app(test_config=None):
     )
     if test_config:
         app.config.update(test_config)
-    os.makedirs(os.path.dirname(app.config["DATABASE"]) or ".", exist_ok=True)
+    if dbmod.is_postgres_url(app.config["DATABASE"]):
+        # مع عدة نسخ (Vercel) كل نسخة لازم توقّع الكوكيز بنفس المفتاح
+        if not os.environ.get("CC_SECRET_KEY") and not (test_config or {}).get("SECRET_KEY"):
+            raise RuntimeError("CC_SECRET_KEY is required when using DATABASE_URL")
+    else:
+        os.makedirs(os.path.dirname(app.config["DATABASE"]) or ".", exist_ok=True)
 
     conn = dbmod.connect(app.config["DATABASE"])
     dbmod.migrate(conn)

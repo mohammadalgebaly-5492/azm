@@ -1,15 +1,13 @@
 import io
 import json
-import os
 import secrets
-import time
+from datetime import datetime, timedelta, timezone
 
-from flask import (Blueprint, abort, current_app, flash, g, redirect, render_template, request, send_file,
-                   url_for)
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, url_for
 
 from .. import boq as B
 from ..auth import AuthError, login_required
-from ..db import get_db
+from ..db import get_db, utcnow
 from ..rbac import can, can_view_project
 
 bp = Blueprint("boq", __name__)
@@ -163,14 +161,10 @@ def item_delete(pid, iid):
 
 # ---------- الاستيراد والتصدير ----------
 
-def _import_dir():
-    d = os.path.join(current_app.instance_path, "imports")
-    os.makedirs(d, exist_ok=True)
-    for f in os.listdir(d):  # تنظيف الملفات المؤقتة الأقدم من ساعة
-        fp = os.path.join(d, f)
-        if os.path.getmtime(fp) < time.time() - 3600:
-            os.remove(fp)
-    return d
+def _purge_previews(db):
+    """حذف المعاينات الأقدم من ساعة."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
+    db.execute("DELETE FROM import_previews WHERE created_at < ?", (cutoff,))
 
 
 @bp.route("/projects/<int:pid>/boq/import", methods=["GET", "POST"])
@@ -194,10 +188,12 @@ def import_upload(pid):
         except Exception:
             error = "تعذرت قراءة الملف. تأكد إنه ملف Excel سليم (.xlsx) أو جرّب القالب."
         else:
+            # المعاينة تُحفظ في قاعدة البيانات لا على القرص: على Vercel القرص للقراءة فقط وكل طلب قد يصل لنسخة مختلفة
             token = secrets.token_urlsafe(16)
-            with open(os.path.join(_import_dir(), token + ".json"), "w", encoding="utf-8") as fh:
-                json.dump({"pid": pid, "uid": g.user["id"], "root": int(root) if root.isdigit() else None,
-                           "rows": parsed}, fh, ensure_ascii=False)
+            _purge_previews(db)
+            db.execute("INSERT INTO import_previews(token, project_id, user_id, root_wbs_id, payload, created_at) "
+                       "VALUES (?,?,?,?,?,?)", (token, pid, g.user["id"], int(root) if root.isdigit() else None,
+                                                json.dumps(parsed, ensure_ascii=False), utcnow()))
             total = sum(r["amount"] for r in parsed if r["kind"] == "item")
             return render_template("boq/import_preview.html", p=p, rows=parsed, errors=errors, token=token,
                                    total=total, filename=f.filename,
@@ -213,17 +209,16 @@ def import_confirm(pid):
     token = request.form.get("token", "")
     if not token.replace("-", "").replace("_", "").isalnum():
         abort(400)
-    path = os.path.join(_import_dir(), token + ".json")
-    if not os.path.exists(path):
+    _purge_previews(db)
+    data = db.execute("DELETE FROM import_previews WHERE token = ? RETURNING project_id, user_id, root_wbs_id, payload",
+                      (token,)).fetchone()
+    if data is None:
         flash("انتهت صلاحية المعاينة. ارفع الملف مرة أخرى.", "bad")
         return redirect(url_for("boq.import_upload", pid=pid))
-    with open(path, encoding="utf-8") as fh:
-        data = json.load(fh)
-    os.remove(path)
-    if data["pid"] != pid or data["uid"] != g.user["id"]:
+    if data["project_id"] != pid or data["user_id"] != g.user["id"]:
         abort(403)
     try:
-        n_items, n_heads = B.commit_import(db, pid, data["rows"], data["root"], g.user["id"])
+        n_items, n_heads = B.commit_import(db, pid, json.loads(data["payload"]), data["root_wbs_id"], g.user["id"])
     except AuthError as e:
         flash(str(e), "bad")
         return redirect(url_for("boq.import_upload", pid=pid))

@@ -104,11 +104,11 @@ def add_wbs(db, pid, name, parent_id, actor_id, _in_tx=False):
         if n > 99:
             raise AuthError("الحد الأقصى 99 عنصرًا في نفس المستوى.")
         code = f"{parent['code']}.{n:02d}" if parent else f"{n:02d}"
-        cur = db.execute("INSERT INTO wbs_nodes(project_id, parent_id, code, name, level, created_at, created_by) "
-                         "VALUES (?,?,?,?,?,?,?)", (pid, parent["id"] if parent else None, code, name, level,
-                                                    utcnow(), actor_id))
-        audit.log(db, actor_id, "wbs_added", "wbs", cur.lastrowid, pid, code=code, name=name)
-        return cur.lastrowid, code
+        wid = db.execute("INSERT INTO wbs_nodes(project_id, parent_id, code, name, level, created_at, created_by) "
+                         "VALUES (?,?,?,?,?,?,?) RETURNING id", (pid, parent["id"] if parent else None, code, name,
+                                                                 level, utcnow(), actor_id)).fetchone()[0]
+        audit.log(db, actor_id, "wbs_added", "wbs", wid, pid, code=code, name=name)
+        return wid, code
 
     if _in_tx:
         return _do()
@@ -176,14 +176,14 @@ def add_item(db, pid, wbs_id, form, actor_id, _in_tx=False):
 
     def _do():
         code = _next_item_code(db, wbs, d["item_type"])
-        cur = db.execute(
+        iid = db.execute(
             "INSERT INTO boq_items(project_id, wbs_id, code, ref_no, description, item_type, unit, qty_milli, "
-            "unit_rate, amount, notes, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "unit_rate, amount, notes, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id",
             (pid, wbs["id"], code, d["ref_no"], d["description"], d["item_type"], d["unit"], d["qty_milli"],
-             d["unit_rate"], d["amount"], d["notes"], utcnow(), actor_id))
+             d["unit_rate"], d["amount"], d["notes"], utcnow(), actor_id)).fetchone()[0]
         if not _in_tx:
-            audit.log(db, actor_id, "boq_item_added", "boq_item", cur.lastrowid, pid, code=code, amount=d["amount"])
-        return cur.lastrowid, code
+            audit.log(db, actor_id, "boq_item_added", "boq_item", iid, pid, code=code, amount=d["amount"])
+        return iid, code
 
     if _in_tx:
         return _do()
@@ -227,7 +227,7 @@ def summary(db, pid):
     """إجماليات لكل عنصر WBS (شاملة الفروع) وإجمالي المشروع."""
     nodes = wbs_nodes(db, pid)
     direct = {r[0]: (r[1], r[2]) for r in db.execute(
-        "SELECT wbs_id, SUM(amount), COUNT(*) FROM boq_items WHERE project_id = ? GROUP BY wbs_id", (pid,))}
+        "SELECT wbs_id, CAST(SUM(amount) AS BIGINT), COUNT(*) FROM boq_items WHERE project_id = ? GROUP BY wbs_id", (pid,))}
     totals = {}
     for n in nodes:
         amt = cnt = 0
@@ -239,7 +239,7 @@ def summary(db, pid):
         totals[n["id"]] = (amt, cnt)
     total = sum(a for a, _ in direct.values())
     by_type = {t: 0 for t in TYPES}
-    for r in db.execute("SELECT item_type, SUM(amount) FROM boq_items WHERE project_id = ? GROUP BY item_type", (pid,)):
+    for r in db.execute("SELECT item_type, CAST(SUM(amount) AS BIGINT) FROM boq_items WHERE project_id = ? GROUP BY item_type", (pid,)):
         by_type[r[0]] = r[1]
     return totals, total, by_type
 

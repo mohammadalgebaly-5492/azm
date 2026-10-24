@@ -4,21 +4,22 @@
 """
 import os
 import re
-import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 
 from app import create_app
 from app.auth import AuthError, create_user, password_problems
-from app.db import connect
+from app.db import IntegrityError, connect
+
+from _db import fresh_database
 from app.projects import fmt_money, parse_money
 
 
 class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.app = create_app({"DATABASE": os.path.join(self.tmp.name, "t.sqlite3"), "TESTING": True,
+        self.app = create_app({"DATABASE": fresh_database(self.tmp.name, "t.sqlite3"), "TESTING": True,
                                "SESSION_COOKIE_SECURE": False, "SECRET_KEY": "test"})
         self.db = connect(self.app.config["DATABASE"])
         with self.app.app_context():
@@ -99,9 +100,9 @@ class LoginTests(Base):
 
     def test_audit_log_is_append_only(self):
         self.login("admin", "AdminPass123")
-        with self.assertRaises(sqlite3.IntegrityError):
+        with self.assertRaises(IntegrityError):
             self.db.execute("DELETE FROM audit_log")
-        with self.assertRaises(sqlite3.IntegrityError):
+        with self.assertRaises(IntegrityError):
             self.db.execute("UPDATE audit_log SET action = 'x'")
 
 
@@ -171,7 +172,7 @@ class AccountLifecycle(Base):
 class Permissions(Base):
     def _active_user(self, username, role):
         uid, _, pw = self.make_user(username, role)
-        self.db.execute("UPDATE users SET must_change_password = 0 WHERE id = ?", (uid,))
+        self.db.execute("UPDATE users SET must_change_password = FALSE WHERE id = ?", (uid,))
         cl = self.app.test_client()
         self.login(username, pw, cl)
         return uid, cl
@@ -227,7 +228,7 @@ class Permissions(Base):
 class FirstSetup(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.app = create_app({"DATABASE": os.path.join(self.tmp.name, "s.sqlite3"), "SESSION_COOKIE_SECURE": False,
+        self.app = create_app({"DATABASE": fresh_database(self.tmp.name, "s.sqlite3"), "SESSION_COOKIE_SECURE": False,
                                "SECRET_KEY": "test"})
         self.c = self.app.test_client()
 
@@ -252,6 +253,7 @@ class FirstSetup(unittest.TestCase):
         self.assertEqual(r.status_code, 302)
         db = connect(self.app.config["DATABASE"])
         self.assertEqual(db.execute("SELECT COUNT(*) FROM users").fetchone()[0], 1)
+        db.close()
 
     def test_weak_password_rejected(self):
         r = self.c.post("/setup", data=self.form(password="123", confirm_password="123"))

@@ -8,7 +8,12 @@
 import getpass
 import sys
 
-from app import create_app
+from dotenv import load_dotenv
+
+load_dotenv(".env.local")
+load_dotenv(".env")
+
+from app import create_app  # noqa: E402
 from app.auth import EMAIL_RE, USERNAME_RE, AuthError, create_user, password_problems
 from app.db import connect, migrate
 
