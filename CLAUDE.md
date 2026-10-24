@@ -147,7 +147,7 @@ Rules:
 - **Read `docs/identity.md` first.** AZM has its own identity (Muhammad's logo, green, dark navy), independent of the company using it, which appears by name only. Everything else is our system: calm and precise, Apple-like in feel, but not a copy.
 - **Change the look only through the tokens** at the top of `app/static/style.css`.
   - **There is one theme: dark navy.** No light mode, by the programmer's decision. Do not add one.
-  - The green is only for actions, links, the active item, and focus. No colored glows or tinted backgrounds.
+  - The solid green is only for actions, links, the active item, and focus. The page background is the soft green-to-teal gradient from the sign-in panel (`--aurora-*`); keep content surfaces neutral glass.
 - **Reuse the existing components:**
   - page head;
   - `fsection` form sections with a sticky `form-actions` bar;

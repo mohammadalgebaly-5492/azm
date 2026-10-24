@@ -8,12 +8,17 @@ The project's memory between chats. Claude reads this at the start of **every** 
 - **Published 2026-10-25 (commits `ba07534` and `17fe87f`, Vercel "Deployment has completed"):** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…», the constitution (articles 1–4), CLAUDE.md rules, and this log. Verified the GitHub copy of the constitution is byte-identical to the local one.
 - **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale). Whether the protection should be off for the team is a programmer/Vercel setting.
-- **Waiting on Muhammad:** (1) his yes to rename the default role labels in the live database (مهندس تحكم تكلفة، المدير التنفيذي، المحاسبة، المشاهد) plus fixing the leftover blue chart bars (`--c-series`); (2) the simpler re-asked question: the contract itself is judged by its total value, payments one by one.
+- **Waiting on Muhammad:** his review of the demo (role names, chart bars, site-wide gradient) and his yes to publish. The migration renames role labels in the live database, so it needs that yes.
 - **Next planned step:** the item pipeline (سلسلة تنفيذ البنود). Confirm the details with Muhammad, and with the programmer for the engine design, before building. See CLAUDE.md, "Roadmap".
 - **Also open:** the decisions listed in CLAUDE.md, "Roadmap and open decisions".
 
 ## Log
 
+- **2026-10-25.** Built locally, not published (demo on a throwaway SQLite copy, port 5056):
+  - Migration `010_role_labels` (both folders) renames the default role labels to the constitution's titles, leaving customised names alone; test added (52 tests pass).
+  - Chart bars use a neutral slate `--c-series`; green would have clashed with the «complete» status bars.
+  - Muhammad asked for the sign-in panel's gradient across the whole site («الالوان بتاعت الموقع والخلفية كلها من نفس الشكل والتدرج دا»): page background now uses `--aurora-*`, cards are glass, and the sign-in page shares it. The fix needed `html` to own the background and `body` to be transparent, because the old opaque body hid the glow.
+  - Muhammad confirmed contract creation is judged by its total and payments one by one («مظبوط كلامك»).
 - **2026-10-25.** Muhammad approved articles 3 and 4 («اه اعتمد المواد») and said the new look is good («والشكل الجديد كويس»). He did not understand the question on contract creation vs payments; re-asked in simpler words with an example. The role-rename proposal (migration on the live database) is still awaiting his yes.
 - **2026-10-25.** Titles approved («صح الاسم»; «الكوست كنترول انجنير هيكون مهندس تحكم تكلفة»): Director = «المدير التنفيذي», Cost Control Engineer = «مهندس تحكم تكلفة». Renamed across the constitution; «التحكم في التكاليف» stays only for the function. The app's role names still show the old transliterations and must be renamed when building.
 - **2026-10-25.** The 10,000 SAR limit is judged per payment, not cumulatively per contract («كل دفعه لوحدها»). Reading applied: contract/PO award by its own total, each payment by its own amount, with the approved-commitment ceiling and the anti-splitting rule kept for new POs and contracts only. Director gets an automatic notice for every Cost Control approval within the limit.

@@ -43,17 +43,20 @@
   --brand-shadow: rgba(1, 127, 77, .55);
   --glow-a: rgba(47, 208, 143, .08);
   --glow-b: rgba(1, 127, 77, .14);
+  --aurora-1: rgba(47, 208, 143, .30);   /* خلفية الموقع كله بنفس تدرج لوحة الدخول: أخضر الشعار فوق، وأخضر أعمق على الجانب، وبترولي أسفل */
+  --aurora-2: rgba(1, 127, 77, .52);
+  --aurora-3: rgba(20, 90, 110, .52);
   --grid: rgba(170, 190, 215, .05);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -8px rgba(0, 0, 0, .45);
   --shadow-lg: 0 2px 6px rgba(0, 0, 0, .35), 0 24px 60px -16px rgba(0, 0, 0, .6);
   --ring: 0 0 0 4px rgba(44, 196, 131, .3);
   --glass: rgba(37, 52, 78, .66);
-  --glass-strong: rgba(37, 52, 78, .84);
+  --glass-strong: rgba(34, 48, 72, .60);
   --glass-line: rgba(255, 255, 255, .06);
   --highlight: inset 0 1px 0 rgba(255, 255, 255, .06);
   --field: #2c3c58;
-  --c-supply: #2394d6; --c-exec: #cf7f22; --c-both: #6a78ff; --c-series: #6a78ff;
+  --c-supply: #2394d6; --c-exec: #cf7f22; --c-both: #6a78ff; --c-series: #7f93b5;
   --c-track: var(--sunken);
   color-scheme: dark;
 }
@@ -61,17 +64,18 @@
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
-html { -webkit-text-size-adjust: 100%; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14.5px; line-height: 1.55;
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body { background: transparent; color: var(--ink); font-family: var(--font); font-size: 14.5px; line-height: 1.55;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; font-feature-settings: "cv11", "ss01"; }
 html, body { overflow-x: clip; }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(800px 460px at 92% -8%, var(--glow-a), transparent 70%),
-    radial-gradient(760px 520px at 30% -14%, var(--glow-b), transparent 70%); }
+    radial-gradient(70% 60% at 22% -8%, var(--aurora-1), transparent 72%),
+    radial-gradient(60% 65% at 104% 42%, var(--aurora-2), transparent 72%),
+    radial-gradient(70% 60% at -6% 108%, var(--aurora-3), transparent 72%); }
 body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 44px 44px; mask-image: linear-gradient(to bottom, #000, transparent 46%); }
+  background-size: 44px 44px; mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 15%, transparent 80%); }
 
 :lang(ar) body, body:lang(ar) { font-size: 15px; line-height: 1.75; }
 a { color: var(--accent); text-decoration: none; transition: color var(--fast) var(--ease); }
@@ -211,6 +215,7 @@ html.hide-guide :is(.page-head .lead, .fsection-head p, .row-label > span, .card
 
 /* ---------- Surfaces ---------- */
 .card { background: var(--glass-strong); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px;
+  backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: var(--highlight), var(--shadow);
   display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .card.flush { padding: 0; gap: 0; overflow: hidden; }
@@ -223,6 +228,7 @@ html.hide-guide :is(.page-head .lead, .fsection-head p, .row-label > span, .card
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
 .stat { background: var(--glass-strong); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px;
+  backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%);
   box-shadow: var(--highlight), var(--shadow);
   display: flex; flex-direction: column; gap: 4px; }
 .stat span { font-size: 12.5px; color: var(--muted); }
@@ -506,7 +512,7 @@ pre.msg { white-space: pre-wrap; font: inherit; font-size: 14px; background: var
   border-radius: var(--r); padding: 14px 16px; margin: 0; }
 
 /* ---------- Auth (login, setup, errors): split layout, brand panel ---------- */
-.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); background: var(--bg); }
+.auth { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
 .auth-main { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; position: relative; }
 .auth-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 28px; }
 .auth-logo { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); }

@@ -31,6 +31,8 @@ Both are editable by the System Owner in **Settings**; templates read them from 
 | `--brand` | `#18a86a` | the logo green `#017F4D`, lifted for dark: the mark only |
 | `--accent` | `#2cc483` | buttons, links, active items, focus |
 | `--brand-grad` | light green → logo green | primary buttons, hero cards, the active menu marker |
+| `--aurora-1/2/3` | light green, deep green, teal | the page background gradient: the same look as the sign-in panel, across the whole interface (Muhammad's decision, 2026-10-25). Cards are glass (`--glass-strong`), so the gradient shows through |
+| `--c-series` | `#7f93b5` | chart bars: a neutral slate, so they stay distinct from the green, yellow and red status colors |
 | `--ink` | `#f0f3f9` | text, and the black parts of the logo |
 
 Status colors (`--ok`, `--warn`, `--bad`) are for status only. `--ok` is also green, so status pills always keep their dot to stay distinct from buttons.
@@ -44,7 +46,7 @@ Status colors (`--ok`, `--warn`, `--bad`) are for status only. `--ok` is also gr
 
 Clean, precise, professional: an engineering tool, not a marketing site. Simple on the surface, with structure you can feel underneath.
 
-- Neutral surfaces with hairline borders and soft shadows. No colored glows or tinted backgrounds: the green appears only on actions, links, the active item and focus.
+- The page background is a soft green-to-teal gradient over the navy (the sign-in panel look). Surfaces are neutral glass with hairline borders and soft shadows. The solid green appears only on actions, links, the active item and focus.
 - Color carries meaning, never decoration.
 - Generous spacing, clear hierarchy, one primary action per screen.
 - Short, formal copy. Arabic is Modern Standard Arabic, never colloquial. No chatty or personal hints in the interface.
