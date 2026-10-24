@@ -4,7 +4,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Now
 
-- **Current task:** writing the constitution with Muhammad. Article 3 = part 1, «تخطيط المشروع» (output: «خطة إدارة المشروع»), name approved 2026-10-25. Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; waiting on the 5 decisions in 4.14 (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
+- **Current task:** writing the constitution with Muhammad. Article 3 = part 1, «تخطيط المشروع» (output: «خطة إدارة المشروع»), name approved 2026-10-25. Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; decisions applied 2026-10-25; one left: the 10,000 SAR limit, cumulative or per payment (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
 - **Not yet published:** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…» (commit `bfcc593`); waiting for his yes.
 - **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
 - **Waiting on Muhammad:** confirmation that the live site shows the new look, and the live site's address. The GitHub repo's homepage (`azm-iota-lime.vercel.app`) is stale (`DEPLOYMENT_NOT_FOUND`); the team URLs `azm-mohammad5493.vercel.app` are behind Vercel sign-in.
@@ -13,6 +13,12 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Article 4 decisions:
+  - Procurement account type added to article 1 («نعم ضيف المشتريات في المادة 1»).
+  - Director approves the baselines, then the PM's kick-off gate («اقتراحك صحيح»).
+  - Thresholds 5 / 10 / 30% («اكثر من 30 % حرج»).
+  - At least 2 quotes («عرضين على الاقل»).
+  - Up to 10,000 SAR the Cost Control engineer acts alone, and above that the Director approves too («لحد 10 الاف يمكن لمهندس الكوست كنترول اتخاذ اجراء»). Added an approval-limits table with an anti-splitting rule (same item and vendor within 30 days). Written as cumulative per PO/contract; awaiting his confirmation. CLAUDE.md open decisions updated.
 - **2026-10-25.** Article 4 drafted from Muhammad's nine points («اربط كل الكلام دا ببالمادة العلمية العالمية»):
   - **References:** PMBOK, PMI EVM standard, ANSI/EIA-748, ISO 21502, PRINCE2, AACE TCM and RP 29R-03, FIDIC, COSO.
   - **Governance principles:** segregation of duties; no commitment without budget; no certificate above recorded progress; management by exception; fixed approve/return paths with a «مهامي» page.

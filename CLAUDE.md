@@ -174,8 +174,9 @@ Rules:
 
 - **Next foundation: the pipeline engine** for the 11-stage item execution chain. It covers stages with a responsible role, approve or return with a reason, fixed return paths, history, a drag-and-drop board per project, and a "My tasks" page. Confirm the details with the programmer before building it.
 - **Then:** file storage (Supabase Storage, private bucket) and notifications (in-app plus an email provider).
+- **Muhammad's business rules live in `docs/constitution.md`.** Decisions settled there on 2026-10-25:
+  - delays between 5% and 10% are yellow (thresholds 5 / 10 / 30%, article 4.3);
+  - up to 10,000 SAR the Cost Control engineer approves alone, and above that the Director approves too; this covers contracts and purchase orders (article 4, approval limits).
 - **Muhammad's open decisions — ask him; don't assume:**
-  - the color for delays between 5% and 10%;
-  - whether the 10,000 SAR director limit also applies to contracts;
-  - whether the limit counts per payment request or cumulatively per contract (cumulative is safer);
+  - whether the limit counts per payment request or cumulatively per contract (written as cumulative, the safer option, awaiting his confirmation);
   - whether vendors sign in the platform or a scanned signed copy is uploaded.
