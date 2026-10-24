@@ -13,6 +13,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Titles approved («صح الاسم»; «الكوست كنترول انجنير هيكون مهندس تحكم تكلفة»): Director = «المدير التنفيذي», Cost Control Engineer = «مهندس تحكم تكلفة». Renamed across the constitution; «التحكم في التكاليف» stays only for the function. The app's role names still show the old transliterations and must be renamed when building.
 - **2026-10-25.** The 10,000 SAR limit is judged per payment, not cumulatively per contract («كل دفعه لوحدها»). Reading applied: contract/PO award by its own total, each payment by its own amount, with the approved-commitment ceiling and the anti-splitting rule kept for new POs and contracts only. Director gets an automatic notice for every Cost Control approval within the limit.
 - **2026-10-25.** Article 4 decisions:
   - Procurement account type added to article 1 («نعم ضيف المشتريات في المادة 1»).
