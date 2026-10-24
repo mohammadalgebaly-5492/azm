@@ -127,7 +127,7 @@ AR = {
     # ---------- الدخول والإعداد ----------
     "Sign in": "تسجيل الدخول",
     "Sign in to {name}": "تسجيل الدخول إلى {name}",
-    "Project management platform": "منصة إدارة المشروعات",
+    "Project management and governance platform": "منصة إدارة المشروعات والحوكمة",
     "Incorrect username or password.": "اسم المستخدم أو كلمة المرور غير صحيحة.",
     "This account is temporarily locked after {n} failed attempts. Try again in {m} minutes or contact the admin.":
         "الحساب مقفول مؤقتًا بعد {n} محاولات خاطئة. أعد المحاولة بعد {m} دقيقة أو تواصل مع مسؤول المنصة.",

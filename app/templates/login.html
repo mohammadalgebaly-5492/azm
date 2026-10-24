@@ -2,7 +2,7 @@
 {% from "_icons.html" import icon %}
 {% block title %}{{ _('Sign in') }}{% endblock %}
 {% block card %}
-<div class="auth-title"><h1>{{ _('Sign in to {name}', name=platform) }}</h1><p>{{ _('Project management platform') }}</p></div>
+<div class="auth-title"><h1>{{ _('Sign in to {name}', name=platform) }}</h1><p>{{ _('Project management and governance platform') }}</p></div>
 {% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
 <form method="post" autocomplete="on">
   <div class="field"><label for="username">{{ _('Username') }}</label>

@@ -10,6 +10,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-24.** Sign-in subtitle changed to «منصة إدارة المشروعات والحوكمة» at Muhammad's request («اكتب منصة ادارة المشروعات والحوكمة»). Not yet published to the live site.
 - **2026-10-24.** Handover from the programmer. In place:
   - our own sign-in, roles and permissions;
   - sign-up links;
