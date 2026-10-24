@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, mark %}
+{% block title %}الرئيسية{% endblock %}
+{% block content %}
+<div class="page-h">
+  <div><h1>أهلًا، {{ me.full_name }}</h1><p>{{ role_label(me.role) }} · <span class="code">{{ me.code }}</span></p></div>
+  {% if can('projects.create') %}<a class="btn primary" href="{{ url_for('admin.project_new') }}">{{ icon('plus', 16) }} مشروع جديد</a>{% endif %}
+</div>
+{% if stats %}
+<div class="stats">
+  <div class="stat"><span>المشروعات</span><b>{{ projects|length }}</b></div>
+  <div class="stat"><span>الحسابات الفعّالة</span><b>{{ stats.users }}</b></div>
+  <div class="stat"><span>بانتظار أول دخول</span><b>{{ stats.pending_first_login }}</b></div>
+  <div class="stat"><span>حسابات مقفولة مؤقتًا</span><b>{{ stats.locked }}</b></div>
+</div>
+{% endif %}
+<div class="card">
+  <div class="card-h"><h2>{{ 'كل المشروعات' if can('projects.view_all') else 'مشروعاتي' }}</h2></div>
+  {% if projects %}
+  <div class="tw"><table>
+    <thead><tr><th>الكود</th><th>المشروع</th><th>المالك</th><th>قيمة العقد (ريال)</th><th>المدة</th><th>الطاقم</th><th>الحالة</th></tr></thead>
+    <tbody>
+    {% for p in projects %}
+      <tr>
+        <td><a class="code" href="{{ url_for('main.project', pid=p.id) }}">{{ p.code }}</a></td>
+        <td><a href="{{ url_for('main.project', pid=p.id) }}">{{ p.name }}</a>{% if p.location %}<br><span class="muted">{{ p.location }}</span>{% endif %}</td>
+        <td>{{ p.client or '—' }}</td>
+        <td class="num">{{ money(p.contract_value) }}</td>
+        <td class="daterange">{% if p.start_date %}<span class="num">{{ p.start_date }}</span><br><span class="muted">إلى</span> <span class="num">{{ p.end_date or '—' }}</span>{% else %}—{% endif %}</td>
+        <td>{{ team_counts.get(p.id, 0) }}</td>
+        <td>{% include "_project_status.html" %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="empty">{% if can('projects.create') %}لا توجد مشروعات بعد. ابدأ بإنشاء أول مشروع، ثم أسند له الطاقم.{% else %}لم يُسند إليك أي مشروع بعد. تواصل مع مهندس الكوست كنترول.{% endif %}</div>
+  {% endif %}
+</div>
+{% endblock %}

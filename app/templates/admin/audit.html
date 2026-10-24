@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}سجل العمليات{% endblock %}
+{% block content %}
+<div class="page-h"><div><h1>سجل العمليات</h1><p>سجل للإضافة فقط: لا يمكن تعديل أي سطر أو حذفه، حتى من قاعدة البيانات. آخر 500 عملية.</p></div></div>
+<div class="card">
+  {% if rows %}
+  <div class="tw"><table>
+    <thead><tr><th>التاريخ (UTC)</th><th>العملية</th><th>بواسطة</th><th>المشروع</th><th>التفاصيل</th><th>IP</th></tr></thead>
+    <tbody>{% for a in rows %}
+      <tr><td class="num">{{ a.at|dt }}</td><td>{{ action_label(a.action) }}</td>
+        <td>{{ a.actor or '—' }}{% if a.actor_code %}<br><span class="code">{{ a.actor_code }}</span>{% endif %}</td>
+        <td class="code">{{ a.project_code or '' }}</td><td class="code">{{ a.details or '' }}</td><td class="code">{{ a.ip or '' }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty">لا توجد عمليات بعد.</div>{% endif %}
+</div>
+{% endblock %}

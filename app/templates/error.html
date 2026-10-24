@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, mark %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+{% if me %}{{ super() }}{% else %}
+<div class="auth"><div class="pane"><div class="box"><h1>{{ title }}</h1><p>{{ message }}</p><a class="btn" href="{{ url_for('auth.login') }}">صفحة الدخول</a></div></div><div class="strip"></div></div>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card"><h1>{{ title }}</h1><p class="muted">{% if code == 403 %}هذه العملية خارج صلاحيات حسابك.{% else %}{{ message }}{% endif %}</p>
+<div class="actions"><a class="btn" href="{{ url_for('main.home') }}">{{ icon('home', 16) }} الرئيسية</a></div></div>
+{% endblock %}

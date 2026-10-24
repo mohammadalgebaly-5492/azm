@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ it.code if it else 'بند جديد' }} · {{ p.code }}{% endblock %}
+{% block content %}
+<div class="page-h"><div><a class="code" href="{{ url_for('boq.page', pid=p.id) }}">{{ p.code }} · جدول الكميات</a>
+  <h1>{% if it %}تعديل البند <span class="code">{{ it.code }}</span>{% else %}بند جديد{% endif %}</h1>
+  <p>{% if it %}كود البند ونوعه ثابتان. لتغيير النوع احذف البند وأضفه من جديد.{% else %}يتولد الكود تلقائيًا من كود القسم ونوع البند، مثل <span class="code">01.02-SE-010</span>.{% endif %}</p></div></div>
+<div class="card">
+  {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="f wide"><label for="wbs_id" class="req">القسم (WBS)</label>
+      <select id="wbs_id" name="wbs_id" required {{ 'disabled' if it }}>{% for n in nodes %}<option value="{{ n.id }}" {{ 'selected' if sel_wbs == n.id|string }}>{{ n.code }} — {{ '· ' * (n.level - 1) }}{{ n.name }}</option>{% endfor %}</select></div>
+    <div class="f"><label for="ref_no">رقم البند في جدول المالك</label><input id="ref_no" name="ref_no" dir="ltr" value="{{ form.get('ref_no') or '' }}" placeholder="2.4"></div>
+    <div class="f"><label for="item_type" class="req">النوع</label>
+      <select id="item_type" name="item_type" required {{ 'disabled' if it }}>{% for k, v in TYPES.items() %}<option value="{{ k }}" {{ 'selected' if form.get('item_type', 'both') == k }}>{{ v[0] }}</option>{% endfor %}</select>
+      {% if it %}<input type="hidden" name="item_type" value="{{ it.item_type }}">{% endif %}</div>
+    <div class="f wide"><label for="description" class="req">الوصف</label><textarea id="description" name="description" required>{{ form.get('description') or '' }}</textarea></div>
+    <div class="f"><label for="unit" class="req">الوحدة</label><input id="unit" name="unit" list="units" required value="{{ form.get('unit') or '' }}"><datalist id="units">{% for u in UNITS %}<option value="{{ u }}">{% endfor %}</datalist></div>
+    <div class="f"><label for="qty" class="req">الكمية</label><input id="qty" name="qty" dir="ltr" inputmode="decimal" required value="{{ form.get('qty') or '' }}" placeholder="850.5"></div>
+    <div class="f"><label for="unit_rate" class="req">سعر الوحدة (ريال)</label><input id="unit_rate" name="unit_rate" dir="ltr" inputmode="decimal" required value="{{ form.get('unit_rate') or '' }}" placeholder="1150.00"></div>
+    <div class="f"><label>الإجمالي</label><output id="amount_out" class="num big" data-calc="qty,unit_rate">{% if it %}{{ money(it.amount) }}{% else %}—{% endif %}</output></div>
+    <div class="f wide"><label for="notes">ملاحظات</label><input id="notes" name="notes" value="{{ form.get('notes') or '' }}"></div>
+    <div class="actions f wide">
+      <button class="btn primary" type="submit">{{ icon('check', 16) }} حفظ</button>
+      {% if not it %}<button class="btn" type="submit" name="again" value="1">{{ icon('plus', 16) }} حفظ وإضافة بند آخر</button>{% endif %}
+      <a class="btn" href="{{ url_for('boq.page', pid=p.id) }}">رجوع</a>
+    </div>
+  </form>
+  {% if it %}
+  <form method="post" action="{{ url_for('boq.item_delete', pid=p.id, iid=it.id) }}" class="actions dangerzone">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <span class="muted">حذف البند نهائي ويُسجل في سجل العمليات.</span>
+    <button class="btn danger" type="submit">{{ icon('x', 16) }} حذف البند</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

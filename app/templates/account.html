@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, mark %}
+{% block title %}بيانات الحساب{% endblock %}
+{% block content %}
+<div class="page-h"><div><h1>بيانات الحساب</h1><p>لتعديل البيانات أو الدور تواصل مع مهندس الكوست كنترول.</p></div>
+<a class="btn" href="{{ url_for('auth.change_password') }}">{{ icon('key', 16) }} تغيير كلمة المرور</a></div>
+<div class="card">
+  <dl class="kv">
+    <dt>الاسم</dt><dd>{{ me.full_name }}</dd>
+    <dt>كود الحساب</dt><dd class="code">{{ me.code }}</dd>
+    <dt>اسم المستخدم</dt><dd class="code">{{ me.username }}</dd>
+    <dt>البريد</dt><dd class="code">{{ me.email }}</dd>
+    <dt>الدور</dt><dd>{{ role_label(me.role) }}</dd>
+    <dt>المسمى الوظيفي</dt><dd>{{ me.job_title or '—' }}</dd>
+    <dt>آخر دخول</dt><dd class="num">{{ me.last_login_at|dt }}</dd>
+    <dt>آخر تغيير لكلمة المرور</dt><dd class="num">{{ (me.password_changed_at|dt) or '—' }}</dd>
+  </dl>
+</div>
+<div class="card">
+  <h2>المشروعات المسندة لي</h2>
+  {% if my_projects %}<ul>{% for p in my_projects %}<li><a href="{{ url_for('main.project', pid=p.id) }}"><span class="code">{{ p.code }}</span> {{ p.name }}</a></li>{% endfor %}</ul>
+  {% else %}<p class="muted">لا توجد مشروعات مسندة.</p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, mark %}
+{% block title %}تسجيل الدخول{% endblock %}
+{% block body %}
+<div class="auth">
+  <div class="pane">
+    <div class="box">
+      <div class="lockup">{{ mark(48) }}<div><b>الإنماء الحر للمقاولات</b><small>ALENMAA ALHOR CONSTRUCTION</small></div></div>
+      <div>
+        <h1 class="pname">{{ platform }}</h1>
+        <div class="en">AZM · PROJECT MANAGEMENT PLATFORM</div>
+        <p class="muted">منصة إدارة المشروعات</p>
+      </div>
+      {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
+      <form method="post" autocomplete="on">
+        <div class="f"><label for="username">اسم المستخدم</label><input id="username" name="username" dir="ltr" autocomplete="username" required autofocus value="{{ username }}"></div>
+        <div class="f"><label for="password">كلمة المرور</label><input id="password" name="password" type="password" dir="ltr" autocomplete="current-password" required></div>
+        <button class="btn primary" type="submit">{{ icon('lock', 16) }} دخول</button>
+      </form>
+      <p class="hint">الحسابات يصدرها مهندس الكوست كنترول فقط. لو نسيت كلمة المرور اطلب إعادة تعيينها منه.</p>
+    </div>
+  </div>
+  <div class="strip" aria-hidden="true"></div>
+</div>
+{% endblock %}

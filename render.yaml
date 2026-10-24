@@ -1,0 +1,32 @@
+# إعداد النشر على Render: كل تحديث على الفرع main يُنشر تلقائيًا
+services:
+  - type: web
+    name: azm
+    runtime: python
+    plan: starter            # التخزين الدائم لقاعدة البيانات يتطلب خطة مدفوعة
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT --forwarded-allow-ips '*' wsgi:app
+    autoDeploy: true
+    healthCheckPath: /login
+    disk:
+      name: azm-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.1
+      - key: CC_DATABASE
+        value: /var/data/azm.sqlite3
+      - key: CC_SECRET_KEY
+        generateValue: true
+      - key: CC_SETUP_TOKEN
+        generateValue: true
+      - key: CC_COOKIE_SECURE
+        value: "1"
+      - key: CC_BEHIND_PROXY
+        value: "1"
+      - key: CC_PLATFORM_NAME
+        value: عزم
+      - key: CC_COMPANY_NAME
+        value: الإنماء الحر للمقاولات

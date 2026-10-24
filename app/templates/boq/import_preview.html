@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}معاينة الاستيراد · {{ p.code }}{% endblock %}
+{% block content %}
+{% set n_items = rows|selectattr('kind', 'equalto', 'item')|list|length %}
+{% set n_heads = rows|selectattr('kind', 'equalto', 'heading')|list|length %}
+<div class="page-h"><div><a class="code" href="{{ url_for('boq.page', pid=p.id) }}">{{ p.code }} · جدول الكميات</a><h1>معاينة الاستيراد</h1>
+<p>{{ filename }} · {{ n_heads }} قسم · {{ n_items }} بند · الإجمالي <span class="num">{{ money(total) }}</span> ريال
+{% if root %}· تحت {{ root.code }} — {{ root.name }}{% endif %}</p></div></div>
+{% if errors %}
+<div class="card">
+  <h2>{{ errors|length }} صف فيه مشكلة ولن يُستورد</h2>
+  <div class="tw"><table><thead><tr><th>الصف في الملف</th><th>المشكلة</th></tr></thead>
+  <tbody>{% for n, e in errors %}<tr><td class="num">{{ n }}</td><td>{{ e }}</td></tr>{% endfor %}</tbody></table></div>
+  <p class="hint">يمكنك تصحيح الملف ورفعه مرة أخرى، أو المتابعة وإضافة هذه الصفوف يدويًا لاحقًا.</p>
+</div>
+{% endif %}
+<div class="card">
+  <div class="tw"><table class="boq">
+    <thead><tr><th>الصف</th><th>رقم البند</th><th>الوصف</th><th>النوع</th><th>الوحدة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead>
+    <tbody>{% for r in rows %}
+      {% if r.kind == 'heading' %}<tr class="sec-row lvl-2"><td class="num">{{ r.row }}</td><td class="code">{{ r.ref_no }}</td><td colspan="6"><b>{{ r.name }}</b> <span class="pill brand">قسم WBS</span></td></tr>
+      {% else %}<tr><td class="num">{{ r.row }}</td><td class="code">{{ r.ref_no or '' }}</td><td class="desc">{{ r.description }}</td><td><span class="pill t-{{ r.item_type }}">{{ TYPES[r.item_type][0] }}</span></td><td>{{ r.unit }}</td><td class="num">{{ qty(r.qty_milli) }}</td><td class="num">{{ money(r.unit_rate) }}</td><td class="num">{{ money(r.amount) }}</td></tr>{% endif %}
+    {% endfor %}</tbody>
+  </table></div>
+  {% if n_items %}
+  <form method="post" action="{{ url_for('boq.import_confirm', pid=p.id) }}" class="actions">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="token" value="{{ token }}">
+    <button class="btn primary" type="submit">{{ icon('check', 16) }} تأكيد الاستيراد ({{ n_items }} بند)</button>
+    <a class="btn" href="{{ url_for('boq.import_upload', pid=p.id) }}">إلغاء ورفع ملف آخر</a>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

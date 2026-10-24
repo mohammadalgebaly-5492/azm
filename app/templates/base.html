@@ -1,0 +1,43 @@
+{% from "_icons.html" import icon, mark %}<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{% endblock %} · {{ platform }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="icon" href="{{ url_for('static', filename='logo-mark.png') }}">
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+{% block body %}
+<div class="shell">
+  <aside class="side">
+    <div class="brandbox">{{ mark(36) }}<div><b class="pname">{{ platform }}</b><small>{{ company }}</small></div></div>
+    {% set ep = request.endpoint or "" %}
+    <nav aria-label="القائمة الرئيسية">
+      <a href="{{ url_for('main.home') }}" class="{{ 'on' if ep == 'main.home' }}">{{ icon('home') }} الرئيسية والمشروعات</a>
+      {% if can('projects.create') %}<a href="{{ url_for('admin.project_new') }}" class="{{ 'on' if ep == 'admin.project_new' }}">{{ icon('folder-plus') }} مشروع جديد</a>{% endif %}
+      {% if can('users.manage') %}
+      <span class="lbl">الإدارة</span>
+      <a href="{{ url_for('admin.users') }}" class="{{ 'on' if ep in ('admin.users', 'admin.user_edit', 'admin.user_reset') }}">{{ icon('users') }} الحسابات والصلاحيات</a>
+      <a href="{{ url_for('admin.user_new') }}" class="{{ 'on' if ep == 'admin.user_new' }}">{{ icon('user-plus') }} إنشاء حساب</a>
+      {% endif %}
+      {% if can('audit.view') %}<a href="{{ url_for('admin.audit_log') }}" class="{{ 'on' if ep == 'admin.audit_log' }}">{{ icon('log') }} سجل العمليات</a>{% endif %}
+      <span class="lbl">حسابي</span>
+      <a href="{{ url_for('main.account') }}" class="{{ 'on' if ep == 'main.account' }}">{{ icon('user') }} بيانات الحساب</a>
+      <a href="{{ url_for('auth.change_password') }}" class="{{ 'on' if ep == 'auth.change_password' }}">{{ icon('key') }} تغيير كلمة المرور</a>
+    </nav>
+    <div class="me">
+      <b>{{ me.full_name }}</b>
+      <span class="code">{{ me.code }}</span> · {{ role_label(me.role) }}
+      <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button type="submit">{{ icon('logout', 16) }} تسجيل الخروج</button></form>
+    </div>
+  </aside>
+  <main class="main">
+    {% for cat, msg in get_flashed_messages(with_categories=true) %}<div class="flash {{ cat }}">{{ icon('check' if cat == 'ok' else 'alert') }} {{ msg }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
+</body>
+</html>

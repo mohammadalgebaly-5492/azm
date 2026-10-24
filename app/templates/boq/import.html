@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}استيراد جدول الكميات · {{ p.code }}{% endblock %}
+{% block content %}
+<div class="page-h"><div><a class="code" href="{{ url_for('boq.page', pid=p.id) }}">{{ p.code }} · جدول الكميات</a><h1>استيراد جدول الكميات من Excel</h1>
+<p>ارفع الملف، وراجع المعاينة، ثم أكّد الحفظ. لا يُحفظ أي شيء قبل التأكيد.</p></div>
+<a class="btn" href="{{ url_for('boq.template') }}">{{ icon('download', 16) }} تحميل القالب</a></div>
+{% if locked %}<div class="err">الميزانية الأصلية معتمدة، فالاستيراد مقفول.</div>{% else %}
+<div class="card">
+  {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="f wide"><label for="file" class="req">ملف Excel (.xlsx) أو CSV</label><input id="file" name="file" type="file" accept=".xlsx,.csv" required></div>
+    <div class="f"><label for="default_type">النوع الافتراضي للبنود</label>
+      <select id="default_type" name="default_type">{% for k, v in TYPES.items() %}<option value="{{ k }}" {{ 'selected' if k == 'both' }}>{{ v[0] }}</option>{% endfor %}</select>
+      <span class="hint">يُطبق على أي بند عمود النوع فيه فارغ.</span></div>
+    <div class="f"><label for="root_wbs">مكان الأقسام المستوردة</label>
+      <select id="root_wbs" name="root_wbs"><option value="">أقسام رئيسية جديدة</option>{% for n in nodes if n.level < 4 %}<option value="{{ n.id }}">تحت {{ n.code }} — {{ n.name }}</option>{% endfor %}</select></div>
+    <div class="actions f wide"><button class="btn primary" type="submit">{{ icon('upload', 16) }} رفع ومعاينة</button></div>
+  </form>
+</div>
+<div class="card">
+  <h2>شكل الملف المطلوب</h2>
+  <ul class="plain">
+    <li>صف عناوين يحتوي على الأقل على: <b>الوصف</b>، <b>الكمية</b>، <b>سعر الوحدة</b>. وتقبل المنصة أيضًا: رقم البند، الوحدة، النوع، الإجمالي، وأسماءها بالإنجليزية (Description, Qty, Rate…).</li>
+    <li>أي صف فيه وصف بدون كمية أو سعر يُعتبر <b>عنوان قسم</b> ويتحول إلى عنصر WBS، وتُسجل البنود التالية له تحته.</li>
+    <li>إذا وُجد عمود الإجمالي، تتحقق المنصة من أنه يساوي الكمية × السعر، ويظهر أي صف مختلف كخطأ في المعاينة.</li>
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
