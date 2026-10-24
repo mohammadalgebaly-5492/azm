@@ -176,7 +176,6 @@ Rules:
 - **Then:** file storage (Supabase Storage, private bucket) and notifications (in-app plus an email provider).
 - **Muhammad's business rules live in `docs/constitution.md`.** Decisions settled there on 2026-10-25:
   - delays between 5% and 10% are yellow (thresholds 5 / 10 / 30%, article 4.3);
-  - up to 10,000 SAR the Cost Control engineer approves alone, and above that the Director approves too; this covers contracts and purchase orders (article 4, approval limits).
+  - up to 10,000 SAR the Cost Control engineer approves alone, and above that the Director approves too; this covers contracts and purchase orders, and each payment is judged by its own amount (article 4, approval limits).
 - **Muhammad's open decisions — ask him; don't assume:**
-  - whether the limit counts per payment request or cumulatively per contract (written as cumulative, the safer option, awaiting his confirmation);
   - whether vendors sign in the platform or a scanned signed copy is uploaded.
