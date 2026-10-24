@@ -1,42 +1,84 @@
-{% from "_icons.html" import icon, mark %}<!doctype html>
-<html lang="ar" dir="rtl">
+{% from "_icons.html" import icon, mark %}{% from "_ui.html" import lang_switch, avatar with context %}<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}"{% if me and not me.show_guide %} class="hide-guide"{% endif %}>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>{% block title %}{% endblock %} · {{ platform }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ asset('early.js') }}"></script>
+<link rel="preload" href="{{ url_for('static', filename='fonts/inter-latin-wght.woff2') }}" as="font" type="font/woff2" crossorigin>
+{% if lang == 'ar' %}{% for w in (400, 500, 600) %}<link rel="preload" href="{{ url_for('static', filename='fonts/plex-arabic-%d.woff2' % w) }}" as="font" type="font/woff2" crossorigin>{% endfor %}{% endif %}
+<link rel="stylesheet" href="{{ asset('style.css') }}">
 <link rel="icon" href="{{ url_for('static', filename='logo-mark.png') }}">
-<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+<script src="{{ asset('app.js') }}" defer></script>
 </head>
 <body>
 {% block body %}
-<div class="shell">
-  <aside class="side">
-    <div class="brandbox">{{ mark(36) }}<div><b class="pname">{{ platform }}</b><small>{{ company }}</small></div></div>
-    {% set ep = request.endpoint or "" %}
-    <nav aria-label="القائمة الرئيسية">
-      <a href="{{ url_for('main.home') }}" class="{{ 'on' if ep == 'main.home' }}">{{ icon('home') }} الرئيسية والمشروعات</a>
-      {% if can('projects.create') %}<a href="{{ url_for('admin.project_new') }}" class="{{ 'on' if ep == 'admin.project_new' }}">{{ icon('folder-plus') }} مشروع جديد</a>{% endif %}
-      {% if can('users.manage') %}
-      <span class="lbl">الإدارة</span>
-      <a href="{{ url_for('admin.users') }}" class="{{ 'on' if ep in ('admin.users', 'admin.user_edit', 'admin.user_reset') }}">{{ icon('users') }} الحسابات والصلاحيات</a>
-      <a href="{{ url_for('admin.user_new') }}" class="{{ 'on' if ep == 'admin.user_new' }}">{{ icon('user-plus') }} إنشاء حساب</a>
-      {% endif %}
-      {% if can('audit.view') %}<a href="{{ url_for('admin.audit_log') }}" class="{{ 'on' if ep == 'admin.audit_log' }}">{{ icon('log') }} سجل العمليات</a>{% endif %}
-      <span class="lbl">حسابي</span>
-      <a href="{{ url_for('main.account') }}" class="{{ 'on' if ep == 'main.account' }}">{{ icon('user') }} بيانات الحساب</a>
-      <a href="{{ url_for('auth.change_password') }}" class="{{ 'on' if ep == 'auth.change_password' }}">{{ icon('key') }} تغيير كلمة المرور</a>
+{% set ep = request.endpoint or "" %}
+{#- عنصر في القائمة: يظهر فقط لمن يملك صلاحيته -#}
+{% macro nav_item(endpoint, label, ic, active=()) -%}
+<a href="{{ url_for(endpoint) }}" class="nav-item {{ 'on' if ep == endpoint or ep in active }}"{% if ep == endpoint %} aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span></a>
+{%- endmacro %}
+{#- مجموعة شجرية: children = (endpoint, label, permission|None, active endpoints) -#}
+{% macro nav_tree(key, label, ic, children) -%}
+{% set visible = [] %}{% for c in children %}{% if not c[2] or can(c[2]) %}{% set _ = visible.append(c) %}{% endif %}{% endfor %}
+{% if visible|length == 1 %}{{ nav_item(visible[0][0], label, ic, visible[0][3]) }}
+{% elif visible %}
+{% set inside = [] %}{% for c in visible %}{% if ep == c[0] or ep in c[3] %}{% set _ = inside.append(1) %}{% endif %}{% endfor %}
+<details class="nav-tree" data-tree="{{ key }}" {{ 'open' if inside }}>
+  <summary class="nav-item {{ 'in' if inside }}">{{ icon(ic) }}<span>{{ label }}</span><svg class="ic chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></summary>
+  <div class="nav-children">
+    {% for c in visible %}<a href="{{ url_for(c[0]) }}" class="nav-sub {{ 'on' if ep == c[0] or ep in c[3] }}"{% if ep == c[0] %} aria-current="page"{% endif %}>{{ c[1] }}</a>{% endfor %}
+  </div>
+</details>
+{% endif %}
+{%- endmacro %}
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{{ url_for('main.home') }}">{{ mark(30) }}<span><b>{{ platform }}</b><small>{{ company }}</small></span></a>
+    <nav class="nav" aria-label="{{ _('Main menu') }}">
+      {{ nav_tree('projects', _('Projects'), 'home', [
+           ('main.home', _('All projects') if can('projects.view_all') else _('My projects'), None, ('main.project', 'admin.project_edit', 'boq.page', 'boq.item_new', 'boq.item_edit', 'boq.import_upload', 'boq.import_confirm')),
+           ('admin.project_new', _('New project'), 'projects.create', ())]) }}
+      {% if can('analytics.view') %}{{ nav_item('main.analytics', _('Analytics'), 'chart') }}{% endif %}
+      {{ nav_tree('accounts', _('Accounts'), 'users', [
+           ('admin.users', _('All accounts'), 'users.manage', ('admin.user_edit', 'admin.user_reset')),
+           ('admin.user_new', _('New account'), 'users.manage', ()),
+           ('admin.invites', _('Sign-up links'), 'admin.invites', ())]) }}
+      {% if admin_area %}{{ nav_tree('admin', _('Administration'), 'grid', [
+           ('admin.console', _('Overview'), None, ()),
+           ('admin.roles', _('Roles'), 'roles.manage', ('admin.role_new', 'admin.role_edit')),
+           ('admin.sessions', _('Active sessions'), 'admin.sessions', ()),
+           ('admin.audit_log', _('Audit log'), 'audit.view', ()),
+           ('admin.platform_settings', _('Platform settings'), 'admin.settings', ())]) }}{% endif %}
+      {{ nav_item('main.account', _('Settings'), 'settings', ('auth.change_password',)) }}
     </nav>
-    <div class="me">
-      <b>{{ me.full_name }}</b>
-      <span class="code">{{ me.code }}</span> · {{ role_label(me.role) }}
-      <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button type="submit">{{ icon('logout', 16) }} تسجيل الخروج</button></form>
+    <div class="side-foot">
+      <div class="side-tools mobile-only">{{ lang_switch() }}</div>
+      <div class="me">
+        <a href="{{ url_for('main.account') }}" class="me-link" title="{{ _('Settings') }}">
+          {{ avatar(me) }}<span class="me-text"><b>{{ me.full_name|first_name }}</b><span>{{ role_label(me.role) }}</span></span></a>
+        <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <button class="btn btn-ghost btn-icon" type="submit" title="{{ _('Sign out') }}" aria-label="{{ _('Sign out') }}">{{ icon('logout', 17) }}</button></form>
+      </div>
     </div>
   </aside>
-  <main class="main">
-    {% for cat, msg in get_flashed_messages(with_categories=true) %}<div class="flash {{ cat }}">{{ icon('check' if cat == 'ok' else 'alert') }} {{ msg }}</div>{% endfor %}
-    {% block content %}{% endblock %}
-  </main>
+  <div class="scrim" data-nav-close></div>
+  <div class="content">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon" type="button" data-nav-toggle aria-controls="sidebar" aria-label="{{ _('Menu') }}">{{ icon('menu', 20) }}</button>
+      <div class="topbar-center">
+        <a class="topbar-brand" href="{{ url_for('main.home') }}">{{ mark(20) }}<b>{{ platform }}</b></a>
+        <span class="topbar-title" aria-hidden="true">{{ self.title() }}</span>
+      </div>
+      <a class="topbar-me" href="{{ url_for('main.account') }}" aria-label="{{ _('Profile') }}">{{ avatar(me, 'sm') }}</a>
+    </header>
+    <div class="corner">{{ lang_switch() }}</div>
+    <main class="main">
+      {% for cat, msg in get_flashed_messages(with_categories=true) %}<div class="alert {{ cat }}" role="status">{{ icon('check' if cat == 'ok' else 'alert', 17) }}<span>{{ msg }}</span></div>{% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 </div>
 {% endblock %}
 </body>

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Settings') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div><h1>{{ _('Platform settings') }}</h1><p class="lead">{{ _('Names shown across the platform, and sign-in session limits.') }}</p></div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post" class="grid-1">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="group">
+    <h2>{{ _('Identity') }}</h2>
+    <div class="group-body">
+      <div class="row"><div class="row-label"><b>{{ _('Platform name') }}</b><span>{{ _('Shown in the sidebar and on the sign-in page.') }}</span></div>
+        <div class="pair"><input name="platform_name_ar" dir="rtl" lang="ar" required maxlength="80" aria-label="{{ _('Platform name (Arabic)') }}" value="{{ form.get('platform_name_ar') }}">
+          <input name="platform_name_en" dir="ltr" lang="en" required maxlength="80" aria-label="{{ _('Platform name (English)') }}" value="{{ form.get('platform_name_en') }}"></div></div>
+      <div class="row"><div class="row-label"><b>{{ _('Company name') }}</b><span>{{ _('Shown on the sign-in page and in messages to users.') }}</span></div>
+        <div class="pair"><input name="company_name_ar" dir="rtl" lang="ar" required maxlength="80" aria-label="{{ _('Company name (Arabic)') }}" value="{{ form.get('company_name_ar') }}">
+          <input name="company_name_en" dir="ltr" lang="en" required maxlength="80" aria-label="{{ _('Company name (English)') }}" value="{{ form.get('company_name_en') }}"></div></div>
+    </div>
+  </section>
+  <section class="group">
+    <h2>{{ _('Sessions') }}</h2>
+    <div class="group-body">
+      <div class="row"><div class="row-label"><b>{{ _('Inactivity timeout') }}</b><span>{{ _('Signs a user out after this many minutes without activity.') }}</span></div>
+        <div class="affix"><input name="session_idle_minutes" type="number" min="5" max="1440" dir="ltr" required aria-label="{{ _('Inactivity timeout (minutes)') }}" value="{{ form.get('session_idle_minutes') }}"><span>{{ _('min') }}</span></div></div>
+      <div class="row"><div class="row-label"><b>{{ _('Maximum session length') }}</b><span>{{ _('Signs a user out after this many hours, even when active.') }}</span></div>
+        <div class="affix"><input name="session_absolute_hours" type="number" min="1" max="168" dir="ltr" required aria-label="{{ _('Maximum session length (hours)') }}" value="{{ form.get('session_absolute_hours') }}"><span>{{ _('hours') }}</span></div></div>
+    </div>
+  </section>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">{{ _('Save settings') }}</button></div>
+</form>
+{% endblock %}

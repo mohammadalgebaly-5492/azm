@@ -1,101 +1,113 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}جدول الكميات · {{ p.code }}{% endblock %}
+{% block title %}{{ _('BOQ') }} · {{ p.code }}{% endblock %}
 {% block content %}
-<div class="page-h">
-  <div><a class="code" href="{{ url_for('main.project', pid=p.id) }}">{{ p.code }} · {{ p.name }}</a><h1>جدول الكميات وهيكل WBS</h1>
-    <p>{% if locked %}<span class="pill ok">{{ icon('lock', 14) }} الميزانية الأصلية معتمدة ومجمّدة</span>{% else %}<span class="pill warn">مسودة — قبل اعتماد الميزانية الأصلية</span>{% endif %}</p></div>
-  <div class="actions">
-    {% if manage and not locked %}
-      <a class="btn primary" href="{{ url_for('boq.item_new', pid=p.id) }}">{{ icon('plus', 16) }} بند جديد</a>
-      <a class="btn" href="{{ url_for('boq.import_upload', pid=p.id) }}">{{ icon('upload', 16) }} استيراد من Excel</a>
-    {% endif %}
-    {% if n_items %}<a class="btn" href="{{ url_for('boq.export', pid=p.id) }}">{{ icon('download', 16) }} تصدير Excel</a>{% endif %}
+{% set edit = manage and not locked %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span>
+      {% if locked %}<span class="pill ok">{{ _('Baseline approved') }}</span>{% else %}<span class="pill warn">{{ _('Draft') }}</span>{% endif %}</div>
+    <h1>{{ _('Bill of quantities') }}</h1>
   </div>
-</div>
+  <div class="actions">
+    {% if n_items %}<a class="btn" href="{{ url_for('boq.export', pid=p.id) }}">{{ icon('download', 16) }} {{ _('Export') }}</a>{% endif %}
+    {% if edit %}
+      <a class="btn" href="{{ url_for('boq.import_upload', pid=p.id) }}">{{ icon('upload', 16) }} {{ _('Import from Excel') }}</a>
+      <a class="btn btn-primary" href="{{ url_for('boq.item_new', pid=p.id) }}">{{ icon('plus', 16) }} {{ _('New item') }}</a>
+    {% endif %}
+  </div>
+</header>
 
-<div class="stats">
-  <div class="stat"><span>إجمالي جدول الكميات (ريال)</span><b>{{ money(total) }}</b></div>
-  <div class="stat"><span>قيمة العقد (ريال)</span><b>{{ money(p.contract_value) }}</b></div>
+<section class="stats" aria-label="{{ _('Summary') }}">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('BOQ total (SAR)') }}</span><i class="chip">{{ icon('table', 18) }}</i></div><b>{{ money(total) }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Contract value (SAR)') }}</span><i class="chip sky">{{ icon('file', 18) }}</i></div><b>{{ money(p.contract_value) }}</b></div>
   {% if p.contract_value %}{% set diff = p.contract_value - total %}
-  <div class="stat {{ 'warnline' if diff != 0 }}"><span>الفرق عن العقد</span><b>{{ money(diff) }}</b></div>{% endif %}
-  <div class="stat"><span>عدد البنود</span><b>{{ n_items }}</b></div>
-</div>
+  <div class="stat {{ 'warn' if diff != 0 }}"><div class="stat-top"><span>{{ _('Difference from contract') }}</span><i class="chip {{ 'warn' if diff != 0 else 'ok' }}">{{ icon('alert' if diff != 0 else 'check', 18) }}</i></div><b>{{ money(diff) }}</b></div>{% endif %}
+  <div class="stat"><div class="stat-top"><span>{{ _('Items') }}</span><i class="chip violet">{{ icon('log', 18) }}</i></div><b data-count="{{ n_items }}">{{ n_items }}</b></div>
+</section>
+
 {% if total %}
-<div class="typebar" aria-label="توزيع الإجمالي حسب نوع البند">
-  {% for k, v in TYPES.items() %}<div><span class="tdot t-{{ k }}"></span> {{ v[0] }}: <span class="num">{{ money(by_type[k]) }}</span> <span class="muted">({{ (100 * by_type[k] / total)|round(1) }}%)</span></div>{% endfor %}
-</div>
+<section class="card">
+  <div class="card-head"><h2>{{ _('Split by item type') }}</h2></div>
+  <svg class="typebar" viewBox="0 0 1000 8" preserveAspectRatio="none" role="img" aria-label="{{ _('Split by item type') }}">
+    {% set ns = namespace(x=0) %}
+    {% for k in TYPES %}{% set w = 1000 * by_type[k] / total %}<rect class="t-{{ k }}-bg" x="{{ ns.x }}" y="0" width="{{ w }}" height="8"/>{% set ns.x = ns.x + w %}{% endfor %}
+  </svg>
+  <div class="typelegend">{% for k in TYPES %}<span><span class="tdot t-{{ k }}-bg"></span>{{ type_label(k) }} · <span class="num">{{ money(by_type[k]) }}</span> <span class="faint num">({{ (100 * by_type[k] / total)|round(1) }}%)</span></span>{% endfor %}</div>
+</section>
 {% endif %}
 
-<div class="card">
-  <div class="card-h"><h2>البنود حسب WBS</h2>
-    {% if manage and not locked %}
-    <form method="post" action="{{ url_for('boq.wbs_add', pid=p.id) }}" class="actions">
+<section class="card flush">
+  <div class="card-head"><h2>{{ _('Items by WBS') }}</h2>
+    {% if edit %}
+    <form method="post" action="{{ url_for('boq.wbs_add', pid=p.id) }}" class="inline-form">
       <input type="hidden" name="csrf_token" value="{{ csrf }}">
-      <label for="root_name" class="sr">قسم رئيسي جديد</label>
-      <input id="root_name" name="name" placeholder="قسم رئيسي جديد: أعمال الخرسانة" required class="w-md">
-      <button class="btn" type="submit">{{ icon('plus', 16) }} إضافة قسم</button>
+      <label for="root_name" class="sr">{{ _('New main section') }}</label>
+      <input id="root_name" name="name" placeholder="{{ _('New main section, e.g. Concrete works') }}" required>
+      <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add section') }}</button>
     </form>
     {% endif %}
   </div>
   {% if nodes %}
-  <div class="tw"><table class="boq">
-    <thead><tr><th>الكود</th><th>رقم البند</th><th>الوصف</th><th>النوع</th><th>الوحدة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th>{% if manage and not locked %}<th></th>{% endif %}</tr></thead>
+  <div class="table-wrap"><table class="boq">
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Ref.') }}</th><th>{{ _('Description') }}</th><th>{{ _('Type') }}</th><th>{{ _('Unit') }}</th><th class="num">{{ _('Qty') }}</th><th class="num">{{ _('Rate') }}</th><th class="num">{{ _('Amount') }}</th>{% if edit %}<th></th>{% endif %}</tr></thead>
     <tbody>
     {% for n in nodes %}
-      <tr class="sec-row lvl-{{ n.level }}" id="w{{ n.id }}">
+      <tr class="sec lvl-{{ n.level }}" id="w{{ n.id }}">
         <td class="code">{{ n.code }}</td>
-        <td colspan="6"><b class="ind">{{ n.name }}</b> <span class="muted">({{ totals[n.id][1] }} بند)</span></td>
-        <td class="num"><b>{{ money(totals[n.id][0]) }}</b></td>
-        {% if manage and not locked %}<td class="rowact">
-          <details class="menu"><summary aria-label="إجراءات القسم">{{ icon('edit', 15) }}</summary><div class="menu-body">
-            <a class="btn" href="{{ url_for('boq.item_new', pid=p.id, wbs=n.id) }}">{{ icon('plus', 15) }} بند هنا</a>
-            {% if n.level < 4 %}<form method="post" action="{{ url_for('boq.wbs_add', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="parent_id" value="{{ n.id }}"><input name="name" placeholder="قسم فرعي" required aria-label="اسم القسم الفرعي"><button class="btn" type="submit">إضافة فرعي</button></form>{% endif %}
-            <form method="post" action="{{ url_for('boq.wbs_rename', pid=p.id, wid=n.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="name" value="{{ n.name }}" required aria-label="الاسم الجديد"><button class="btn" type="submit">تعديل الاسم</button></form>
-            <form method="post" action="{{ url_for('boq.wbs_delete', pid=p.id, wid=n.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn danger" type="submit">{{ icon('x', 15) }} حذف القسم</button></form>
+        <td colspan="6"><span class="ind">{{ n.name }} <span class="faint">· {{ _('{n} items', n=totals[n.id][1]) }}</span></span></td>
+        <td class="num">{{ money(totals[n.id][0]) }}</td>
+        {% if edit %}<td class="cell-actions">
+          <details class="menu"><summary class="btn btn-ghost btn-sm btn-icon" aria-label="{{ _('Section actions') }}">{{ icon('edit', 15) }}</summary><div class="menu-body">
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('boq.item_new', pid=p.id, wbs=n.id) }}">{{ icon('plus', 15) }} {{ _('Add item here') }}</a>
+            {% if n.level < 4 %}<form method="post" action="{{ url_for('boq.wbs_add', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="parent_id" value="{{ n.id }}"><input name="name" placeholder="{{ _('Sub-section name') }}" required aria-label="{{ _('Sub-section name') }}"><button class="btn btn-sm" type="submit">{{ _('Add') }}</button></form>{% endif %}
+            <form method="post" action="{{ url_for('boq.wbs_rename', pid=p.id, wid=n.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="name" value="{{ n.name }}" required aria-label="{{ _('New name') }}"><button class="btn btn-sm" type="submit">{{ _('Rename') }}</button></form>
+            <div class="menu-sep"></div>
+            <form method="post" action="{{ url_for('boq.wbs_delete', pid=p.id, wid=n.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost btn-sm btn-danger" type="submit">{{ icon('x', 15) }} {{ _('Delete section') }}</button></form>
           </div></details></td>{% endif %}
       </tr>
       {% for it in by_wbs.get(n.id, []) %}
       <tr id="i{{ it.id }}">
         <td class="code">{{ it.code }}</td>
         <td class="code">{{ it.ref_no or '' }}</td>
-        <td class="desc">{{ it.description }}{% if it.notes %}<br><span class="muted">{{ it.notes }}</span>{% endif %}</td>
-        <td><span class="pill t-{{ it.item_type }}">{{ TYPES[it.item_type][0] }}</span></td>
+        <td class="desc">{{ it.description }}{% if it.notes %}<span class="sub">{{ it.notes }}</span>{% endif %}</td>
+        <td><span class="pill plain t-{{ it.item_type }}">{{ type_label(it.item_type) }}</span></td>
         <td>{{ it.unit }}</td>
         <td class="num">{{ qty(it.qty_milli) }}</td>
         <td class="num">{{ money(it.unit_rate) }}</td>
         <td class="num">{{ money(it.amount) }}</td>
-        {% if manage and not locked %}<td class="rowact"><a class="btn icon-only" href="{{ url_for('boq.item_edit', pid=p.id, iid=it.id) }}" aria-label="تعديل البند {{ it.code }}">{{ icon('edit', 15) }}</a></td>{% endif %}
+        {% if edit %}<td class="cell-actions"><a class="btn btn-ghost btn-sm btn-icon" href="{{ url_for('boq.item_edit', pid=p.id, iid=it.id) }}" aria-label="{{ _('Edit item {code}', code=it.code) }}">{{ icon('edit', 15) }}</a></td>{% endif %}
       </tr>
       {% endfor %}
     {% endfor %}
-    <tr class="grand"><td colspan="7">الإجمالي العام</td><td class="num">{{ money(total) }}</td>{% if manage and not locked %}<td></td>{% endif %}</tr>
+    <tr class="grand"><td colspan="7">{{ _('Grand total') }}</td><td class="num">{{ money(total) }}</td>{% if edit %}<td></td>{% endif %}</tr>
     </tbody>
   </table></div>
   {% else %}
-  <div class="empty">لا يوجد هيكل WBS بعد.{% if manage %} أضف أول قسم رئيسي من الخانة أعلاه، أو <a href="{{ url_for('boq.import_upload', pid=p.id) }}">استورد جدول الكميات من Excel</a> لإنشاء الأقسام والبنود دفعة واحدة.{% endif %}</div>
+  <div class="empty">{{ icon('table', 30) }}<p>{{ _('No WBS sections yet.') }}{% if edit %} {{ _('Add the first main section above, or import the whole BOQ from Excel.') }}{% endif %}</p>
+    {% if edit %}<a class="btn" href="{{ url_for('boq.import_upload', pid=p.id) }}">{{ icon('upload', 16) }} {{ _('Import from Excel') }}</a>{% endif %}</div>
   {% endif %}
-</div>
+</section>
 
-<div class="card" id="baseline">
-  <h2>اعتماد الميزانية الأصلية (خط الأساس)</h2>
+<section class="card" id="baseline">
+  <div class="card-head"><div><h2>{{ _('Baseline approval') }}</h2>
+    {% if not locked %}<p>{{ _("Approval freezes the BOQ as the project's original budget and moves the project to In progress. Items can't be edited or deleted afterwards.") }}</p>{% endif %}</div></div>
   {% if locked %}
     <dl class="kv">
-      <dt>الإجمالي المعتمد</dt><dd class="num">{{ money(p.baseline_total) }} ريال</dd>
-      <dt>اعتمدها</dt><dd>{{ approver.full_name if approver else '—' }}</dd>
-      <dt>تاريخ الاعتماد</dt><dd class="num">{{ p.baseline_approved_at|dt }}</dd>
+      <dt>{{ _('Approved total') }}</dt><dd><span class="num">{{ money(p.baseline_total) }}</span> {{ _('SAR') }}</dd>
+      <dt>{{ _('Approved by') }}</dt><dd>{{ approver.full_name if approver else '—' }}</dd>
+      <dt>{{ _('Approved on') }}</dt><dd class="num">{{ p.baseline_approved_at|dt }}</dd>
     </dl>
-    <p class="note">جدول الكميات وهيكل WBS مجمّدان على مستوى قاعدة البيانات. أي تغيير بعد ذلك يتم عبر تحويلات الميزانية وأوامر التغيير، وتبقى الميزانية الأصلية محفوظة للمقارنة.</p>
+    <div class="alert info">{{ icon('lock', 17) }}<span>{{ _('The BOQ and WBS are frozen in the database. Later changes go through budget transfers and change orders; the original budget is kept for comparison.') }}</span></div>
   {% else %}
-    <p class="muted">الاعتماد يجمّد جدول الكميات كميزانية أصلية للمشروع، ويحوّل حالة المشروع إلى "قيد التنفيذ". بعد الاعتماد لا يمكن تعديل أي بند أو حذفه.</p>
-    <ul class="checks-list">{% for ok_, text, blocking in checks %}<li class="{{ 'ok' if ok_ else ('bad' if blocking else 'warn') }}">{{ icon('check' if ok_ else 'alert', 16) }} {{ text }}{% if not ok_ and not blocking %} <span class="muted">(تنبيه، لا يمنع الاعتماد)</span>{% endif %}</li>{% endfor %}</ul>
+    <ul class="checklist">{% for ok_, text, blocking in checks %}<li class="{{ 'ok' if ok_ else ('bad' if blocking else 'warn') }}">{{ icon('check' if ok_ else 'alert', 16) }} <span>{{ text }}{% if not ok_ and not blocking %} <span class="faint">({{ _('warning only') }})</span>{% endif %}</span></li>{% endfor %}</ul>
     {% if manage %}
     <form method="post" action="{{ url_for('boq.baseline_approve', pid=p.id) }}" class="actions">
       <input type="hidden" name="csrf_token" value="{{ csrf }}">
-      <label class="checkline"><input type="checkbox" name="confirm" value="1" {{ 'disabled' if not ok }}> راجعت جدول الكميات وأوافق على تجميده كميزانية أصلية</label>
-      <button class="btn primary" type="submit" {{ 'disabled' if not ok }}>{{ icon('lock', 16) }} اعتماد وتجميد</button>
+      <label class="confirm-line"><input type="checkbox" name="confirm" value="1" {{ 'disabled' if not ok }}> {{ _('I have reviewed the BOQ and approve freezing it as the baseline') }}</label>
+      <button class="btn btn-primary" type="submit" {{ 'disabled' if not ok }}>{{ icon('lock', 16) }} {{ _('Approve and freeze') }}</button>
     </form>
     {% endif %}
   {% endif %}
-</div>
+</section>
 {% endblock %}

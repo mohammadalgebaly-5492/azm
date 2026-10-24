@@ -1,0 +1,20 @@
+{% extends "_auth_layout.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Create your account') }}{% endblock %}
+{% block card_class %}wide{% endblock %}
+{% block card %}
+<div class="auth-title"><h1>{{ _('Create your account') }}</h1><p>{{ _('You were invited to join {name} as {role}.', name=platform, role=role_label(invite.role)) }}</p></div>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <div class="field"><label for="full_name" class="req">{{ _('Full name') }}</label><input id="full_name" name="full_name" required autocomplete="name" value="{{ form.get('full_name', '') }}"></div>
+  <div class="field"><label for="username" class="req">{{ _('Username') }}</label>
+    <input id="username" name="username" dir="ltr" required pattern="[a-z0-9._\-]{3,32}" autocapitalize="none" spellcheck="false" autocomplete="username" value="{{ form.get('username', '') }}">
+    <span class="hint">{{ _('Lowercase English letters, numbers, and . _ -') }}</span></div>
+  <div class="field"><label for="email" class="req">{{ _('Email') }}</label><input id="email" name="email" type="email" dir="ltr" required autocomplete="email" value="{{ form.get('email', '') }}"></div>
+  <div class="field"><label for="password" class="req">{{ _('Password') }}</label><input id="password" name="password" type="password" dir="ltr" required minlength="10" autocomplete="new-password"></div>
+  <div class="field"><label for="confirm_password" class="req">{{ _('Confirm password') }}</label>
+    <input id="confirm_password" name="confirm_password" type="password" dir="ltr" required minlength="10" autocomplete="new-password">
+    <span class="hint">{{ _('At least 10 characters, with letters and numbers.') }}</span></div>
+  <button class="btn btn-primary btn-block" type="submit">{{ _('Create account') }}</button>
+</form>
+{% endblock %}

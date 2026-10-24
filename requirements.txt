@@ -3,3 +3,4 @@ openpyxl==3.1.5
 gunicorn==23.0.0
 psycopg[binary]==3.2.10
 python-dotenv==1.1.1
+Pillow==13.0.0

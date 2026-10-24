@@ -1,0 +1,9 @@
+{% extends "analytics/_card.html" %}
+{% block body %}
+{% from "_icons.html" import icon %}<div class="stats inset">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Projects') }}</span><i class="chip">{{ icon('folder', 18) }}</i></div><b data-count="{{ d.count }}">{{ d.count }}</b><small>{{ _('{n} in setup', n=d.setup) }}</small></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('In progress') }}</span><i class="chip ok">{{ icon('activity', 18) }}</i></div><b data-count="{{ d.active }}">{{ d.active }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Total contract value') }}</span><i class="chip sky">{{ icon('table', 18) }}</i></div><b>{{ compact(d.contract_total) }}</b><small>{{ _('SAR') }}</small></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Baselines approved') }}</span><i class="chip violet">{{ icon('lock', 18) }}</i></div><b>{{ d.baselines }}<span class="of"> / {{ d.count }}</span></b></div>
+</div>
+{% endblock %}

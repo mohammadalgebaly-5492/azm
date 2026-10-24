@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Roles') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Roles') }}</h1><p class="lead">{{ _('Each account has one role. A role decides which parts of the platform its accounts see and use.') }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('admin.role_new') }}">{{ icon('plus', 16) }} {{ _('New role') }}</a>
+</header>
+<section class="group">
+  <div class="group-body">
+    {% for key, r in roles.items() %}
+    <a class="row row-link-row" href="{{ url_for('admin.role_edit', key=key) }}">
+      <div class="row-main"><b>{{ role_label(key) }}</b>
+        <span class="row-meta"><span class="code">{{ r.code }}</span>
+          {% if r.system %}<span class="pill accent plain">{{ _('All permissions') }}</span>
+          {% else %}<span>{{ _('{n} of {total} permissions', n=perms.get(key, ())|length, total=n_perms) }}</span>{% endif %}
+          {% if r.external %}<span class="pill plain">{{ _('External') }}</span>{% endif %}</span></div>
+      <span class="row-end"><span class="count">{{ counts.get(key, 0) }}</span>{{ icon('back', 16) }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

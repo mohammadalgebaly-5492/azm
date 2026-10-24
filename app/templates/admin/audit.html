@@ -1,17 +1,19 @@
 {% extends "base.html" %}
-{% block title %}سجل العمليات{% endblock %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Audit log') }}{% endblock %}
 {% block content %}
-<div class="page-h"><div><h1>سجل العمليات</h1><p>سجل للإضافة فقط: لا يمكن تعديل أي سطر أو حذفه، حتى من قاعدة البيانات. آخر 500 عملية.</p></div></div>
-<div class="card">
+<header class="page-head"><div><h1>{{ _('Audit log') }}</h1>
+  <p class="lead">{{ _('Append-only: no entry can be edited or deleted, even in the database. Showing the latest 500 actions.') }}</p></div></header>
+<section class="card flush">
   {% if rows %}
-  <div class="tw"><table>
-    <thead><tr><th>التاريخ (UTC)</th><th>العملية</th><th>بواسطة</th><th>المشروع</th><th>التفاصيل</th><th>IP</th></tr></thead>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Date (UTC)') }}</th><th>{{ _('Action') }}</th><th>{{ _('By') }}</th><th>{{ _('Project') }}</th><th>{{ _('Details') }}</th><th>{{ _('IP address') }}</th></tr></thead>
     <tbody>{% for a in rows %}
       <tr><td class="num">{{ a.at|dt }}</td><td>{{ action_label(a.action) }}</td>
-        <td>{{ a.actor or '—' }}{% if a.actor_code %}<br><span class="code">{{ a.actor_code }}</span>{% endif %}</td>
-        <td class="code">{{ a.project_code or '' }}</td><td class="code">{{ a.details or '' }}</td><td class="code">{{ a.ip or '' }}</td></tr>
+        <td>{{ a.actor or '—' }}{% if a.actor_code %}<span class="sub code">{{ a.actor_code }}</span>{% endif %}</td>
+        <td class="code">{{ a.project_code or '' }}</td><td class="details">{% for line in describe(a.details) %}<span>{{ line }}</span>{% endfor %}</td><td class="code">{{ a.ip or '' }}</td></tr>
     {% endfor %}</tbody>
   </table></div>
-  {% else %}<div class="empty">لا توجد عمليات بعد.</div>{% endif %}
-</div>
+  {% else %}<div class="empty">{{ icon('log', 28) }}<p>{{ _('No actions recorded yet.') }}</p></div>{% endif %}
+</section>
 {% endblock %}

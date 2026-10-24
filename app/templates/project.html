@@ -1,60 +1,65 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon, mark %}
+{% from "_icons.html" import icon %}
+{% from "_ui.html" import status_pill, avatar with context %}
 {% block title %}{{ p.code }}{% endblock %}
 {% block content %}
-<div class="page-h">
-  <div><span class="code">{{ p.code }}</span><h1>{{ p.name }}</h1><p>{% include "_project_status.html" %} {% if p.location %}· {{ icon('map-pin', 15) }} {{ p.location }}{% endif %}</p></div>
-  {% if can('projects.manage') %}<a class="btn" href="{{ url_for('admin.project_edit', pid=p.id) }}">{{ icon('edit', 16) }} تعديل بيانات المشروع</a>{% endif %}
-</div>
-<div class="grid2">
-  <div class="card">
-    <h2>بيانات المشروع والعقد</h2>
-    <dl class="kv">
-      <dt>المالك</dt><dd>{{ p.client or '—' }}</dd>
-      <dt>الاستشاري</dt><dd>{{ p.consultant or '—' }}</dd>
-      <dt>رقم العقد الرئيسي</dt><dd class="code">{{ p.contract_no or '—' }}</dd>
-      <dt>قيمة العقد</dt><dd class="num">{{ money(p.contract_value) }} ريال</dd>
-      <dt>تاريخ البداية</dt><dd class="num">{{ p.start_date or '—' }}</dd>
-      <dt>تاريخ النهاية</dt><dd class="num">{{ p.end_date or '—' }}</dd>
-    </dl>
-    <div class="boqbox">
-      <div><b>جدول الكميات وWBS</b><br>
-      {% if boq_count %}<span class="num">{{ boq_count }}</span> بند · الإجمالي <span class="num">{{ money(boq_total) }}</span> ريال
-      {% else %}<span class="muted">لم يُسجل جدول الكميات بعد.</span>{% endif %}
-      {% if p.baseline_approved_at %}<br><span class="pill ok">{{ icon('lock', 13) }} الميزانية الأصلية معتمدة</span>{% endif %}</div>
-      <a class="btn primary" href="{{ url_for('boq.page', pid=p.id) }}">{{ icon('table', 16) }} فتح جدول الكميات</a>
-    </div>
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.home') }}">{{ icon('back', 15) }} {{ _('Projects') }}</a><span class="code">{{ p.code }}</span>{{ status_pill(p.status) }}</div>
+    <h1>{{ p.name }}</h1>
+    {% if p.location %}<p class="meta">{{ icon('map-pin', 15) }} {{ p.location }}</p>{% endif %}
   </div>
-  <div class="card" id="team">
-    <div class="card-h"><h2>طاقم المشروع وأطرافه</h2><span class="pill">{{ team|length }}</span></div>
+  {% if can('projects.manage') %}<a class="btn" href="{{ url_for('admin.project_edit', pid=p.id) }}">{{ icon('edit', 16) }} {{ _('Edit project') }}</a>{% endif %}
+</header>
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Project and contract') }}</h2></div>
+    <dl class="kv">
+      <dt>{{ _('Client') }}</dt><dd>{{ p.client or '—' }}</dd>
+      <dt>{{ _('Consultant') }}</dt><dd>{{ p.consultant or '—' }}</dd>
+      <dt>{{ _('Main contract no.') }}</dt><dd class="code">{{ p.contract_no or '—' }}</dd>
+      <dt>{{ _('Contract value') }}</dt><dd><span class="num">{{ money(p.contract_value) }}</span> {{ _('SAR') }}</dd>
+      <dt>{{ _('Start date') }}</dt><dd class="num">{{ p.start_date or '—' }}</dd>
+      <dt>{{ _('End date') }}</dt><dd class="num">{{ p.end_date or '—' }}</dd>
+    </dl>
+    <div class="boq-summary">
+      <div><b>{{ _('BOQ and WBS') }}</b><br>
+        {% if boq_count %}<span class="muted">{{ _('{n} items', n=boq_count) }} · <span class="num">{{ money(boq_total) }}</span> {{ _('SAR') }}</span>
+        {% else %}<span class="muted">{{ _('No BOQ recorded yet.') }}</span>{% endif %}
+        {% if p.baseline_approved_at %}<br><span class="pill ok">{{ _('Baseline approved') }}</span>{% endif %}</div>
+      <a class="btn btn-primary" href="{{ url_for('boq.page', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open BOQ') }}</a>
+    </div>
+  </section>
+  <section class="card" id="team">
+    <div class="card-head"><h2>{{ _('Project team') }}</h2><span class="count">{{ team|length }}</span></div>
     {% if team %}
-    <div class="tw"><table>
-      <thead><tr><th>الاسم</th><th>الدور</th><th>الكود</th>{% if can('projects.manage') %}<th></th>{% endif %}</tr></thead>
+    <div class="table-wrap"><table>
+      <thead><tr><th>{{ _('Name') }}</th><th>{{ _('Role') }}</th>{% if can('projects.manage') %}<th></th>{% endif %}</tr></thead>
       <tbody>{% for t in team %}
-        <tr><td>{{ t.full_name }}{% if t.job_title %}<br><span class="muted">{{ t.job_title }}</span>{% endif %}{% if t.status != 'active' %} <span class="pill bad">موقوف</span>{% endif %}</td>
-          <td>{{ role_label(t.role) }}</td><td class="code">{{ t.code }}</td>
-          {% if can('projects.manage') %}<td><form method="post" action="{{ url_for('admin.project_members', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="op" value="remove"><input type="hidden" name="user_id" value="{{ t.id }}"><button class="btn danger" type="submit">{{ icon('x', 15) }} إزالة</button></form></td>{% endif %}
+        <tr><td><div class="person">{{ avatar(t, 'sm') }}<div>{{ t.full_name }}{% if t.status != 'active' %} <span class="pill bad">{{ _('Disabled') }}</span>{% endif %}<span class="sub"><span class="code">{{ t.code }}</span>{% if t.job_title %} · {{ t.job_title }}{% endif %}</span></div></div></td>
+          <td>{{ role_label(t.role) }}</td>
+          {% if can('projects.manage') %}<td class="cell-actions"><form method="post" action="{{ url_for('admin.project_members', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="op" value="remove"><input type="hidden" name="user_id" value="{{ t.id }}"><button class="btn btn-ghost btn-sm btn-danger" type="submit">{{ _('Remove') }}</button></form></td>{% endif %}
         </tr>{% endfor %}</tbody>
     </table></div>
-    {% else %}<div class="empty">لم يُسند أحد لهذا المشروع بعد.</div>{% endif %}
+    {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No one is assigned to this project yet.') }}</p></div>{% endif %}
     {% if can('projects.manage') %}
       {% if candidates %}
-      <form method="post" action="{{ url_for('admin.project_members', pid=p.id) }}" class="actions">
+      <form method="post" action="{{ url_for('admin.project_members', pid=p.id) }}" class="searchbar">
         <input type="hidden" name="csrf_token" value="{{ csrf }}">
-        <label for="add_user" class="sr">إسناد عضو</label>
-        <select id="add_user" name="user_id" required>{% for c in candidates %}<option value="{{ c.id }}">{{ c.full_name }} · {{ role_label(c.role) }} · {{ c.code }}</option>{% endfor %}</select>
-        <button class="btn primary" type="submit">{{ icon('plus', 16) }} إسناد</button>
+        <label for="add_user" class="sr">{{ _('Assign a member') }}</label>
+        <select id="add_user" name="user_id" required>{% for c in candidates %}<option value="{{ c.id }}">{{ c.full_name }} · {{ role_label(c.role) }}</option>{% endfor %}</select>
+        <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Assign') }}</button>
       </form>
       {% endif %}
-      <p class="hint">لإضافة شخص غير موجود، <a href="{{ url_for('admin.user_new') }}">أنشئ له حسابًا</a> أولًا.</p>
+      {% if can('users.manage') %}<p class="hint"><a href="{{ url_for('admin.user_new') }}">{{ _('Create a new account') }}</a></p>{% endif %}
     {% endif %}
-  </div>
+  </section>
 </div>
 {% if activity %}
-<div class="card">
-  <h2>آخر العمليات على المشروع</h2>
-  <div class="tw"><table><thead><tr><th>التاريخ</th><th>العملية</th><th>بواسطة</th></tr></thead>
+<section class="card flush">
+  <div class="card-head"><h2>{{ _('Recent activity') }}</h2></div>
+  <div class="table-wrap"><table><thead><tr><th>{{ _('Date') }}</th><th>{{ _('Action') }}</th><th>{{ _('By') }}</th></tr></thead>
   <tbody>{% for a in activity %}<tr><td class="num">{{ a.at|dt }}</td><td>{{ action_label(a.action) }}</td><td>{{ a.actor or '—' }}</td></tr>{% endfor %}</tbody></table></div>
-</div>
+</section>
 {% endif %}
 {% endblock %}

@@ -1,0 +1,14 @@
+{% extends "analytics/_card.html" %}
+{% block body %}
+{% if d.rows %}
+<ul class="barlist">
+  {% for r in d.rows %}
+  <li data-tip="{{ _('BOQ {boq} of contract {contract} SAR', boq=money(r.boq), contract=money(r.contract)) }}" tabindex="0">
+    <a class="bl-label" href="{{ url_for('boq.page', pid=r.id) }}">{{ r.name }}<span class="code">{{ r.code }}{% if r.locked %} · {{ _('Baseline approved') }}{% endif %}</span></a>
+    <svg class="bl-bar" aria-hidden="true"><rect class="track" width="100%" height="10" rx="4"/>{% if r.bar %}<rect class="mark {{ 'over' if r.pct > 100.5 else ('full' if r.pct >= 99.5 else '') }}" width="{{ r.bar }}%" height="10" rx="4"/><rect class="mark {{ 'over' if r.pct > 100.5 else ('full' if r.pct >= 99.5 else '') }}" width="4" height="10"/>{% endif %}</svg>
+    <span class="bl-value num">{{ r.pct }}%</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<div class="empty"><p>{{ _('No projects with a contract value yet.') }}</p></div>{% endif %}
+{% endblock %}

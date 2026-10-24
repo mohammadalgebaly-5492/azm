@@ -1,40 +1,49 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon, mark %}
-{% block title %}الرئيسية{% endblock %}
+{% from "_icons.html" import icon %}
+{% from "_ui.html" import status_pill with context %}
+{% block title %}{{ _('Projects') }}{% endblock %}
 {% block content %}
-<div class="page-h">
-  <div><h1>أهلًا، {{ me.full_name }}</h1><p>{{ role_label(me.role) }} · <span class="code">{{ me.code }}</span></p></div>
-  {% if can('projects.create') %}<a class="btn primary" href="{{ url_for('admin.project_new') }}">{{ icon('plus', 16) }} مشروع جديد</a>{% endif %}
-</div>
-{% if stats %}
-<div class="stats">
-  <div class="stat"><span>المشروعات</span><b>{{ projects|length }}</b></div>
-  <div class="stat"><span>الحسابات الفعّالة</span><b>{{ stats.users }}</b></div>
-  <div class="stat"><span>بانتظار أول دخول</span><b>{{ stats.pending_first_login }}</b></div>
-  <div class="stat"><span>حسابات مقفولة مؤقتًا</span><b>{{ stats.locked }}</b></div>
-</div>
-{% endif %}
-<div class="card">
-  <div class="card-h"><h2>{{ 'كل المشروعات' if can('projects.view_all') else 'مشروعاتي' }}</h2></div>
+<header class="page-head">
+  <div><p class="eyebrow-line">{{ today }}</p><h1>{{ _('Welcome, {name}', name=me.full_name|first_name) }}</h1><p class="meta">{{ role_label(me.role) }} · <span class="code">{{ me.code }}</span></p></div>
+  {% if can('projects.create') %}<a class="btn btn-primary" href="{{ url_for('admin.project_new') }}">{{ icon('plus', 16) }} {{ _('New project') }}</a>{% endif %}
+</header>
+{% set active = projects|selectattr('status', 'equalto', 'active')|list|length %}
+{% set contract_total = projects|map(attribute='contract_value')|select|sum %}
+<section class="stats" aria-label="{{ _('Summary') }}">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('All projects') if can('projects.view_all') else _('My projects') }}</span><i class="chip">{{ icon('folder', 18) }}</i></div><b data-count="{{ projects|length }}">{{ projects|length }}</b><small>{{ _('{n} in progress', n=active) }}</small></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Total contract value') }}</span><i class="chip sky">{{ icon('table', 18) }}</i></div><b>{{ compact(contract_total) }}</b><small>{{ _('SAR') }}</small></div>
+  {% if stats %}
+  <div class="stat"><div class="stat-top"><span>{{ _('Active accounts') }}</span><i class="chip ok">{{ icon('users', 18) }}</i></div><b data-count="{{ stats.users }}">{{ stats.users }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Awaiting first sign-in') }}</span><i class="chip {{ 'warn' if stats.pending_first_login else 'violet' }}">{{ icon('clock', 18) }}</i></div><b data-count="{{ stats.pending_first_login }}">{{ stats.pending_first_login }}</b>{% if stats.locked %}<small class="bad-text">{{ _('{n} temporarily locked', n=stats.locked) }}</small>{% endif %}</div>
+  {% else %}
+  <div class="stat"><div class="stat-top"><span>{{ _('In progress') }}</span><i class="chip ok">{{ icon('activity', 18) }}</i></div><b data-count="{{ active }}">{{ active }}</b></div>
+  {% endif %}
+</section>
+<section class="card flush">
+  <div class="card-head"><h2>{{ _('All projects') if can('projects.view_all') else _('My projects') }}</h2><span class="count">{{ projects|length }}</span></div>
   {% if projects %}
-  <div class="tw"><table>
-    <thead><tr><th>الكود</th><th>المشروع</th><th>المالك</th><th>قيمة العقد (ريال)</th><th>المدة</th><th>الطاقم</th><th>الحالة</th></tr></thead>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Project') }}</th><th>{{ _('Client') }}</th><th class="num">{{ _('Contract value (SAR)') }}</th><th>{{ _('Duration') }}</th><th class="num">{{ _('Team') }}</th><th>{{ _('Status') }}</th></tr></thead>
     <tbody>
     {% for p in projects %}
       <tr>
         <td><a class="code" href="{{ url_for('main.project', pid=p.id) }}">{{ p.code }}</a></td>
-        <td><a href="{{ url_for('main.project', pid=p.id) }}">{{ p.name }}</a>{% if p.location %}<br><span class="muted">{{ p.location }}</span>{% endif %}</td>
+        <td><a class="row-link" href="{{ url_for('main.project', pid=p.id) }}">{{ p.name }}</a>{% if p.location %}<span class="sub">{{ p.location }}</span>{% endif %}</td>
         <td>{{ p.client or '—' }}</td>
         <td class="num">{{ money(p.contract_value) }}</td>
-        <td class="daterange">{% if p.start_date %}<span class="num">{{ p.start_date }}</span><br><span class="muted">إلى</span> <span class="num">{{ p.end_date or '—' }}</span>{% else %}—{% endif %}</td>
-        <td>{{ team_counts.get(p.id, 0) }}</td>
-        <td>{% include "_project_status.html" %}</td>
+        <td>{% if p.start_date %}<span class="num">{{ p.start_date }}</span><span class="sub"><span class="num">{{ p.end_date or '—' }}</span></span>{% else %}—{% endif %}</td>
+        <td class="num">{{ team_counts.get(p.id, 0) }}</td>
+        <td>{{ status_pill(p.status) }}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table></div>
   {% else %}
-  <div class="empty">{% if can('projects.create') %}لا توجد مشروعات بعد. ابدأ بإنشاء أول مشروع، ثم أسند له الطاقم.{% else %}لم يُسند إليك أي مشروع بعد. تواصل مع مهندس الكوست كنترول.{% endif %}</div>
+  <div class="empty">{{ icon('folder', 30) }}
+    {% if can('projects.create') %}<p>{{ _('No projects yet. Create the first project, then assign its team.') }}</p>
+      <a class="btn btn-primary" href="{{ url_for('admin.project_new') }}">{{ icon('plus', 16) }} {{ _('New project') }}</a>
+    {% else %}<p>{{ _('No projects are assigned to your account yet.') }}</p>{% endif %}
+  </div>
   {% endif %}
-</div>
+</section>
 {% endblock %}

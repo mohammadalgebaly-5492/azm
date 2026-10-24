@@ -1,24 +1,81 @@
 {% extends "base.html" %}
-{% from "_icons.html" import icon, mark %}
-{% block title %}بيانات الحساب{% endblock %}
+{% from "_icons.html" import icon %}
+{% from "_ui.html" import avatar, preset_svg with context %}
+{% block title %}{{ _('Settings') }}{% endblock %}
 {% block content %}
-<div class="page-h"><div><h1>بيانات الحساب</h1><p>لتعديل البيانات أو الدور تواصل مع مهندس الكوست كنترول.</p></div>
-<a class="btn" href="{{ url_for('auth.change_password') }}">{{ icon('key', 16) }} تغيير كلمة المرور</a></div>
-<div class="card">
-  <dl class="kv">
-    <dt>الاسم</dt><dd>{{ me.full_name }}</dd>
-    <dt>كود الحساب</dt><dd class="code">{{ me.code }}</dd>
-    <dt>اسم المستخدم</dt><dd class="code">{{ me.username }}</dd>
-    <dt>البريد</dt><dd class="code">{{ me.email }}</dd>
-    <dt>الدور</dt><dd>{{ role_label(me.role) }}</dd>
-    <dt>المسمى الوظيفي</dt><dd>{{ me.job_title or '—' }}</dd>
-    <dt>آخر دخول</dt><dd class="num">{{ me.last_login_at|dt }}</dd>
-    <dt>آخر تغيير لكلمة المرور</dt><dd class="num">{{ (me.password_changed_at|dt) or '—' }}</dd>
-  </dl>
-</div>
-<div class="card">
-  <h2>المشروعات المسندة لي</h2>
-  {% if my_projects %}<ul>{% for p in my_projects %}<li><a href="{{ url_for('main.project', pid=p.id) }}"><span class="code">{{ p.code }}</span> {{ p.name }}</a></li>{% endfor %}</ul>
-  {% else %}<p class="muted">لا توجد مشروعات مسندة.</p>{% endif %}
-</div>
+<header class="page-head">
+  <div><h1>{{ _('Settings') }}</h1><p class="lead">{{ _('Your profile, picture, preferences and password.') }}</p></div>
+</header>
+
+<section class="group">
+  <h2>{{ _('Profile') }}</h2>
+  <div class="group-body">
+    <div class="row profile-row">
+      <div class="person">{{ avatar(me, 'lg') }}<div class="row-main"><b>{{ me.full_name }}</b>
+        <span class="row-meta"><span>{{ role_label(me.role) }}</span><span class="code">{{ me.code }}</span></span></div></div>
+    </div>
+    <div class="row"><div class="row-main"><b>{{ _('Username') }}</b></div><span class="code">{{ me.username }}</span></div>
+    <div class="row"><div class="row-main"><b>{{ _('Email') }}</b></div><span class="code">{{ me.email }}</span></div>
+    <div class="row"><div class="row-main"><b>{{ _('Job title') }}</b></div><span>{{ me.job_title or '—' }}</span></div>
+    <div class="row"><div class="row-main"><b>{{ _('Last sign-in') }}</b></div><span class="num">{{ me.last_login_at|dt }}</span></div>
+  </div>
+  <p class="hint group-note">{{ _('To change these details, contact the platform administrator.') }}</p>
+</section>
+
+<section class="group" id="avatar">
+  <h2>{{ _('Profile picture') }}</h2>
+  <div class="group-body pad">
+    <form method="post" action="{{ url_for('main.account_avatar') }}" class="avatar-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="action" value="preset">
+      {% for key, (label, _svg) in AVATARS.items() %}
+      <button type="submit" name="preset" value="{{ key }}" class="avatar-choice {{ 'on' if me.avatar == 'p:' ~ key }}" title="{{ _(label) }}" aria-label="{{ _(label) }}"{% if me.avatar == 'p:' ~ key %} aria-pressed="true"{% endif %}>
+        <span class="avatar preset p-{{ key }} lg">{{ preset_svg(key) }}</span><span class="avatar-label">{{ _(label) }}</span></button>
+      {% endfor %}
+    </form>
+    <div class="upload-row">
+      <form method="post" action="{{ url_for('main.account_avatar') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="action" value="upload">
+        <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required data-autosubmit
+               data-choose="{{ _('Upload your photo') }}" aria-label="{{ _('Upload your photo') }}">
+      </form>
+      {% if me.avatar %}<form method="post" action="{{ url_for('main.account_avatar') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="action" value="clear">
+        <button class="btn btn-ghost" type="submit">{{ _('Use initials') }}</button></form>{% endif %}
+      <span class="hint keep">{{ _('JPEG, PNG or WebP, up to 4 MB. It is cropped to a square.') }}</span>
+    </div>
+  </div>
+</section>
+
+<section class="group" id="preferences">
+  <h2>{{ _('Preferences') }}</h2>
+  <div class="group-body">
+    <form method="post" action="{{ url_for('main.account_preferences') }}" class="row">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="row-label"><b>{{ _('Show explanations') }}</b>
+        <span class="keep">{{ _('Shows a short explanation under page titles, sections and fields across the platform. Turn it off for cleaner screens.') }}</span></div>
+      <label class="switch"><input type="checkbox" name="show_guide" value="1" data-autosubmit {{ 'checked' if me.show_guide }} aria-label="{{ _('Show explanations') }}"><span></span></label>
+      <noscript><button class="btn btn-sm" type="submit">{{ _('Save') }}</button></noscript>
+    </form>
+  </div>
+</section>
+
+<section class="group">
+  <h2>{{ _('Security') }}</h2>
+  <div class="group-body">
+    <div class="row"><div class="row-label"><b>{{ _('Password') }}</b>
+      <span class="keep">{{ _('Last changed') }}: <span class="num">{{ (me.password_changed_at|dt) or '—' }}</span></span></div>
+      <a class="btn" href="{{ url_for('auth.change_password') }}">{{ icon('key', 16) }} {{ _('Change password') }}</a></div>
+  </div>
+</section>
+
+<section class="group">
+  <h2>{{ _('My projects') }}</h2>
+  <div class="group-body">
+    {% for p in my_projects %}
+    <a class="row row-link-row" href="{{ url_for('main.project', pid=p.id) }}"><div class="row-main"><b>{{ p.name }}</b><span class="row-meta"><span class="code">{{ p.code }}</span></span></div>
+      <span class="row-end">{{ icon('back', 16) }}</span></a>
+    {% else %}
+    <div class="empty"><p>{{ _('No projects are assigned to your account yet.') }}</p></div>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}

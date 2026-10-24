@@ -1,0 +1,10 @@
+{% extends "analytics/_card.html" %}
+{% block aside %}{% if d.total %}<span class="num faint">{{ compact(d.total) }} {{ _('SAR') }}</span>{% endif %}{% endblock %}
+{% block body %}
+{% if d.total %}
+<svg class="stackbar" aria-hidden="true">{% for s in d.segs if s.w %}<rect class="seg t-{{ s.type }}" x="{{ s.x }}%" width="{{ s.w }}%" height="14" rx="3" data-tip="{{ type_label(s.type) }} · {{ money(s.value) }} {{ _('SAR') }} ({{ s.pct }}%)"/>{% endfor %}</svg>
+<ul class="legend">
+  {% for s in d.segs %}<li><span class="swatch t-{{ s.type }}"></span><span>{{ type_label(s.type) }}</span><b class="num">{{ compact(s.value) }}</b><span class="faint num">{{ s.pct }}%</span></li>{% endfor %}
+</ul>
+{% else %}<div class="empty"><p>{{ _('No BOQ items recorded yet.') }}</p></div>{% endif %}
+{% endblock %}

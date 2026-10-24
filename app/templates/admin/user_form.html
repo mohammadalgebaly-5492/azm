@@ -1,57 +1,72 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}{{ u.full_name if u else 'إنشاء حساب' }}{% endblock %}
+{% from "_ui.html" import account_pill, avatar with context %}
+{% block title %}{{ u.full_name if u else _('New account') }}{% endblock %}
 {% block content %}
-<div class="page-h">
-  <div>{% if u %}<span class="code">{{ u.code }}</span><h1>{{ u.full_name }}</h1>
-    <p>{% if u.status == 'disabled' %}<span class="pill bad">موقوف</span>{% elif u.must_change_password %}<span class="pill warn">بانتظار أول دخول</span>{% else %}<span class="pill ok">فعّال</span>{% endif %}
-    · آخر دخول: <span class="num">{{ (u.last_login_at|dt) or 'لم يدخل بعد' }}</span></p>
-  {% else %}<h1>إنشاء حساب</h1><p>يتولد كود الحساب وكلمة مرور مؤقتة تلقائيًا. صاحب الحساب يغيّرها إجباريًا في أول دخول.</p>{% endif %}</div>
-</div>
-<div class="card">
-  {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
-  <form method="post" class="form">
-    <input type="hidden" name="csrf_token" value="{{ csrf }}">
-    <div class="f"><label for="full_name" class="req">الاسم الكامل</label><input id="full_name" name="full_name" required value="{{ form.get('full_name', '') }}"></div>
-    <div class="f"><label for="username" class="{{ '' if u else 'req' }}">اسم المستخدم</label>
-      {% if u %}<input id="username" value="{{ u.username }}" dir="ltr" disabled><span class="hint">اسم المستخدم ثابت ولا يتغير.</span>
-      {% else %}<input id="username" name="username" dir="ltr" required pattern="[a-z0-9._\-]{3,32}" value="{{ form.get('username', '') }}" placeholder="m.ahmed"><span class="hint">حروف لاتينية صغيرة وأرقام و . _ -</span>{% endif %}</div>
-    <div class="f"><label for="email" class="req">البريد الإلكتروني</label><input id="email" name="email" type="email" dir="ltr" required value="{{ form.get('email', '') }}"></div>
-    <div class="f"><label for="role" class="req">الدور</label>
-      <select id="role" name="role" required>
-        <optgroup label="طاقم الشركة">{% for k in INTERNAL %}<option value="{{ k }}" {{ 'selected' if form.get('role') == k }}>{{ ROLES[k][0] }}</option>{% endfor %}</optgroup>
-        <optgroup label="أطراف المشروع">{% for k in EXTERNAL %}<option value="{{ k }}" {{ 'selected' if form.get('role') == k }}>{{ ROLES[k][0] }}</option>{% endfor %}</optgroup>
-      </select>
-      <span class="hint">لو هتشتغل كمدير مشروع بجانب دورك كأدمن، أنشئ لنفسك حسابًا منفصلًا بدور مدير مشروع.</span></div>
-    <div class="f"><label for="job_title">المسمى الوظيفي</label><input id="job_title" name="job_title" value="{{ form.get('job_title') or '' }}" placeholder="مهندس موقع أول"></div>
-    <div class="f"><label for="phone">الجوال</label><input id="phone" name="phone" dir="ltr" value="{{ form.get('phone') or '' }}" placeholder="05xxxxxxxx"></div>
-    <div class="f wide"><label>المشروعات المسندة</label>
-      {% if projects %}<div class="checks">{% for p in projects %}<label><input type="checkbox" name="projects" value="{{ p.id }}" {{ 'checked' if p.id in assigned }}> <span class="code">{{ p.code }}</span> {{ p.name }}</label>{% endfor %}</div>
-      {% else %}<span class="hint">لا توجد مشروعات مفتوحة بعد.</span>{% endif %}</div>
-    <div class="actions f wide"><button class="btn primary" type="submit">{{ icon('check', 16) }} {{ 'حفظ التعديلات' if u else 'إنشاء الحساب' }}</button>
-      <a class="btn" href="{{ url_for('admin.users') }}">رجوع</a></div>
-  </form>
-</div>
-{% if u %}
-<div class="grid2">
-  <div class="card">
-    <h2>إعادة تعيين كلمة المرور</h2>
-    <p class="muted">تتولد كلمة مرور مؤقتة جديدة، وتنتهي كل جلسات الحساب المفتوحة، ويُجبر صاحبه على تغييرها في أول دخول.</p>
-    <form method="post" action="{{ url_for('admin.user_reset', uid=u.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('key', 16) }} إعادة تعيين</button></form>
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('admin.users') }}">{{ icon('back', 15) }} {{ _('Accounts') }}</a>{% if u %}<span class="code">{{ u.code }}</span>{{ account_pill(u) }}{% endif %}</div>
+    {% if u %}<div class="person">{{ avatar(u, 'lg') }}<h1>{{ u.full_name }}</h1></div><p class="meta">{{ _('Last sign-in') }}: <span class="num">{{ (u.last_login_at|dt) or _('Never') }}</span></p>
+    {% else %}<h1>{{ _('New account') }}</h1><p class="lead">{{ _('The account code and a temporary password are generated automatically. The password must be changed at first sign-in.') }}</p>{% endif %}
   </div>
-  <div class="card">
-    <h2>{{ 'إعادة تفعيل الحساب' if u.status == 'disabled' else 'إيقاف الحساب' }}</h2>
-    <p class="muted">{% if u.status == 'disabled' %}الحساب موقوف ولا يستطيع الدخول. سجله وبياناته محفوظة.{% else %}الإيقاف يمنع الدخول فورًا وينهي الجلسات المفتوحة، ويحتفظ بكل سجلاته وتوقيعاته.{% endif %}</p>
+</header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Personal details') }}</h2><p>{{ _('How this person appears across the platform.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="full_name" class="req">{{ _('Full name') }}</label><input id="full_name" name="full_name" required value="{{ form.get('full_name', '') }}"></div>
+      <div class="field"><label for="job_title">{{ _('Job title') }}</label><input id="job_title" name="job_title" value="{{ form.get('job_title') or '' }}"></div>
+      <div class="field"><label for="phone">{{ _('Mobile') }}</label><input id="phone" name="phone" dir="ltr" inputmode="tel" value="{{ form.get('phone') or '' }}" placeholder="05xxxxxxxx"></div>
+      <div class="field wide"><label for="email" class="req">{{ _('Email') }}</label><input id="email" name="email" type="email" dir="ltr" required value="{{ form.get('email', '') }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Sign-in and role') }}</h2>
+      <p>{% if can('roles.manage') %}{{ _('The role decides what this account can do.') }} <a href="{{ url_for('admin.roles') }}">{{ _('What each role can do') }}</a>{% else %}{{ _('The role decides what this account can do.') }}{% endif %}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="username" class="{{ '' if u else 'req' }}">{{ _('Username') }}</label>
+        {% if u %}<input id="username" value="{{ u.username }}" dir="ltr" disabled><span class="hint">{{ _('Usernames are permanent.') }}</span>
+        {% else %}<input id="username" name="username" dir="ltr" required pattern="[a-z0-9._\-]{3,32}" autocapitalize="none" spellcheck="false" value="{{ form.get('username', '') }}"><span class="hint">{{ _('Lowercase English letters, numbers, and . _ -') }}</span>{% endif %}</div>
+      <div class="field"><label for="role" class="req">{{ _('Role') }}</label>
+        <select id="role" name="role" required>
+          <optgroup label="{{ _('Company staff') }}">{% for k in INTERNAL %}<option value="{{ k }}" {{ 'selected' if form.get('role') == k }}>{{ role_label(k) }}</option>{% endfor %}</optgroup>
+          <optgroup label="{{ _('External parties') }}">{% for k in EXTERNAL %}<option value="{{ k }}" {{ 'selected' if form.get('role') == k }}>{{ role_label(k) }}</option>{% endfor %}</optgroup>
+        </select></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Assigned projects') }}</h2><p>{{ _('Without the See all projects permission, the account only sees these.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide">{% if projects %}<div class="checks">{% for p in projects %}<label class="check"><input type="checkbox" name="projects" value="{{ p.id }}" {{ 'checked' if p.id in assigned }}><span><span class="code">{{ p.code }}</span> {{ p.name }}</span></label>{% endfor %}</div>
+        {% else %}<span class="hint">{{ _('There are no open projects yet.') }}</span>{% endif %}</div>
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('admin.users') }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if u else _('Create account') }}</button>
+  </div>
+</form>
+{% if u %}
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('Reset password') }}</h2><p>{{ _("Generates a new temporary password and ends all of this account's sessions.") }}</p></div></div>
+    <form method="post" action="{{ url_for('admin.user_reset', uid=u.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('key', 16) }} {{ _('Reset password') }}</button></form>
+  </section>
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('Enable account') if u.status == 'disabled' else _('Disable account') }}</h2>
+      <p>{{ _('The account cannot sign in. Its records are kept.') if u.status == 'disabled' else _('Blocks sign-in immediately and ends open sessions. All records are kept.') }}</p></div></div>
     <form method="post" action="{{ url_for('admin.user_status', uid=u.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
       <input type="hidden" name="status" value="{{ 'active' if u.status == 'disabled' else 'disabled' }}">
-      <button class="btn {{ '' if u.status == 'disabled' else 'danger' }}" type="submit">{{ icon('check' if u.status == 'disabled' else 'lock', 16) }} {{ 'إعادة التفعيل' if u.status == 'disabled' else 'إيقاف الحساب' }}</button></form>
-  </div>
+      <button class="btn {{ '' if u.status == 'disabled' else 'btn-danger' }}" type="submit">{{ icon('check' if u.status == 'disabled' else 'power', 16) }} {{ _('Enable account') if u.status == 'disabled' else _('Disable account') }}</button></form>
+  </section>
 </div>
 {% if log %}
-<div class="card"><h2>سجل الحساب</h2>
-  <div class="tw"><table><thead><tr><th>التاريخ</th><th>العملية</th><th>بواسطة</th><th>عنوان IP</th></tr></thead>
+<section class="card flush"><div class="card-head"><h2>{{ _('Account history') }}</h2></div>
+  <div class="table-wrap"><table><thead><tr><th>{{ _('Date') }}</th><th>{{ _('Action') }}</th><th>{{ _('By') }}</th><th>{{ _('IP address') }}</th></tr></thead>
   <tbody>{% for a in log %}<tr><td class="num">{{ a.at|dt }}</td><td>{{ action_label(a.action) }}</td><td>{{ a.actor or '—' }}</td><td class="code">{{ a.ip or '' }}</td></tr>{% endfor %}</tbody></table></div>
-</div>
+</section>
 {% endif %}
 {% endif %}
 {% endblock %}

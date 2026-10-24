@@ -1,25 +1,46 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}{{ p.code if p else 'مشروع جديد' }}{% endblock %}
+{% block title %}{{ _('Edit project') if p else _('New project') }}{% endblock %}
 {% block content %}
-<div class="page-h"><div>{% if p %}<span class="code">{{ p.code }}</span><h1>تعديل بيانات المشروع</h1>{% else %}<h1>تسجيل مشروع جديد</h1>
-<p>يتولد كود المشروع تلقائيًا بصيغة P-السنة-مسلسل حسب سنة البداية.</p>{% endif %}</div></div>
-<div class="card">
-  {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
-  <form method="post" class="form">
-    <input type="hidden" name="csrf_token" value="{{ csrf }}">
-    <div class="f wide"><label for="name" class="req">اسم المشروع</label><input id="name" name="name" required value="{{ form.get('name') or '' }}" placeholder="مستودعات السلي — المرحلة الأولى"></div>
-    <div class="f"><label for="client">المالك</label><input id="client" name="client" value="{{ form.get('client') or '' }}"></div>
-    <div class="f"><label for="consultant">الاستشاري</label><input id="consultant" name="consultant" value="{{ form.get('consultant') or '' }}"></div>
-    <div class="f"><label for="location">الموقع</label><input id="location" name="location" value="{{ form.get('location') or '' }}" placeholder="الرياض — حي السلي"></div>
-    <div class="f"><label for="contract_no">رقم العقد الرئيسي</label><input id="contract_no" name="contract_no" dir="ltr" value="{{ form.get('contract_no') or '' }}"></div>
-    <div class="f"><label for="contract_value">قيمة العقد (ريال)</label><input id="contract_value" name="contract_value" dir="ltr" inputmode="decimal" value="{{ form.get('contract_value') or '' }}" placeholder="12500000.00"></div>
-    <div class="f"><label for="start_date">تاريخ البداية</label><input id="start_date" name="start_date" type="date" value="{{ form.get('start_date') or '' }}"></div>
-    <div class="f"><label for="end_date">تاريخ النهاية التعاقدي</label><input id="end_date" name="end_date" type="date" value="{{ form.get('end_date') or '' }}"></div>
-    {% if p %}<div class="f"><label for="status">حالة المشروع</label><select id="status" name="status">
-      {% for k, v in (('setup','تأسيس'),('active','قيد التنفيذ'),('closed','مقفول')) %}<option value="{{ k }}" {{ 'selected' if form.get('status') == k }}>{{ v }}</option>{% endfor %}</select></div>{% endif %}
-    <div class="actions f wide"><button class="btn primary" type="submit">{{ icon('check', 16) }} {{ 'حفظ' if p else 'إنشاء المشروع' }}</button>
-      <a class="btn" href="{{ url_for('main.project', pid=p.id) if p else url_for('main.home') }}">رجوع</a></div>
-  </form>
-</div>
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  {% if p %}<div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div><h1>{{ _('Edit project') }}</h1>
+  {% else %}<div class="eyebrow"><a class="crumb" href="{{ url_for('main.home') }}">{{ icon('back', 15) }} {{ _('Projects') }}</a></div><h1>{{ _('New project') }}</h1>
+  <p class="lead">{{ _('The project code is generated automatically as P-year-number, based on the start year.') }}</p>{% endif %}
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Project') }}</h2><p>{{ _('The name and site as they appear across the platform.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="name" class="req">{{ _('Project name') }}</label><input id="name" name="name" required value="{{ form.get('name') or '' }}" autofocus></div>
+      <div class="field wide"><label for="location">{{ _('Location') }}</label><input id="location" name="location" value="{{ form.get('location') or '' }}"></div>
+      {% if p %}<div class="field"><label for="status">{{ _('Status') }}</label><select id="status" name="status">
+        {% for k, v in (('setup', _('Setup')), ('active', _('In progress')), ('closed', _('Closed'))) %}<option value="{{ k }}" {{ 'selected' if form.get('status') == k }}>{{ v }}</option>{% endfor %}</select></div>{% endif %}
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Parties') }}</h2><p>{{ _('The client and the supervising consultant.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="client">{{ _('Client') }}</label><input id="client" name="client" value="{{ form.get('client') or '' }}"></div>
+      <div class="field"><label for="consultant">{{ _('Consultant') }}</label><input id="consultant" name="consultant" value="{{ form.get('consultant') or '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Main contract') }}</h2><p>{{ _('Contract value and dates. The duration is calculated automatically.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="contract_no">{{ _('Main contract no.') }}</label><input id="contract_no" name="contract_no" dir="ltr" value="{{ form.get('contract_no') or '' }}"></div>
+      <div class="field"><label for="contract_value">{{ _('Contract value') }}</label>
+        <div class="affix"><input id="contract_value" name="contract_value" dir="ltr" inputmode="decimal" data-money value="{{ form.get('contract_value') or '' }}" placeholder="0.00"><span>{{ _('SAR') }}</span></div></div>
+      <div class="field"><label for="start_date">{{ _('Start date') }}</label><input id="start_date" name="start_date" type="date" {{ date_attrs|safe }} value="{{ form.get('start_date') or '' }}"></div>
+      <div class="field"><label for="end_date">{{ _('Contractual end date') }}</label><input id="end_date" name="end_date" type="date" data-after="start_date" {{ date_attrs|safe }} value="{{ form.get('end_date') or '' }}">
+        <output class="readout" data-duration="start_date,end_date" data-days="{{ _('Duration: {n} days', n='{n}') }}"></output></div>
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('main.project', pid=p.id) if p else url_for('main.home') }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if p else _('Create project') }}</button>
+  </div>
+</form>
 {% endblock %}

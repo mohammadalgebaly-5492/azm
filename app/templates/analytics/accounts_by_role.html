@@ -1,0 +1,13 @@
+{% extends "analytics/_card.html" %}
+{% block aside %}<span class="num faint">{{ _('{n} active', n=d.total) }}</span>{% endblock %}
+{% block body %}
+<ul class="barlist">
+  {% for r in d.rows %}
+  <li data-tip="{{ role_label(r.role) }} · {{ r.n }}" tabindex="0">
+    <span class="bl-label">{{ role_label(r.role) }}</span>
+    <svg class="bl-bar" aria-hidden="true">{% if r.n %}<rect class="mark" width="{{ r.pct }}%" height="10" rx="4"/><rect class="mark" width="4" height="10"/>{% endif %}</svg>
+    <span class="bl-value num">{{ r.n }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

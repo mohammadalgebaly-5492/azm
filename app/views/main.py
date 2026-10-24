@@ -1,8 +1,10 @@
-from flask import Blueprint, abort, g, render_template
+from flask import Blueprint, abort, flash, g, make_response, redirect, render_template, request, url_for
 
-from .. import projects as P
-from ..auth import login_required
+from .. import avatars, projects as P
+from ..auth import AuthError, login_required
 from ..db import get_db, utcnow
+from ..i18n import _
+from ..auth import permission_required
 from ..rbac import can, can_view_project
 
 bp = Blueprint("main", __name__)
@@ -43,10 +45,20 @@ def project(pid):
     activity = db.execute(
         "SELECT a.*, u.full_name AS actor FROM audit_log a LEFT JOIN users u ON u.id = a.actor_id "
         "WHERE a.project_id = ? ORDER BY a.id DESC LIMIT 20", (pid,)).fetchall()
-    boq_count, boq_total = db.execute("SELECT COUNT(*), CAST(COALESCE(SUM(amount), 0) AS BIGINT) FROM boq_items WHERE project_id = ?",
-                                      (pid,)).fetchone()
+    boq_count, boq_total = db.execute(
+        "SELECT COUNT(*), CAST(COALESCE(SUM(amount), 0) AS BIGINT) FROM boq_items WHERE project_id = ?",
+        (pid,)).fetchone()
     return render_template("project.html", p=p, team=team, candidates=candidates, activity=activity,
                            boq_count=boq_count, boq_total=boq_total)
+
+
+@bp.get("/analytics")
+@permission_required("analytics.view")
+def analytics():
+    from .. import analytics as A
+    db = get_db()
+    scope = {"projects": P.visible_projects(db, g.user, can(g.user, "projects.view_all"))}
+    return render_template("analytics.html", widgets=A.render_all(db, g.user, scope))
 
 
 @bp.get("/account")
@@ -55,3 +67,50 @@ def account():
     db = get_db()
     plist = P.visible_projects(db, g.user, False)
     return render_template("account.html", my_projects=plist)
+
+
+@bp.post("/account/preferences")
+@login_required
+def account_preferences():
+    db = get_db()
+    on = request.form.get("show_guide") == "1"
+    db.execute("UPDATE users SET show_guide = ? WHERE id = ?", (on, g.user["id"]))
+    flash(_("Explanations are shown across the platform.") if on else _("Explanations are hidden."), "ok")
+    return redirect(url_for("main.account") + "#preferences")
+
+
+@bp.post("/account/avatar")
+@login_required
+def account_avatar():
+    db = get_db()
+    action = request.form.get("action")
+    try:
+        if action == "preset":
+            avatars.set_preset(db, g.user["id"], request.form.get("preset", ""))
+        elif action == "upload":
+            f = request.files.get("photo")
+            if not f or not f.filename:
+                raise AuthError(_("Choose a photo to upload."))
+            avatars.save_upload(db, g.user["id"], f.stream)
+        elif action == "clear":
+            avatars.clear(db, g.user["id"])
+        else:
+            abort(400)
+    except AuthError as e:
+        flash(str(e), "bad")
+    else:
+        flash(_("Profile picture updated."), "ok")
+    return redirect(url_for("main.account") + "#avatar")
+
+
+@bp.get("/avatar/<int:uid>")
+@login_required
+def avatar_image(uid):
+    img = avatars.load(get_db(), uid)
+    if img is None:
+        abort(404)
+    resp = make_response(img[1])
+    resp.headers["Content-Type"] = img[0]
+    # الرابط يتغير مع كل صورة جديدة (?v=)، فالتخزين المؤقت آمن
+    resp.headers["Cache-Control"] = "private, max-age=31536000, immutable"
+    return resp

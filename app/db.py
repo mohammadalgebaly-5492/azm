@@ -4,6 +4,7 @@
   - SQLite: ملف محلي (التجربة على الجهاز والاختبارات).
   - PostgreSQL (Supabase): عند ضبط DATABASE_URL على رابط يبدأ بـ postgres:// أو postgresql://
 """
+import importlib.util
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -148,17 +149,24 @@ def migrate(conn) -> list[str]:
                      + ("TIMESTAMPTZ NOT NULL DEFAULT now())" if pg else "TEXT NOT NULL)"))
     done = {r[0] for r in conn.execute("SELECT name FROM schema_migrations")}
     applied = []
-    for f in sorted((PG_MIGRATIONS if pg else MIGRATIONS).glob("*.sql")):
+    folder = PG_MIGRATIONS if pg else MIGRATIONS
+    for f in sorted([*folder.glob("*.sql"), *folder.glob("*.py")], key=lambda f: f.name):
         if f.name in done:
             continue
         with tx(conn):
             # إعادة الفحص بعد أخذ القفل: نسخة أخرى من التطبيق ربما طبقته للتو
             if conn.execute("SELECT 1 FROM schema_migrations WHERE name = ?", (f.name,)).fetchone():
                 continue
-            sql = f.read_text(encoding="utf-8")
-            if pg:
-                conn.execute(sql)
+            if f.suffix == ".py":
+                # مهاجرة تحتاج منطقًا لا يكتبه SQL وحده (مثل تعديل قيد CHECK في SQLite): تعرّف run(conn)
+                spec = importlib.util.spec_from_file_location(f"migration_{f.stem}", f)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                module.run(conn)
+            elif pg:
+                conn.execute(f.read_text(encoding="utf-8"))
             else:
+                sql = f.read_text(encoding="utf-8")
                 # executescript ينفذ COMMIT ضمنيًا؛ لذلك ننفذ الجمل واحدة واحدة داخل المعاملة
                 for stmt in _split_sql(sql):
                     conn.execute(stmt)

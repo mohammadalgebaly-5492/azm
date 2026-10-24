@@ -1,0 +1,31 @@
+{#- عناصر واجهة مشتركة. الاستيراد: {% from "_ui.html" import lang_switch with context %} -#}
+{% macro lang_switch() -%}
+<nav class="seg" aria-label="{{ _('Language') }}">
+  <a href="{{ url_for('auth.set_lang', code='ar', next=request.full_path.rstrip('?')) }}" class="{{ 'on' if lang == 'ar' }}" lang="ar" hreflang="ar">العربية</a>
+  <a href="{{ url_for('auth.set_lang', code='en', next=request.full_path.rstrip('?')) }}" class="{{ 'on' if lang == 'en' }}" lang="en" hreflang="en">English</a>
+</nav>
+{%- endmacro %}
+
+{% macro status_pill(status) -%}
+{% if status == 'setup' %}<span class="pill warn">{{ _('Setup') }}</span>{% elif status == 'active' %}<span class="pill ok">{{ _('In progress') }}</span>{% else %}<span class="pill">{{ _('Closed') }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro account_pill(u) -%}
+{% if u.status == 'disabled' %}<span class="pill bad">{{ _('Disabled') }}</span>{% elif u.must_change_password %}<span class="pill warn">{{ _('Awaiting first sign-in') }}</span>{% else %}<span class="pill ok">{{ _('Active') }}</span>{% endif %}
+{%- endmacro %}
+
+{#- صورة الحساب: مرفوعة، أو جاهزة، أو الحرف الأول. size: sm | (افتراضي) | lg | xl -#}
+{% macro avatar(u, size='') -%}
+{% set a = u.avatar or '' %}
+{%- if a.startswith('u:') -%}
+<img class="avatar {{ size }}" src="{{ url_for('main.avatar_image', uid=u.id, v=a[2:]) }}" alt="" loading="lazy" decoding="async">
+{%- elif a.startswith('p:') and a[2:] in AVATARS -%}
+<span class="avatar preset p-{{ a[2:] }} {{ size }}" aria-hidden="true">{{ preset_svg(a[2:]) }}</span>
+{%- else -%}
+<span class="avatar {{ size }}" aria-hidden="true">{{ (u.full_name or '?')[:1] }}</span>
+{%- endif %}
+{%- endmacro %}
+
+{% macro preset_svg(key) -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">{{ AVATARS[key][1]|safe }}</svg>
+{%- endmacro %}

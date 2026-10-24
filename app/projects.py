@@ -3,7 +3,8 @@ import re
 from datetime import date
 
 from . import audit
-from .auth import AuthError
+from .errors import AuthError
+from .i18n import _
 from .db import next_counter, tx, utcnow
 
 
@@ -14,8 +15,8 @@ def parse_money(v) -> int | None:
     if not s:
         return None
     if not re.fullmatch(r"\d+(\.\d{1,2})?", s):
-        raise AuthError("صيغة المبلغ غير صحيحة.")
-    whole, _, frac = s.partition(".")
+        raise AuthError(_("The amount format is not valid."))
+    whole, _sep, frac = s.partition(".")
     return int(whole) * 100 + int((frac + "00")[:2])
 
 
@@ -34,16 +35,16 @@ def _date(v):
     try:
         return date.fromisoformat(v).isoformat()
     except ValueError:
-        raise AuthError("صيغة التاريخ غير صحيحة.")
+        raise AuthError(_("The date format is not valid."))
 
 
 def _validate(f):
     name = (f.get("name") or "").strip()
     if len(name) < 3:
-        raise AuthError("أدخل اسم المشروع.")
+        raise AuthError(_("Enter the project name."))
     start, end = _date(f.get("start_date")), _date(f.get("end_date"))
     if start and end and end <= start:
-        raise AuthError("تاريخ النهاية يجب أن يكون بعد تاريخ البداية.")
+        raise AuthError(_("The end date must be after the start date."))
     return {
         "name": name,
         "client": (f.get("client") or "").strip() or None,
@@ -76,7 +77,7 @@ def update_project(db, pid, form, actor_id):
     data = _validate(form)
     status = form.get("status") or "setup"
     if status not in ("setup", "active", "closed"):
-        raise AuthError("حالة المشروع غير معروفة.")
+        raise AuthError(_("Unknown project status."))
     data["status"] = status
     cur = db.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
     changes = {k: v for k, v in data.items() if cur[k] != v}
@@ -92,7 +93,7 @@ def update_project(db, pid, form, actor_id):
 def add_member(db, pid, user_id, actor_id):
     u = db.execute("SELECT status FROM users WHERE id = ?", (user_id,)).fetchone()
     if u is None or u["status"] != "active":
-        raise AuthError("الحساب غير موجود أو موقوف.")
+        raise AuthError(_("The account doesn't exist or is disabled."))
     with tx(db):
         cur = db.execute("INSERT INTO project_members(project_id, user_id, assigned_at, assigned_by) "
                          "VALUES (?,?,?,?) ON CONFLICT DO NOTHING", (pid, user_id, utcnow(), actor_id))
@@ -117,5 +118,5 @@ def visible_projects(db, user, can_view_all: bool):
 
 def members(db, pid):
     return db.execute(
-        "SELECT u.id, u.code, u.full_name, u.role, u.status, u.job_title, m.assigned_at FROM project_members m "
+        "SELECT u.id, u.code, u.full_name, u.role, u.status, u.job_title, u.avatar, m.assigned_at FROM project_members m "
         "JOIN users u ON u.id = m.user_id WHERE m.project_id = ? ORDER BY u.role, u.full_name", (pid,)).fetchall()

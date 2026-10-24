@@ -1,27 +1,22 @@
-{% extends "base.html" %}
-{% from "_icons.html" import icon, mark %}
-{% block title %}الإعداد الأول{% endblock %}
-{% block body %}
-<div class="auth">
-  <div class="pane">
-    <div class="box">
-      <div class="lockup">{{ mark(48) }}<div><b>{{ company }}</b><small>ALENMAA ALHOR CONSTRUCTION</small></div></div>
-      <div>
-        <h1 class="pname">{{ platform }}</h1>
-        <p class="muted">الإعداد الأول: إنشاء حساب الأدمن (مهندس الكوست كنترول). تظهر هذه الصفحة مرة واحدة فقط قبل إنشاء أي حساب أدمن.</p>
-      </div>
-      {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
-      <form method="post">
-        <input type="hidden" name="token" value="{{ token }}">
-        <div class="f"><label for="full_name" class="req">الاسم الكامل</label><input id="full_name" name="full_name" required value="{{ form.get('full_name', '') }}" placeholder="م. محمد الجبالي"></div>
-        <div class="f"><label for="username" class="req">اسم المستخدم</label><input id="username" name="username" dir="ltr" required pattern="[a-z0-9._\-]{3,32}" value="{{ form.get('username', '') }}" placeholder="m.algebaly"><span class="hint">حروف إنجليزي صغيرة وأرقام و . _ -</span></div>
-        <div class="f"><label for="email" class="req">البريد الإلكتروني</label><input id="email" name="email" type="email" dir="ltr" required value="{{ form.get('email', '') }}"></div>
-        <div class="f"><label for="password" class="req">كلمة المرور</label><input id="password" name="password" type="password" dir="ltr" required minlength="10" autocomplete="new-password"></div>
-        <div class="f"><label for="confirm_password" class="req">تأكيد كلمة المرور</label><input id="confirm_password" name="confirm_password" type="password" dir="ltr" required minlength="10" autocomplete="new-password"><span class="hint">10 أحرف على الأقل، فيها حروف وأرقام.</span></div>
-        <button class="btn primary" type="submit">{{ icon('check', 16) }} إنشاء حساب الأدمن والدخول</button>
-      </form>
-    </div>
-  </div>
-  <div class="strip" aria-hidden="true"></div>
-</div>
+{% extends "_auth_layout.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('First-time setup') }}{% endblock %}
+{% block card_class %}wide{% endblock %}
+{% block card %}
+<div class="auth-title"><h1>{{ _('Create the System Owner account') }}</h1>
+  <p>{{ _('This account has full control of the platform. This page closes once it is created.') }}</p></div>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="token" value="{{ token }}">
+  <div class="field"><label for="full_name" class="req">{{ _('Full name') }}</label><input id="full_name" name="full_name" required value="{{ form.get('full_name', '') }}"></div>
+  <div class="field"><label for="username" class="req">{{ _('Username') }}</label>
+    <input id="username" name="username" dir="ltr" required pattern="[a-z0-9._\-]{3,32}" autocapitalize="none" spellcheck="false" value="{{ form.get('username', '') }}">
+    <span class="hint">{{ _('Lowercase English letters, numbers, and . _ -') }}</span></div>
+  <div class="field"><label for="email" class="req">{{ _('Email') }}</label><input id="email" name="email" type="email" dir="ltr" required value="{{ form.get('email', '') }}"></div>
+  <div class="field"><label for="password" class="req">{{ _('Password') }}</label><input id="password" name="password" type="password" dir="ltr" required minlength="10" autocomplete="new-password"></div>
+  <div class="field"><label for="confirm_password" class="req">{{ _('Confirm password') }}</label>
+    <input id="confirm_password" name="confirm_password" type="password" dir="ltr" required minlength="10" autocomplete="new-password">
+    <span class="hint">{{ _('At least 10 characters, with letters and numbers.') }}</span></div>
+  <button class="btn btn-primary btn-block" type="submit">{{ _('Create account and sign in') }}</button>
+</form>
 {% endblock %}

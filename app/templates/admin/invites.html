@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Sign-up links') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div><h1>{{ _('Sign-up links') }}</h1>
+  <p class="lead">{{ _('People can create their own account only through a link from here. Each link gives one role, expires, and can be revoked.') }}</p></div></header>
+{% if new_link %}
+<div class="alert ok" role="status">{{ icon('link', 17) }}<span class="link-out"><b id="new-link" dir="ltr">{{ url_for('auth.join', token=new_link, _external=True) }}</b></span>
+  <button class="btn btn-sm" type="button" data-copy="#new-link" data-done="{{ _('Copied') }}">{{ icon('copy', 15) }}<span>{{ _('Copy link') }}</span></button></div>
+{% endif %}
+<section class="group">
+  <div class="group-body">
+    <form method="post" action="{{ url_for('admin.invites_toggle') }}" class="row">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="row-label"><b>{{ _('Allow sign-up links') }}</b><span>{{ _('When off, every link stops working immediately.') }}</span></div>
+      <label class="switch"><input type="checkbox" name="enabled" value="1" data-autosubmit {{ 'checked' if site.signup_enabled }} aria-label="{{ _('Allow sign-up links') }}"><span></span></label>
+      <noscript><button class="btn btn-sm" type="submit">{{ _('Save') }}</button></noscript>
+    </form>
+  </div>
+</section>
+<section class="group">
+  <h2>{{ _('New link') }}</h2>
+  <form method="post" action="{{ url_for('admin.invite_create') }}" class="group-body pad">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="inv_role" class="req">{{ _('Role') }}</label>
+        <select id="inv_role" name="role" required>{% for k in roles %}<option value="{{ k }}">{{ role_label(k) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="inv_days">{{ _('Expires after') }}</label>
+        <select id="inv_days" name="days">{% for d in DAYS %}<option value="{{ d }}" {{ 'selected' if d == 3 }}>{{ _('{n} days', n=d) if d > 1 else _('1 day') }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="inv_uses">{{ _('Can be used by') }}</label>
+        <select id="inv_uses" name="max_uses">{% for u in USES %}<option value="{{ u }}">{{ _('{n} people', n=u) if u > 1 else _('1 person') }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="inv_note">{{ _('Note') }}</label><input id="inv_note" name="note" maxlength="120" placeholder="{{ _('e.g. Site engineers, Project P-2026-001') }}"></div>
+    </div>
+    <div class="form-foot"><button class="btn btn-primary" type="submit" {{ 'disabled' if not site.signup_enabled }}>{{ icon('link', 16) }} {{ _('Create link') }}</button>
+      {% if not site.signup_enabled %}<span class="hint">{{ _('Turn on sign-up links first.') }}</span>{% endif %}</div>
+  </form>
+</section>
+<section class="group">
+  <h2>{{ _('Active links') }}</h2>
+  <div class="group-body">
+    {% for i in rows %}
+    <div class="row">
+      <div class="row-label"><b>{{ role_label(i.role) }}{% if i.note %} · {{ i.note }}{% endif %}</b>
+        <span class="row-meta"><span>{{ _('{used} of {max} used', used=i.uses, max=i.max_uses) }}</span><span>{{ _('Expires') }} <span class="num">{{ i.expires_at|dt }}</span></span><span>{{ i.creator }}</span></span>
+        <b class="sr" id="link-{{ i.id }}">{{ url_for('auth.join', token=i.token, _external=True) }}</b></div>
+      <div class="actions">
+        <button class="btn btn-sm" type="button" data-copy="#link-{{ i.id }}" data-done="{{ _('Copied') }}">{{ icon('copy', 15) }}<span>{{ _('Copy link') }}</span></button>
+        <form method="post" action="{{ url_for('admin.invite_revoke', iid=i.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-sm btn-danger" type="submit">{{ _('Revoke') }}</button></form>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">{{ icon('link', 26) }}<p>{{ _('No active links.') }}</p></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

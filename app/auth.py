@@ -9,19 +9,16 @@ from functools import wraps
 from flask import abort, current_app, g, redirect, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import audit
+from . import audit, settings
 from .db import get_db, next_counter, tx, utcnow
-from .rbac import ROLES, can, role_code
+from .errors import AuthError
+from .i18n import _, init_lang
+from .rbac import OWNER, can, role_code, role_exists, roles_with
 
 COOKIE = "cc_session"
 MAX_FAILED = 5
 LOCK_MINUTES = 15
-GENERIC_LOGIN_ERROR = "اسم المستخدم أو كلمة المرور غير صحيحة."
 TEMP_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
-
-
-class AuthError(Exception):
-    pass
 
 
 # ---------- كلمات المرور ----------
@@ -41,11 +38,11 @@ _DUMMY_HASH = generate_password_hash("not-a-real-password-0", method="scrypt")
 def password_problems(pw: str, username: str = "") -> list[str]:
     errs = []
     if len(pw) < 10:
-        errs.append("كلمة المرور يجب ألا تقل عن 10 أحرف.")
+        errs.append(_("The password must be at least 10 characters."))
     if not re.search(r"[A-Za-z؀-ۿ]", pw) or not re.search(r"\d", pw):
-        errs.append("كلمة المرور يجب أن تحتوي على حروف وأرقام.")
+        errs.append(_("The password must contain both letters and numbers."))
     if username and username.lower() in pw.lower():
-        errs.append("كلمة المرور يجب ألا تحتوي على اسم المستخدم.")
+        errs.append(_("The password must not contain the username."))
     return errs
 
 
@@ -69,23 +66,23 @@ def create_user(db, *, username, email, full_name, role, created_by=None, phone=
     full_name = (full_name or "").strip()
     errs = []
     if not USERNAME_RE.match(username):
-        errs.append("اسم المستخدم من 3 إلى 32 حرفًا لاتينيًا صغيرًا أو أرقام أو . _ -")
+        errs.append(_("Usernames are 3 to 32 lowercase English letters, numbers, or . _ -"))
     if not EMAIL_RE.match(email):
-        errs.append("البريد الإلكتروني غير صحيح.")
+        errs.append(_("The email address is not valid."))
     if len(full_name) < 3:
-        errs.append("أدخل الاسم الكامل.")
-    if role not in ROLES:
-        errs.append("الدور غير معروف.")
+        errs.append(_("Enter the full name."))
+    if not role_exists(db, role):
+        errs.append(_("Unknown role."))
     if errs:
         raise AuthError(" ".join(errs))
     if db.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone():
-        raise AuthError("اسم المستخدم مستخدم بالفعل.")
+        raise AuthError(_("This username is already taken."))
     if db.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
-        raise AuthError("البريد الإلكتروني مسجل لحساب آخر.")
+        raise AuthError(_("This email is already registered to another account."))
     pw = password or temp_password()
     with tx(db):
         n = next_counter(db, f"user-{role}")
-        code = f"USR-{role_code(role)}-{n:02d}"
+        code = f"USR-{role_code(db, role)}-{n:02d}"
         cur = db.execute(
             "INSERT INTO users(code, username, email, full_name, role, password_hash, must_change_password, "
             "phone, job_title, created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING id",
@@ -110,12 +107,12 @@ def reset_password(db, user_id: int, actor_id: int) -> str:
 
 def set_status(db, user_id: int, status: str, actor_id: int):
     if user_id == actor_id and status == "disabled":
-        raise AuthError("لا يمكنك إيقاف حسابك.")
+        raise AuthError(_("You can't disable your own account."))
     target = db.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
     if target is None:
-        raise AuthError("الحساب غير موجود.")
-    if status == "disabled" and target["role"] == "admin" and _active_admins(db) <= 1:
-        raise AuthError("لا يمكن إيقاف آخر حساب أدمن فعّال.")
+        raise AuthError(_("Account not found."))
+    if status == "disabled":
+        _ensure_not_last(db, user_id, target["role"])
     with tx(db):
         db.execute("UPDATE users SET status = ? WHERE id = ?", (status, user_id))
         if status == "disabled":
@@ -126,16 +123,18 @@ def set_status(db, user_id: int, status: str, actor_id: int):
 def update_user(db, user_id: int, actor_id: int, *, full_name, email, role, phone, job_title):
     email = (email or "").strip().lower()
     if not EMAIL_RE.match(email):
-        raise AuthError("البريد الإلكتروني غير صحيح.")
-    if role not in ROLES:
-        raise AuthError("الدور غير معروف.")
+        raise AuthError(_("The email address is not valid."))
+    if not role_exists(db, role):
+        raise AuthError(_("Unknown role."))
     cur = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if cur is None:
-        raise AuthError("الحساب غير موجود.")
+        raise AuthError(_("Account not found."))
+    if len((full_name or "").strip()) < 3:
+        raise AuthError(_("Enter the full name."))
     if db.execute("SELECT 1 FROM users WHERE email = ? AND id != ?", (email, user_id)).fetchone():
-        raise AuthError("البريد الإلكتروني مسجل لحساب آخر.")
-    if cur["role"] == "admin" and role != "admin" and cur["status"] == "active" and _active_admins(db) <= 1:
-        raise AuthError("لا يمكن تغيير دور آخر حساب أدمن فعّال.")
+        raise AuthError(_("This email is already registered to another account."))
+    if role != cur["role"] and cur["status"] == "active":
+        _ensure_not_last(db, user_id, cur["role"], new_role=role)
     changes = {}
     for k, v in (("full_name", full_name.strip()), ("email", email), ("role", role),
                  ("phone", (phone or "").strip() or None), ("job_title", (job_title or "").strip() or None)):
@@ -153,8 +152,17 @@ def update_user(db, user_id: int, actor_id: int, *, full_name, email, role, phon
                   **{k: {"from": cur[k], "to": v} for k, v in changes.items()})
 
 
-def _active_admins(db) -> int:
-    return db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active'").fetchone()[0]
+def _ensure_not_last(db, user_id: int, role: str, new_role=None):
+    """يمنع قفل المنصة: لازم يفضل مدير نظام فعّال، وحساب فعّال واحد على الأقل يدير الحسابات."""
+    others = "SELECT COUNT(*) FROM users WHERE status = 'active' AND id != ? AND role IN ({})"
+    if role == OWNER and new_role != OWNER:
+        if db.execute(others.format("?"), (user_id, OWNER)).fetchone()[0] == 0:
+            raise AuthError(_("This is the only active System Owner. Make another account System Owner first."))
+    managers = roles_with(db, "users.manage")
+    if role in managers and new_role not in managers:
+        marks = ",".join("?" * len(managers))
+        if db.execute(others.format(marks), (user_id, *managers)).fetchone()[0] == 0:
+            raise AuthError(_("This is the last active account that can manage accounts."))
 
 
 # ---------- الدخول والجلسات ----------
@@ -173,10 +181,11 @@ def login(db, username: str, password: str, ip=None, user_agent=None) -> str:
     user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     if user is None:
         verify_password(_DUMMY_HASH, password or "")
-        raise AuthError(GENERIC_LOGIN_ERROR)
+        raise AuthError(_("Incorrect username or password."))
     if user["locked_until"] and datetime.fromisoformat(user["locked_until"]) > _now():
         verify_password(_DUMMY_HASH, password or "")
-        raise AuthError(f"الحساب مقفول مؤقتًا بعد {MAX_FAILED} محاولات خاطئة. حاول بعد {LOCK_MINUTES} دقيقة أو تواصل مع الأدمن.")
+        raise AuthError(_("This account is temporarily locked after {n} failed attempts. Try again in {m} minutes "
+                          "or contact the admin.", n=MAX_FAILED, m=LOCK_MINUTES))
     ok = verify_password(user["password_hash"], password or "")
     if not ok or user["status"] != "active":
         with tx(db):
@@ -191,10 +200,10 @@ def login(db, username: str, password: str, ip=None, user_agent=None) -> str:
                 audit.log(db, user["id"], "account_locked" if locked else "login_failed", "user", user["id"])
             else:
                 audit.log(db, user["id"], "login_failed", "user", user["id"], reason="disabled")
-        raise AuthError(GENERIC_LOGIN_ERROR)
+        raise AuthError(_("Incorrect username or password."))
     token = secrets.token_urlsafe(32)
     now = _now()
-    absolute = now + timedelta(hours=current_app.config["SESSION_ABSOLUTE_HOURS"])
+    absolute = now + timedelta(hours=settings.get("session_absolute_hours"))
     with tx(db):
         db.execute("UPDATE users SET failed_attempts = 0, locked_until = NULL, last_login_at = ? WHERE id = ?",
                    (now.isoformat(timespec="seconds"), user["id"]))
@@ -215,7 +224,7 @@ def load_session(db, token: str | None):
     if s is None:
         return None, None
     now = _now()
-    idle = timedelta(minutes=current_app.config["SESSION_IDLE_MINUTES"])
+    idle = timedelta(minutes=settings.get("session_idle_minutes"))
     if datetime.fromisoformat(s["expires_at"]) <= now or datetime.fromisoformat(s["last_seen"]) + idle <= now:
         db.execute("DELETE FROM sessions WHERE id = ?", (s["id"],))
         return None, None
@@ -237,10 +246,10 @@ def logout(db, token: str | None, user_id=None):
 
 def change_password(db, user, current: str, new: str, keep_session_id: int):
     if not verify_password(user["password_hash"], current or ""):
-        raise AuthError("كلمة المرور الحالية غير صحيحة.")
+        raise AuthError(_("The current password is incorrect."))
     errs = password_problems(new, user["username"])
     if verify_password(user["password_hash"], new):
-        errs.append("اختر كلمة مرور مختلفة عن الحالية.")
+        errs.append(_("Choose a password different from the current one."))
     if errs:
         raise AuthError(" ".join(errs))
     with tx(db):
@@ -254,6 +263,7 @@ def change_password(db, user, current: str, new: str, keep_session_id: int):
 # ---------- ربط Flask ----------
 
 def init_request():
+    init_lang()
     if request.endpoint == "static":  # الملفات الثابتة لا تحتاج جلسة ولا اتصالًا بقاعدة البيانات
         g.user = g.session = None
         return
@@ -261,18 +271,35 @@ def init_request():
     g.user, g.session = load_session(db, request.cookies.get(COOKIE))
 
 
+def revoke_session(db, session_id: int, actor_id: int) -> bool:
+    s = db.execute("SELECT user_id FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    if s is None:
+        return False
+    with tx(db):
+        db.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+        audit.log(db, actor_id, "session_revoked", "user", s["user_id"])
+    return True
+
+
+def revoke_other_sessions(db, keep_session_id: int, actor_id: int) -> int:
+    with tx(db):
+        n = db.execute("DELETE FROM sessions WHERE id != ?", (keep_session_id,)).rowcount
+        audit.log(db, actor_id, "sessions_revoked_all", None, None, count=n)
+    return n
+
+
 def check_csrf():
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        if request.endpoint in ("auth.login", "auth.setup"):
+        if request.endpoint in ("auth.login", "auth.setup", "auth.join"):
             return  # لا جلسة قبل الدخول؛ الحماية هنا بـ SameSite=Strict على كوكي الجلسة
         sent = request.form.get("csrf_token", "")
         if g.session is None or not hmac.compare_digest(sent, g.session["csrf_token"]):
-            abort(400, description="انتهت صلاحية النموذج. أعد تحميل الصفحة وحاول مرة أخرى.")
+            abort(400, description=_("This form has expired. Reload the page and try again."))
 
 
 def set_session_cookie(resp, token: str):
     resp.set_cookie(COOKIE, token, httponly=True, secure=current_app.config["SESSION_COOKIE_SECURE"],
-                    samesite="Strict", max_age=current_app.config["SESSION_ABSOLUTE_HOURS"] * 3600, path="/")
+                    samesite="Strict", max_age=settings.get("session_absolute_hours") * 3600, path="/")
     return resp
 
 

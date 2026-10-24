@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ role_label(r.key) if r else _('New role') }}{% endblock %}
+{% block content %}
+{% set locked = r and r.system %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('admin.roles') }}">{{ icon('back', 15) }} {{ _('Roles') }}</a>{% if r %}<span class="code">{{ r.code }}</span>{% endif %}</div>
+  <h1>{{ role_label(r.key) if r else _('New role') }}</h1>
+  {% if locked %}<p class="lead">{{ _('The System Owner role is built in. It always has every permission and cannot be changed.') }}</p>{% endif %}
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post" class="grid-1">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <fieldset class="bare" {{ 'disabled' if locked }}>
+  <section class="group">
+    <h2>{{ _('Role') }}</h2>
+    <div class="group-body">
+      <div class="row"><div class="row-label"><b>{{ _('Name') }}</b><span>{{ _('Shown on accounts, in lists, and in the audit log.') }}</span></div>
+        <div class="pair"><input name="name_ar" dir="rtl" lang="ar" required maxlength="60" placeholder="العربية" aria-label="{{ _('Name (Arabic)') }}" value="{{ form.get('name_ar') or '' }}">
+          <input name="name_en" dir="ltr" lang="en" required maxlength="60" placeholder="English" aria-label="{{ _('Name (English)') }}" value="{{ form.get('name_en') or '' }}"></div></div>
+      <div class="row"><div class="row-label"><b>{{ _('Code') }}</b><span>{{ _('2 to 5 capital letters, used in new account codes, e.g. USR-QS-01. Existing codes do not change.') }}</span></div>
+        <input name="code" dir="ltr" required pattern="[A-Za-z]{2,5}" maxlength="5" autocapitalize="characters" class="upper" aria-label="{{ _('Code') }}" value="{{ form.get('code') or '' }}"></div>
+      <div class="row"><div class="row-label"><b>{{ _('External party') }}</b><span>{{ _('For people outside the company, such as the client or consultant.') }}</span></div>
+        <label class="switch"><input type="checkbox" name="external" value="1" {{ 'checked' if form.get('external') }} aria-label="{{ _('External party') }}"><span></span></label></div>
+    </div>
+  </section>
+  {% for group, keys in GROUPS %}
+  <section class="group">
+    <h2>{{ _(group) }}</h2>
+    <div class="group-body">
+      {% for key in keys %}{% set label, desc = PERMISSIONS[key] %}
+      <div class="row"><div class="row-label"><b>{{ _(label) }}</b><span>{{ _(desc) }}</span></div>
+        <label class="switch"><input type="checkbox" name="perm" value="{{ key }}" {{ 'checked' if key in granted }} aria-label="{{ _(label) }}"><span></span></label></div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  </fieldset>
+  {% if not locked %}
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('admin.roles') }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save role') if r else _('Create role') }}</button>
+  </div>
+  {% endif %}
+</form>
+{% if r and not locked %}
+<section class="group">
+  <h2>{{ _('Delete role') }}</h2>
+  <div class="group-body"><div class="row">
+    <div class="row-label"><b>{{ _('{n} accounts use this role', n=n_users) }}</b><span>{{ _('A role can be deleted only when no account uses it.') }}</span></div>
+    <form method="post" action="{{ url_for('admin.role_delete', key=r.key) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <button class="btn btn-danger" type="submit" {{ 'disabled' if n_users }}>{{ icon('x', 16) }} {{ _('Delete role') }}</button></form>
+  </div></div>
+</section>
+{% endif %}
+{% endblock %}

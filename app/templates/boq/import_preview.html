@@ -1,34 +1,41 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}معاينة الاستيراد · {{ p.code }}{% endblock %}
+{% block title %}{{ _('Import preview') }} · {{ p.code }}{% endblock %}
 {% block content %}
 {% set n_items = rows|selectattr('kind', 'equalto', 'item')|list|length %}
 {% set n_heads = rows|selectattr('kind', 'equalto', 'heading')|list|length %}
-<div class="page-h"><div><a class="code" href="{{ url_for('boq.page', pid=p.id) }}">{{ p.code }} · جدول الكميات</a><h1>معاينة الاستيراد</h1>
-<p>{{ filename }} · {{ n_heads }} قسم · {{ n_items }} بند · الإجمالي <span class="num">{{ money(total) }}</span> ريال
-{% if root %}· تحت {{ root.code }} — {{ root.name }}{% endif %}</p></div></div>
-{% if errors %}
-<div class="card">
-  <h2>{{ errors|length }} صف فيه مشكلة ولن يُستورد</h2>
-  <div class="tw"><table><thead><tr><th>الصف في الملف</th><th>المشكلة</th></tr></thead>
-  <tbody>{% for n, e in errors %}<tr><td class="num">{{ n }}</td><td>{{ e }}</td></tr>{% endfor %}</tbody></table></div>
-  <p class="hint">يمكنك تصحيح الملف ورفعه مرة أخرى، أو المتابعة وإضافة هذه الصفوف يدويًا لاحقًا.</p>
-</div>
-{% endif %}
-<div class="card">
-  <div class="tw"><table class="boq">
-    <thead><tr><th>الصف</th><th>رقم البند</th><th>الوصف</th><th>النوع</th><th>الوحدة</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead>
-    <tbody>{% for r in rows %}
-      {% if r.kind == 'heading' %}<tr class="sec-row lvl-2"><td class="num">{{ r.row }}</td><td class="code">{{ r.ref_no }}</td><td colspan="6"><b>{{ r.name }}</b> <span class="pill brand">قسم WBS</span></td></tr>
-      {% else %}<tr><td class="num">{{ r.row }}</td><td class="code">{{ r.ref_no or '' }}</td><td class="desc">{{ r.description }}</td><td><span class="pill t-{{ r.item_type }}">{{ TYPES[r.item_type][0] }}</span></td><td>{{ r.unit }}</td><td class="num">{{ qty(r.qty_milli) }}</td><td class="num">{{ money(r.unit_rate) }}</td><td class="num">{{ money(r.amount) }}</td></tr>{% endif %}
-    {% endfor %}</tbody>
-  </table></div>
+<header class="page-head">
+  <div><div class="eyebrow"><a class="crumb" href="{{ url_for('boq.import_upload', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Import BOQ') }}</a><span class="code">{{ p.code }}</span></div>
+    <h1>{{ _('Import preview') }}</h1>
+    <p class="meta">{{ filename }}{% if root %} · {{ _('Under {code} — {name}', code=root.code, name=root.name) }}{% endif %}</p></div>
   {% if n_items %}
   <form method="post" action="{{ url_for('boq.import_confirm', pid=p.id) }}" class="actions">
     <input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="token" value="{{ token }}">
-    <button class="btn primary" type="submit">{{ icon('check', 16) }} تأكيد الاستيراد ({{ n_items }} بند)</button>
-    <a class="btn" href="{{ url_for('boq.import_upload', pid=p.id) }}">إلغاء ورفع ملف آخر</a>
+    <a class="btn btn-ghost" href="{{ url_for('boq.import_upload', pid=p.id) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ _('Import {n} items', n=n_items) }}</button>
   </form>
   {% endif %}
-</div>
+</header>
+<section class="stats">
+  <div class="stat"><span>{{ _('Sections') }}</span><b>{{ n_heads }}</b></div>
+  <div class="stat"><span>{{ _('Items') }}</span><b>{{ n_items }}</b></div>
+  <div class="stat accent"><span>{{ _('Total (SAR)') }}</span><b>{{ money(total) }}</b></div>
+  <div class="stat {{ 'bad' if errors }}"><span>{{ _('Rows with problems') }}</span><b>{{ errors|length }}</b></div>
+</section>
+{% if errors %}
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Rows that will not be imported') }}</h2><p>{{ _('Fix the file and upload it again, or continue and add these rows manually later.') }}</p></div></div>
+  <div class="table-wrap"><table><thead><tr><th class="num">{{ _('Row') }}</th><th>{{ _('Problem') }}</th></tr></thead>
+  <tbody>{% for n, e in errors %}<tr><td class="num">{{ n }}</td><td>{{ e }}</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endif %}
+<section class="card flush">
+  <div class="table-wrap"><table class="boq">
+    <thead><tr><th class="num">{{ _('Row') }}</th><th>{{ _('Ref.') }}</th><th>{{ _('Description') }}</th><th>{{ _('Type') }}</th><th>{{ _('Unit') }}</th><th class="num">{{ _('Qty') }}</th><th class="num">{{ _('Rate') }}</th><th class="num">{{ _('Amount') }}</th></tr></thead>
+    <tbody>{% for r in rows %}
+      {% if r.kind == 'heading' %}<tr class="sec lvl-2"><td class="num">{{ r.row }}</td><td class="code">{{ r.ref_no }}</td><td colspan="6">{{ r.name }} <span class="pill accent plain">{{ _('WBS section') }}</span></td></tr>
+      {% else %}<tr><td class="num">{{ r.row }}</td><td class="code">{{ r.ref_no or '' }}</td><td class="desc">{{ r.description }}</td><td><span class="pill plain t-{{ r.item_type }}">{{ type_label(r.item_type) }}</span></td><td>{{ r.unit }}</td><td class="num">{{ qty(r.qty_milli) }}</td><td class="num">{{ money(r.unit_rate) }}</td><td class="num">{{ money(r.amount) }}</td></tr>{% endif %}
+    {% endfor %}</tbody>
+  </table></div>
+</section>
 {% endblock %}

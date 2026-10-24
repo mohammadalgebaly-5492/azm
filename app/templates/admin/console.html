@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Overview') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Platform overview') }}</h1><p class="lead">{{ _('Accounts, access and activity across the platform.') }}</p></div>
+  <div class="actions"><a class="btn btn-primary" href="{{ url_for('admin.user_new') }}">{{ icon('user-plus', 16) }} {{ _('New account') }}</a></div>
+</header>
+<section class="stats" aria-label="{{ _('Summary') }}">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Active accounts') }}</span><i class="chip">{{ icon('users', 18) }}</i></div><b data-count="{{ stats.users }}">{{ stats.users }}</b><small>{{ _('{n} disabled', n=stats.disabled) }}</small></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Signed in now') }}</span><i class="chip ok">{{ icon('devices', 18) }}</i></div><b data-count="{{ stats.sessions }}">{{ stats.sessions }}</b><small class="live">{{ _('Live') }}</small></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Awaiting first sign-in') }}</span><i class="chip {{ 'warn' if stats.pending else 'violet' }}">{{ icon('clock', 18) }}</i></div><b data-count="{{ stats.pending }}">{{ stats.pending }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Temporarily locked') }}</span><i class="chip {{ 'bad' if stats.locked else 'sky' }}">{{ icon('lock', 18) }}</i></div><b data-count="{{ stats.locked }}">{{ stats.locked }}</b><small>{{ _('{n} failed sign-ins in 24 h', n=stats.failed_24h) }}</small></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Projects') }}</span><i class="chip sky">{{ icon('folder', 18) }}</i></div><b data-count="{{ stats.projects }}">{{ stats.projects }}</b><small>{{ _('{n} in progress', n=stats.projects_active) }}</small></div>
+</section>
+<div class="grid-2">
+  <section class="card flush">
+    <div class="card-head"><h2>{{ _('Accounts by role') }}</h2>{% if can('roles.manage') %}<a class="btn btn-sm" href="{{ url_for('admin.roles') }}">{{ icon('sliders', 15) }} {{ _('Roles') }}</a>{% endif %}</div>
+    <div class="table-wrap"><table><tbody>
+      {% for r in ROLES %}<tr><td>{% if can('users.manage') %}<a class="row-link" href="{{ url_for('admin.users', role=r) }}">{{ role_label(r) }}</a>{% else %}{{ role_label(r) }}{% endif %}</td><td class="num tight">{{ by_role.get(r, 0) }}</td></tr>{% endfor %}
+    </tbody></table></div>
+  </section>
+  {% if can('audit.view') %}<section class="card flush">
+    <div class="card-head"><h2>{{ _('Recent activity') }}</h2><a class="btn btn-sm" href="{{ url_for('admin.audit_log') }}">{{ _('Audit log') }}</a></div>
+    {% if recent %}<div class="table-wrap"><table><tbody>
+      {% for a in recent %}<tr><td>{{ action_label(a.action) }}<span class="sub">{{ a.actor or '—' }}</span></td><td class="num faint tight">{{ a.at|dt }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty"><p>{{ _('No actions recorded yet.') }}</p></div>{% endif %}
+  </section>{% endif %}
+</div>
+{% endblock %}

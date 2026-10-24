@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon, mark %}
+{% from "_ui.html" import lang_switch with context %}
+{% block body %}
+<div class="auth">
+  <div class="auth-main">
+    <div class="auth-top"><a class="auth-logo" href="{{ url_for('auth.login') }}">{{ mark(26) }}<b>{{ platform }}</b></a>{{ lang_switch() }}</div>
+    <div class="auth-center">
+      <main class="auth-card {% block card_class %}{% endblock %}">
+        <div class="auth-brand">
+          {{ mark(40) }}
+          <div class="lockup"><b>{{ site.company_name_ar }}</b><small>{{ site.company_name_en }}</small></div>
+        </div>
+        {% block card %}{% endblock %}
+      </main>
+    </div>
+    <footer class="auth-foot">{{ platform }} · {{ company }}</footer>
+  </div>
+  <aside class="auth-panel" aria-hidden="true">
+    <div class="aurora"><span></span><span></span><span></span></div>
+    <div class="auth-panel-inner">
+      <div class="panel-mark">{{ mark(56) }}</div>
+      <p class="panel-title">{{ _('Cost control for every project, from the BOQ to the final payment.') }}</p>
+      <div class="panel-card">
+        <ol class="panel-flow">
+          <li class="done"><i></i>{{ _('Bill of quantities') }}</li>
+          <li class="done"><i></i>{{ _('Baseline approved') }}</li>
+          <li class="now"><i></i>{{ _('Contracts') }}</li>
+          <li><i></i>{{ _('Payments') }}</li>
+        </ol>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

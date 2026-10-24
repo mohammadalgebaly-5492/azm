@@ -1,0 +1,16 @@
+{% extends "analytics/_card.html" %}
+{% block aside %}<span class="faint">{{ _('SAR') }}</span>{% endblock %}
+{% block body %}
+{% if d.rows %}
+<ul class="barlist">
+  {% for r in d.rows %}
+  <li data-tip="{{ r.name }} · {{ money(r.value) }} {{ _('SAR') }}" tabindex="0">
+    <a class="bl-label" href="{{ url_for('main.project', pid=r.id) }}">{{ r.name }}<span class="code">{{ r.code }}</span></a>
+    <svg class="bl-bar" aria-hidden="true"><rect class="mark" width="{{ r.pct }}%" height="10" rx="4"/><rect class="mark" width="4" height="10"/></svg>
+    <span class="bl-value num">{{ compact(r.value) }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% if d.more %}<p class="hint">{{ _('And {n} more projects.', n=d.more) }}</p>{% endif %}
+{% else %}<div class="empty"><p>{{ _('No contract values recorded yet.') }}</p></div>{% endif %}
+{% endblock %}

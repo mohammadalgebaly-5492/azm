@@ -1,0 +1,14 @@
+{% extends "analytics/_card.html" %}
+{% block aside %}<span class="faint">{{ _('{ok} sign-ins · {failed} failed', ok=d.ok, failed=d.failed) }}</span>{% endblock %}
+{% block body %}
+<div class="columns" role="img" aria-label="{{ _(w.TITLE) }}">
+  {% for day in d.days %}
+  <div class="col" data-tip="{{ day.label }} · {{ _('{ok} sign-ins · {failed} failed', ok=day.ok, failed=day.failed) }}" tabindex="0">
+    {% if day.ok == d.top and d.top %}<span class="cap num">{{ day.ok }}</span>{% endif %}
+    <svg aria-hidden="true">{% if day.ok %}<rect class="mark" x="20%" width="60%" y="{{ 100 - day.h }}%" height="{{ day.h }}%" rx="3"/>{% endif %}</svg>
+    <span class="tick num">{{ day.label if loop.first or loop.last or loop.index == 7 else '' }}</span>
+  </div>
+  {% endfor %}
+</div>
+<table class="sr"><caption>{{ _(w.TITLE) }}</caption><tbody>{% for day in d.days %}<tr><td>{{ day.date }}</td><td>{{ day.ok }}</td><td>{{ day.failed }}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

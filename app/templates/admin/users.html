@@ -1,32 +1,33 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}الحسابات والصلاحيات{% endblock %}
+{% from "_ui.html" import account_pill, avatar with context %}
+{% block title %}{{ _('Accounts') }}{% endblock %}
 {% block content %}
-<div class="page-h">
-  <div><h1>الحسابات والصلاحيات</h1><p>كل حساب له كود ثابت ودور واحد ومشروعات مسندة. الأدمن وحده ينشئ الحسابات ويعدّلها.</p></div>
-  <a class="btn primary" href="{{ url_for('admin.user_new') }}">{{ icon('user-plus', 16) }} إنشاء حساب</a>
-</div>
-<form method="get" class="card actions">
-  <input name="q" value="{{ q }}" placeholder="بحث بالاسم أو اسم المستخدم أو البريد أو الكود" aria-label="بحث">
-  <select name="role" aria-label="الدور"><option value="">كل الأدوار</option>{% for k, v in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if role == k }}>{{ v[0] }}</option>{% endfor %}</select>
-  <button class="btn" type="submit">{{ icon('search', 16) }} بحث</button>
+<header class="page-head">
+  <div><h1>{{ _('Accounts') }}</h1><p class="lead">{{ _('Every account has a permanent code, one role, and its assigned projects.') }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('admin.user_new') }}">{{ icon('user-plus', 16) }} {{ _('New account') }}</a>
+</header>
+<form method="get" class="searchbar">
+  <input name="q" value="{{ q }}" placeholder="{{ _('Search by name, username, email or code') }}" aria-label="{{ _('Search') }}">
+  <select name="role" aria-label="{{ _('Role') }}"><option value="">{{ _('All roles') }}</option>{% for k in ROLES %}<option value="{{ k }}" {{ 'selected' if role == k }}>{{ role_label(k) }}</option>{% endfor %}</select>
+  <button class="btn" type="submit">{{ icon('search', 16) }} {{ _('Search') }}</button>
 </form>
-<div class="card">
+<section class="card flush">
   {% if users %}
-  <div class="tw"><table>
-    <thead><tr><th>الكود</th><th>الاسم</th><th>اسم المستخدم</th><th>الدور</th><th>المشروعات</th><th>آخر دخول</th><th>الحالة</th></tr></thead>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Name') }}</th><th>{{ _('Username') }}</th><th>{{ _('Role') }}</th><th class="num">{{ _('Projects') }}</th><th>{{ _('Last sign-in') }}</th><th>{{ _('Status') }}</th></tr></thead>
     <tbody>{% for u in users %}
       <tr>
-        <td><a class="code" href="{{ url_for('admin.user_edit', uid=u.id) }}">{{ u.code }}</a></td>
-        <td><a href="{{ url_for('admin.user_edit', uid=u.id) }}">{{ u.full_name }}</a>{% if u.job_title %}<br><span class="muted">{{ u.job_title }}</span>{% endif %}</td>
+        <td><div class="person">{{ avatar(u, 'sm') }}<div>{% if u.role != 'superadmin' or can('users.manage_owners') %}<a class="row-link" href="{{ url_for('admin.user_edit', uid=u.id) }}">{{ u.full_name }}</a>{% else %}{{ u.full_name }}{% endif %}
+          <span class="sub"><span class="code">{{ u.code }}</span>{% if u.job_title %} · {{ u.job_title }}{% endif %}</span></div></div></td>
         <td class="code">{{ u.username }}</td>
-        <td>{{ role_label(u.role) }}{% if u.role in EXTERNAL %} <span class="pill">طرف خارجي</span>{% endif %}</td>
-        <td>{{ u.n_projects }}</td>
+        <td>{{ role_label(u.role) }}{% if u.role in EXTERNAL %} <span class="pill plain">{{ _('External') }}</span>{% endif %}</td>
+        <td class="num">{{ u.n_projects }}</td>
         <td class="num">{{ (u.last_login_at|dt) or '—' }}</td>
-        <td>{% if u.status == 'disabled' %}<span class="pill bad">موقوف</span>{% elif u.must_change_password %}<span class="pill warn">بانتظار أول دخول</span>{% else %}<span class="pill ok">فعّال</span>{% endif %}</td>
+        <td>{{ account_pill(u) }}</td>
       </tr>{% endfor %}
     </tbody>
   </table></div>
-  {% else %}<div class="empty">لا توجد حسابات مطابقة.</div>{% endif %}
-</div>
+  {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No matching accounts.') }}</p></div>{% endif %}
+</section>
 {% endblock %}

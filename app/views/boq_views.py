@@ -8,10 +8,15 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 from .. import boq as B
 from ..auth import AuthError, login_required
 from ..db import get_db, utcnow
+from ..i18n import _, current_lang
 from ..rbac import can, can_view_project
 
 bp = Blueprint("boq", __name__)
-UNITS = ["م³", "م²", "م.ط", "طن", "كجم", "عدد", "مقطوعية", "لتر", "كيس", "يوم", "شهر"]
+# اقتراحات للوحدات حسب لغة الواجهة؛ الوحدة نص حر يُحفظ مع البند كما كُتب
+UNITS = {
+    "ar": ["م³", "م²", "م.ط", "طن", "كجم", "عدد", "مقطوعية", "لتر", "كيس", "يوم", "شهر"],
+    "en": ["m³", "m²", "lm", "ton", "kg", "no.", "lump sum", "L", "bag", "day", "month"],
+}
 
 
 def _project(pid):
@@ -43,7 +48,7 @@ def page(pid):
     totals, total, by_type = B.summary(db, pid)
     checks = ok = None
     if not p["baseline_approved_at"]:
-        checks, ok, _ = B.baseline_checks(db, pid)
+        checks, ok = B.baseline_checks(db, pid)[:2]
     approver = None
     if p["baseline_approved_by"]:
         approver = db.execute("SELECT full_name FROM users WHERE id = ?", (p["baseline_approved_by"],)).fetchone()
@@ -57,13 +62,13 @@ def page(pid):
 @bp.post("/projects/<int:pid>/wbs")
 @login_required
 def wbs_add(pid):
-    db, _ = _project(pid)
+    db = _project(pid)[0]
     _manage()
     parent = request.form.get("parent_id")
     try:
         wid, code = B.add_wbs(db, pid, request.form.get("name"), int(parent) if parent and parent.isdigit() else None,
                               g.user["id"])
-        flash(f"أضيف العنصر {code}.", "ok")
+        flash(_("Section {code} added.", code=code), "ok")
     except AuthError as e:
         flash(str(e), "bad")
         return _back(pid)
@@ -73,11 +78,11 @@ def wbs_add(pid):
 @bp.post("/projects/<int:pid>/wbs/<int:wid>/rename")
 @login_required
 def wbs_rename(pid, wid):
-    db, _ = _project(pid)
+    db = _project(pid)[0]
     _manage()
     try:
         B.rename_wbs(db, pid, wid, request.form.get("name"), g.user["id"])
-        flash("تم تعديل الاسم.", "ok")
+        flash(_("Name updated."), "ok")
     except AuthError as e:
         flash(str(e), "bad")
     return _back(pid, f"#w{wid}")
@@ -86,11 +91,11 @@ def wbs_rename(pid, wid):
 @bp.post("/projects/<int:pid>/wbs/<int:wid>/delete")
 @login_required
 def wbs_delete(pid, wid):
-    db, _ = _project(pid)
+    db = _project(pid)[0]
     _manage()
     try:
         B.delete_wbs(db, pid, wid, g.user["id"])
-        flash("حُذف العنصر.", "ok")
+        flash(_("Section deleted."), "ok")
     except AuthError as e:
         flash(str(e), "bad")
     return _back(pid)
@@ -105,7 +110,7 @@ def item_new(pid):
     _manage()
     nodes = B.wbs_nodes(db, pid)
     if not nodes:
-        flash("أضف عنصر WBS أولًا، ثم أضف البنود تحته.", "bad")
+        flash(_("Add a WBS section first, then add items under it."), "bad")
         return _back(pid)
     error = None
     if request.method == "POST":
@@ -115,12 +120,12 @@ def item_new(pid):
         except AuthError as e:
             error = str(e)
         else:
-            flash(f"أضيف البند {code}.", "ok")
+            flash(_("Item {code} added.", code=code), "ok")
             if request.form.get("again"):
                 return redirect(url_for("boq.item_new", pid=pid, wbs=wid))
             return _back(pid, f"#i{iid}")
     return render_template("boq/item_form.html", p=p, it=None, nodes=nodes, form=request.form, error=error,
-                           sel_wbs=request.values.get("wbs_id") or request.args.get("wbs"), UNITS=UNITS)
+                           sel_wbs=request.values.get("wbs_id") or request.args.get("wbs"), UNITS=UNITS[current_lang()])
 
 
 @bp.route("/projects/<int:pid>/boq/items/<int:iid>", methods=["GET", "POST"])
@@ -138,22 +143,22 @@ def item_edit(pid, iid):
         except AuthError as e:
             error = str(e)
         else:
-            flash(f"تم حفظ البند {it['code']}.", "ok")
+            flash(_("Item {code} saved.", code=it["code"]), "ok")
             return _back(pid, f"#i{iid}")
     form = request.form if error else {**dict(it), "qty": B.fmt_qty(it["qty_milli"]).replace(",", ""),
                                        "unit_rate": f"{it['unit_rate'] / 100:.2f}"}
     return render_template("boq/item_form.html", p=p, it=it, nodes=B.wbs_nodes(db, pid), form=form, error=error,
-                           sel_wbs=str(it["wbs_id"]), UNITS=UNITS)
+                           sel_wbs=str(it["wbs_id"]), UNITS=UNITS[current_lang()])
 
 
 @bp.post("/projects/<int:pid>/boq/items/<int:iid>/delete")
 @login_required
 def item_delete(pid, iid):
-    db, _ = _project(pid)
+    db = _project(pid)[0]
     _manage()
     try:
         B.delete_item(db, pid, iid, g.user["id"])
-        flash("حُذف البند.", "ok")
+        flash(_("Item deleted."), "ok")
     except AuthError as e:
         flash(str(e), "bad")
     return _back(pid)
@@ -180,13 +185,13 @@ def import_upload(pid):
         root = request.form.get("root_wbs", "")
         try:
             if not f or not f.filename:
-                raise AuthError("اختر ملف Excel.")
+                raise AuthError(_("Choose an Excel file."))
             rows = B.read_rows(f.filename, f.stream)
             parsed, errors = B.parse_import(rows, default_type)
         except AuthError as e:
             error = str(e)
         except Exception:
-            error = "تعذرت قراءة الملف. تأكد إنه ملف Excel سليم (.xlsx) أو جرّب القالب."
+            error = _("The file couldn't be read. Make sure it's a valid Excel file (.xlsx), or start from the template.")
         else:
             # المعاينة تُحفظ في قاعدة البيانات لا على القرص: على Vercel القرص للقراءة فقط وكل طلب قد يصل لنسخة مختلفة
             token = secrets.token_urlsafe(16)
@@ -204,7 +209,7 @@ def import_upload(pid):
 @bp.post("/projects/<int:pid>/boq/import/confirm")
 @login_required
 def import_confirm(pid):
-    db, _ = _project(pid)
+    db = _project(pid)[0]
     _manage()
     token = request.form.get("token", "")
     if not token.replace("-", "").replace("_", "").isalnum():
@@ -213,7 +218,7 @@ def import_confirm(pid):
     data = db.execute("DELETE FROM import_previews WHERE token = ? RETURNING project_id, user_id, root_wbs_id, payload",
                       (token,)).fetchone()
     if data is None:
-        flash("انتهت صلاحية المعاينة. ارفع الملف مرة أخرى.", "bad")
+        flash(_("The preview expired. Upload the file again."), "bad")
         return redirect(url_for("boq.import_upload", pid=pid))
     if data["project_id"] != pid or data["user_id"] != g.user["id"]:
         abort(403)
@@ -222,7 +227,7 @@ def import_confirm(pid):
     except AuthError as e:
         flash(str(e), "bad")
         return redirect(url_for("boq.import_upload", pid=pid))
-    flash(f"تم استيراد {n_items} بند و{n_heads} قسم.", "ok")
+    flash(_("Imported {items} items in {sections} sections.", items=n_items, sections=n_heads), "ok")
     return _back(pid)
 
 
@@ -234,21 +239,23 @@ def template():
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "BOQ"
-    ws.sheet_view.rightToLeft = True
-    head = ["رقم البند", "الوصف", "النوع", "الوحدة", "الكمية", "سعر الوحدة", "الإجمالي"]
+    ws.sheet_view.rightToLeft = current_lang() == "ar"
+    head = [_("Item No"), _("Description"), _("Type"), _("Unit"), _("Qty"), _("Rate"), _("Amount")]
     ws.append(head)
     for c in ws[1]:
         c.font = Font(bold=True, color="FFFFFF")
         c.fill = PatternFill("solid", fgColor="0D1CF2")
         c.alignment = Alignment(horizontal="center")
+    both, supply = _(B.TYPES["both"][0]), _(B.TYPES["supply"][0])
+    m3, m2, ton = (UNITS[current_lang()][i] for i in (0, 1, 3))
     sample = [
-        ["1", "أعمال الخرسانة", None, None, None, None, None],
-        ["1.1", "خرسانة عادية تحت القواعد C15 سمك 10 سم", "توريد وتنفيذ", "م³", 120, 280, None],
-        ["1.2", "خرسانة مسلحة للقواعد C35 شاملة الحديد والشدات", "توريد وتنفيذ", "م³", 850, 1150, None],
-        ["2", "أعمال المباني", None, None, None, None, None],
-        ["2.1", "بلوك أسمنتي مفرغ 20 سم للجدران الخارجية", "توريد وتنفيذ", "م²", 2400, 95, None],
-        ["3", "التوريدات", None, None, None, None, None],
-        ["3.1", "توريد حديد تسليح قطر 16 مم", "توريد", "طن", 180, 2750, None],
+        ["1", _("Concrete works"), None, None, None, None, None],
+        ["1.1", _("Plain concrete under footings C15, 10 cm thick"), both, m3, 120, 280, None],
+        ["1.2", _("Reinforced concrete for footings C35 incl. rebar and formwork"), both, m3, 850, 1150, None],
+        ["2", _("Masonry works"), None, None, None, None, None],
+        ["2.1", _("Hollow concrete block 20 cm for external walls"), both, m2, 2400, 95, None],
+        ["3", _("Supplies"), None, None, None, None, None],
+        ["3.1", _("Supply of rebar, 16 mm diameter"), supply, ton, 180, 2750, None],
     ]
     for r in sample:
         ws.append(r)
@@ -259,13 +266,15 @@ def template():
             ws.cell(n, 2).font = Font(bold=True)
     for col, w in zip("ABCDEFG", (11, 60, 16, 10, 12, 14, 16)):
         ws.column_dimensions[col].width = w
-    notes = wb.create_sheet("تعليمات")
-    notes.sheet_view.rightToLeft = True
-    for line in ("الصف الأول عناوين الأعمدة. أسماء الأعمدة المقبولة: رقم البند، الوصف، النوع، الوحدة، الكمية، سعر الوحدة، الإجمالي.",
-                 "الصف اللي فيه وصف بدون كمية ولا سعر يعتبر عنوان قسم، ويتحول لعنصر WBS، والبنود اللي بعده تتسجل تحته.",
-                 "عمود النوع اختياري: توريد، تنفيذ، توريد وتنفيذ. لو فاضي يتطبق النوع الافتراضي اللي تختاره وقت الاستيراد.",
-                 "عمود الإجمالي اختياري، ولو موجود المنصة بتتأكد إنه يساوي الكمية × السعر.",
-                 "الأعمدة بالإنجليزي مقبولة كمان: Item No, Description, Type, Unit, Qty, Rate, Amount."):
+    notes = wb.create_sheet(_("Instructions"))
+    notes.sheet_view.rightToLeft = current_lang() == "ar"
+    for line in (_("The first row holds the column headers: Item No, Description, Type, Unit, Qty, Rate, Amount."),
+                 _("A row with a description but no quantity or rate is a section heading. It becomes a WBS section, "
+                   "and the items after it are filed under it."),
+                 _("The Type column is optional: Supply, Execution, Supply & Execution. If empty, the default type "
+                   "you choose during import is used."),
+                 _("The Amount column is optional. If present, the platform checks it equals quantity × rate."),
+                 _("Arabic and English column headers are both accepted.")):
         notes.append([line])
     notes.column_dimensions["A"].width = 120
     buf = io.BytesIO()
@@ -285,14 +294,14 @@ def export(pid):
     by_wbs = {}
     for it in B.items(db, pid):
         by_wbs.setdefault(it["wbs_id"], []).append(it)
-    totals, total, _ = B.summary(db, pid)
+    totals, total = B.summary(db, pid)[:2]
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "BOQ"
-    ws.sheet_view.rightToLeft = True
+    ws.sheet_view.rightToLeft = current_lang() == "ar"
     ws.append([f"{p['code']} — {p['name']}"])
     ws["A1"].font = Font(bold=True, size=14)
-    ws.append(["الكود", "رقم البند", "الوصف", "النوع", "الوحدة", "الكمية", "سعر الوحدة", "الإجمالي"])
+    ws.append([_("Code"), _("Item No"), _("Description"), _("Type"), _("Unit"), _("Qty"), _("Rate"), _("Amount")])
     for c in ws[2]:
         c.font = Font(bold=True, color="FFFFFF")
         c.fill = PatternFill("solid", fgColor="0D1CF2")
@@ -301,9 +310,9 @@ def export(pid):
         for c in ws[ws.max_row]:
             c.font = Font(bold=True)
         for it in by_wbs.get(n["id"], []):
-            ws.append([it["code"], it["ref_no"], it["description"], B.TYPES[it["item_type"]][0], it["unit"],
+            ws.append([it["code"], it["ref_no"], it["description"], _(B.TYPES[it["item_type"]][0]), it["unit"],
                        it["qty_milli"] / 1000, it["unit_rate"] / 100, it["amount"] / 100])
-    ws.append([None, None, "الإجمالي", None, None, None, None, total / 100])
+    ws.append([None, None, _("Grand total"), None, None, None, None, total / 100])
     for c in ws[ws.max_row]:
         c.font = Font(bold=True)
     for row in ws.iter_rows(min_row=3, min_col=6, max_col=8):
@@ -323,14 +332,14 @@ def export(pid):
 @bp.post("/projects/<int:pid>/baseline/approve")
 @login_required
 def baseline_approve(pid):
-    db, _ = _project(pid)
+    db = _project(pid)[0]
     _manage()
     if request.form.get("confirm") != "1":
-        flash("علّم على خانة التأكيد قبل الاعتماد.", "bad")
+        flash(_("Tick the confirmation box before approving."), "bad")
         return _back(pid, "#baseline")
     try:
         total = B.approve_baseline(db, pid, g.user["id"])
-        flash(f"اعتُمدت الميزانية الأصلية بإجمالي {total / 100:,.2f} ريال، وتجمّد جدول الكميات.", "ok")
+        flash(_("Baseline approved at {amount} SAR. The BOQ is now frozen.", amount=f"{total / 100:,.2f}"), "ok")
     except AuthError as e:
         flash(str(e), "bad")
     return _back(pid, "#baseline")

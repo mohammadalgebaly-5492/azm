@@ -115,7 +115,7 @@ sqlite3 data/costcontrol.sqlite3 ".backup 'backup-$(date +%F).sqlite3'"
 
 | الأمر | الوظيفة |
 |---|---|
-| `python manage.py create-admin` | إنشاء حساب أدمن |
+| `python manage.py create-owner` | إنشاء حساب مدير النظام (للاسترجاع عند فقد الدخول) |
 | `python manage.py unlock USERNAME` | فك قفل حساب قبل انتهاء الـ 15 دقيقة |
 | `python manage.py migrate` | تطبيق تحديثات قاعدة البيانات (تتم تلقائيًا عند التشغيل) |
 

@@ -1,7 +1,7 @@
 """أوامر الإدارة من سطر الأوامر.
 
-  python manage.py create-admin     إنشاء حساب أدمن (الكوست كنترول)
-  python manage.py ensure-admin     إنشاء حساب أدمن فقط لو لا يوجد أدمن
+  python manage.py create-owner     إنشاء حساب مدير النظام (الحساب الأعلى، للاسترجاع عند فقد الدخول)
+  python manage.py ensure-owner     إنشاء حساب مدير النظام فقط لو لا يوجد واحد
   python manage.py migrate          تطبيق تحديثات قاعدة البيانات
   python manage.py unlock USERNAME  فك قفل حساب
 """
@@ -28,10 +28,10 @@ def main(argv):
         db = connect(app.config["DATABASE"])
         if cmd == "migrate":
             print("applied:", migrate(db) or "nothing")
-        elif cmd == "ensure-admin" and db.execute("SELECT 1 FROM users WHERE role = 'admin'").fetchone():
-            print("Admin account exists.")
-        elif cmd in ("create-admin", "ensure-admin"):
-            print("Create the first admin account (Cost Control)")
+        elif cmd == "ensure-owner" and db.execute("SELECT 1 FROM users WHERE role = 'superadmin'").fetchone():
+            print("A System Owner account exists.")
+        elif cmd in ("create-owner", "ensure-owner"):
+            print("Create a System Owner account (full control of the platform)")
             print("You can write the full name in Arabic later from the platform: Accounts > your account.")
             full_name = input("Full name (English): ").strip()
             while True:
@@ -57,11 +57,11 @@ def main(argv):
                 break
             try:
                 uid, code, _ = create_user(db, username=username, email=email, full_name=full_name,
-                                           role="admin", password=pw)
+                                           role="superadmin", password=pw)
             except AuthError:
                 print("Could not create the account: the username or email may already exist, or the name is too short.")
                 return 1
-            print(f"Admin account created: {code} / username: {username}")
+            print(f"System Owner account created: {code} / username: {username}")
         elif cmd == "unlock" and len(argv) > 2:
             n = db.execute("UPDATE users SET locked_until = NULL, failed_attempts = 0 WHERE username = ?",
                            (argv[2].lower(),)).rowcount

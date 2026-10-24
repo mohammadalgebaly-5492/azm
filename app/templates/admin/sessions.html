@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_ui.html" import avatar with context %}
+{% block title %}{{ _('Active sessions') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Active sessions') }}</h1><p class="lead">{{ _('Devices currently signed in. Ending a session signs that device out immediately.') }}</p></div>
+  {% if rows|length > 1 %}<form method="post" action="{{ url_for('admin.sessions_revoke_others') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <button class="btn btn-danger" type="submit">{{ icon('power', 16) }} {{ _('Sign out everyone else') }}</button></form>{% endif %}
+</header>
+<section class="card flush">
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Account') }}</th><th>{{ _('Device') }}</th><th>{{ _('IP address') }}</th><th>{{ _('Signed in') }}</th><th>{{ _('Last active') }}</th><th></th></tr></thead>
+    <tbody>{% for s in rows %}
+      <tr><td><div class="person">{{ avatar(s, 'sm') }}<div>{{ s.full_name }}<span class="sub">{{ role_label(s.role) }} · <span class="code">{{ s.code }}</span></span></div></div></td>
+        <td>{{ device(s.user_agent) }}</td><td class="code">{{ s.ip or '—' }}</td>
+        <td class="num">{{ s.created_at|dt }}</td><td class="num">{{ s.last_seen|dt }}</td>
+        <td class="cell-actions">{% if s.sid == g.session.id %}<span class="pill accent">{{ _('This device') }}</span>
+          {% else %}<form method="post" action="{{ url_for('admin.session_revoke', sid=s.sid) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-sm btn-danger" type="submit">{{ _('End session') }}</button></form>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

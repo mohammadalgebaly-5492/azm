@@ -1,12 +1,11 @@
-{% extends "base.html" %}
-{% from "_icons.html" import icon, mark %}
+{% extends "_auth_layout.html" if not me else "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}{{ title }}{% endblock %}
-{% block body %}
-{% if me %}{{ super() }}{% else %}
-<div class="auth"><div class="pane"><div class="box"><h1>{{ title }}</h1><p>{{ message }}</p><a class="btn" href="{{ url_for('auth.login') }}">صفحة الدخول</a></div></div><div class="strip"></div></div>
-{% endif %}
+{% block card %}
+<div class="auth-title"><p class="code">{{ code }}</p><h1>{{ title }}</h1><p>{{ message }}</p></div>
+<a class="btn btn-block" href="{{ url_for('auth.login') }}">{{ _('Go to sign in') }}</a>
 {% endblock %}
 {% block content %}
-<div class="card"><h1>{{ title }}</h1><p class="muted">{% if code == 403 %}هذه العملية خارج صلاحيات حسابك.{% else %}{{ message }}{% endif %}</p>
-<div class="actions"><a class="btn" href="{{ url_for('main.home') }}">{{ icon('home', 16) }} الرئيسية</a></div></div>
+<div class="card"><div class="empty">{{ icon('alert', 28) }}<p class="code">{{ code }}</p><h1>{{ title }}</h1><p>{{ message }}</p>
+  <a class="btn" href="{{ url_for('main.home') }}">{{ icon('home', 16) }} {{ _('Back to projects') }}</a></div></div>
 {% endblock %}

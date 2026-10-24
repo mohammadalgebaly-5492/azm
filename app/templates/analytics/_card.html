@@ -1,0 +1,5 @@
+{#- إطار موحد لكل بطاقة تحليلات. البطاقة تملأ block body فقط -#}
+<section class="card chart-card size-{{ w.SIZE }}" aria-labelledby="w-{{ w.KEY }}">
+  <div class="card-head"><h2 id="w-{{ w.KEY }}">{{ _(w.TITLE) }}</h2>{% block aside %}{% endblock %}</div>
+  {% block body %}{% endblock %}
+</section>

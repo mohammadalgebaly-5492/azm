@@ -3,10 +3,12 @@ import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from . import audit
-from .auth import AuthError
+from .errors import AuthError
+from .i18n import _
 from .db import tx, utcnow
 
-TYPES = {"supply": ("توريد", "S"), "exec": ("تنفيذ", "E"), "both": ("توريد وتنفيذ", "SE")}
+# المفتاح: (الاسم بالإنجليزية، رمز الكود)
+TYPES = {"supply": ("Supply", "S"), "exec": ("Execution", "E"), "both": ("Supply & Execution", "SE")}
 TYPE_ALIASES = {
     "توريد": "supply", "supply": "supply", "s": "supply",
     "تنفيذ": "exec", "تركيب": "exec", "exec": "exec", "execution": "exec", "e": "exec", "install": "exec",
@@ -25,25 +27,25 @@ def _dec(v, places: int, what: str) -> Decimal:
     else:
         s = str(v or "").strip().translate(_AR_DIGITS).replace(",", "").replace(" ", "")
     if not s:
-        raise AuthError(f"أدخل {what}.")
+        raise AuthError(_("Enter the {what}.", what=what))
     try:
         d = Decimal(s)
     except InvalidOperation:
-        raise AuthError(f"صيغة {what} غير صحيحة: {v}")
+        raise AuthError(_("The {what} format is not valid: {v}", what=what, v=v))
     if d < 0:
-        raise AuthError(f"{what} لا يمكن أن تكون سالبة.")
+        raise AuthError(_("The {what} can't be negative.", what=what))
     return d.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
 
 
 def parse_qty(v) -> int:
-    q = int(_dec(v, 3, "الكمية") * 1000)
+    q = int(_dec(v, 3, _("quantity")) * 1000)
     if q <= 0:
-        raise AuthError("الكمية يجب أن تكون أكبر من صفر.")
+        raise AuthError(_("The quantity must be greater than zero."))
     return q
 
 
 def parse_rate(v) -> int:
-    return int(_dec(v, 2, "سعر الوحدة") * 100)
+    return int(_dec(v, 2, _("unit rate")) * 100)
 
 
 def amount_of(qty_milli: int, rate: int) -> int:
@@ -61,7 +63,7 @@ def norm_type(v, default=None):
         return default
     t = TYPE_ALIASES.get(str(v).strip().lower())
     if t is None:
-        raise AuthError(f"نوع البند غير معروف: {v}. الأنواع: توريد، تنفيذ، توريد وتنفيذ.")
+        raise AuthError(_("Unknown item type: {v}. Types: Supply, Execution, Supply & Execution.", v=v))
     return t
 
 
@@ -72,7 +74,8 @@ def is_locked(db, pid) -> bool:
 
 def _ensure_unlocked(db, pid):
     if is_locked(db, pid):
-        raise AuthError("الميزانية الأصلية معتمدة ومجمّدة. أي تغيير بعد الاعتماد يتم عبر تحويلات أو أوامر تغيير.")
+        raise AuthError(_("The baseline is approved and frozen. Changes after approval go through budget transfers "
+                          "or change orders."))
 
 
 # ---------- WBS ----------
@@ -84,15 +87,15 @@ def wbs_nodes(db, pid):
 def add_wbs(db, pid, name, parent_id, actor_id, _in_tx=False):
     name = (name or "").strip()
     if len(name) < 2:
-        raise AuthError("أدخل اسم عنصر الـ WBS.")
+        raise AuthError(_("Enter the WBS section name."))
     _ensure_unlocked(db, pid)
     parent = None
     if parent_id:
         parent = db.execute("SELECT * FROM wbs_nodes WHERE id = ? AND project_id = ?", (parent_id, pid)).fetchone()
         if parent is None:
-            raise AuthError("العنصر الأب غير موجود في هذا المشروع.")
+            raise AuthError(_("The parent section doesn't exist in this project."))
         if parent["level"] >= MAX_LEVEL:
-            raise AuthError(f"الحد الأقصى لعمق الـ WBS هو {MAX_LEVEL} مستويات.")
+            raise AuthError(_("The WBS can be at most {n} levels deep.", n=MAX_LEVEL))
     level = parent["level"] + 1 if parent else 1
 
     def _do():
@@ -102,7 +105,7 @@ def add_wbs(db, pid, name, parent_id, actor_id, _in_tx=False):
             sib = db.execute("SELECT code FROM wbs_nodes WHERE project_id = ? AND parent_id IS NULL", (pid,)).fetchall()
         n = max([int(r[0].rsplit(".", 1)[-1]) for r in sib], default=0) + 1
         if n > 99:
-            raise AuthError("الحد الأقصى 99 عنصرًا في نفس المستوى.")
+            raise AuthError(_("A level can hold at most 99 sections."))
         code = f"{parent['code']}.{n:02d}" if parent else f"{n:02d}"
         wid = db.execute("INSERT INTO wbs_nodes(project_id, parent_id, code, name, level, created_at, created_by) "
                          "VALUES (?,?,?,?,?,?,?) RETURNING id", (pid, parent["id"] if parent else None, code, name,
@@ -119,11 +122,11 @@ def add_wbs(db, pid, name, parent_id, actor_id, _in_tx=False):
 def rename_wbs(db, pid, wbs_id, name, actor_id):
     name = (name or "").strip()
     if len(name) < 2:
-        raise AuthError("أدخل اسم عنصر الـ WBS.")
+        raise AuthError(_("Enter the WBS section name."))
     with tx(db):
         cur = db.execute("UPDATE wbs_nodes SET name = ? WHERE id = ? AND project_id = ?", (name, wbs_id, pid))
         if not cur.rowcount:
-            raise AuthError("العنصر غير موجود.")
+            raise AuthError(_("Section not found."))
         audit.log(db, actor_id, "wbs_renamed", "wbs", wbs_id, pid, name=name)
 
 
@@ -131,11 +134,11 @@ def delete_wbs(db, pid, wbs_id, actor_id):
     _ensure_unlocked(db, pid)
     node = db.execute("SELECT * FROM wbs_nodes WHERE id = ? AND project_id = ?", (wbs_id, pid)).fetchone()
     if node is None:
-        raise AuthError("العنصر غير موجود.")
+        raise AuthError(_("Section not found."))
     if db.execute("SELECT 1 FROM wbs_nodes WHERE parent_id = ?", (wbs_id,)).fetchone():
-        raise AuthError("احذف العناصر الفرعية أولًا.")
+        raise AuthError(_("Delete the sub-sections first."))
     if db.execute("SELECT 1 FROM boq_items WHERE wbs_id = ?", (wbs_id,)).fetchone():
-        raise AuthError("العنصر فيه بنود. انقلها أو احذفها أولًا.")
+        raise AuthError(_("This section has items. Move or delete them first."))
     with tx(db):
         db.execute("DELETE FROM wbs_nodes WHERE id = ?", (wbs_id,))
         audit.log(db, actor_id, "wbs_deleted", "wbs", wbs_id, pid, code=node["code"])
@@ -154,12 +157,12 @@ def _clean_item(f):
     desc = (f.get("description") or "").strip()
     unit = (f.get("unit") or "").strip()
     if len(desc) < 3:
-        raise AuthError("أدخل وصف البند.")
+        raise AuthError(_("Enter the item description."))
     if not unit:
-        raise AuthError("أدخل وحدة البند.")
+        raise AuthError(_("Enter the item unit."))
     item_type = norm_type(f.get("item_type"))
     if item_type is None:
-        raise AuthError("اختر نوع البند.")
+        raise AuthError(_("Choose the item type."))
     qty = parse_qty(f.get("qty"))
     rate = parse_rate(f.get("unit_rate"))
     return {"description": desc, "unit": unit, "item_type": item_type, "qty_milli": qty, "unit_rate": rate,
@@ -171,7 +174,7 @@ def add_item(db, pid, wbs_id, form, actor_id, _in_tx=False):
     _ensure_unlocked(db, pid)
     wbs = db.execute("SELECT * FROM wbs_nodes WHERE id = ? AND project_id = ?", (wbs_id, pid)).fetchone()
     if wbs is None:
-        raise AuthError("اختر عنصر WBS من نفس المشروع.")
+        raise AuthError(_("Choose a WBS section from this project."))
     d = _clean_item(form)
 
     def _do():
@@ -195,10 +198,11 @@ def update_item(db, pid, item_id, form, actor_id):
     _ensure_unlocked(db, pid)
     cur = db.execute("SELECT * FROM boq_items WHERE id = ? AND project_id = ?", (item_id, pid)).fetchone()
     if cur is None:
-        raise AuthError("البند غير موجود.")
+        raise AuthError(_("Item not found."))
     d = _clean_item(form)
     if d["item_type"] != cur["item_type"]:
-        raise AuthError("نوع البند جزء من كوده ولا يتغير. احذف البند وأضفه بالنوع الصحيح.")
+        raise AuthError(_("The item type is part of its code and can't change. Delete the item and add it again "
+                          "with the right type."))
     changes = {k: v for k, v in d.items() if cur[k] != v}
     if not changes:
         return
@@ -213,7 +217,7 @@ def delete_item(db, pid, item_id, actor_id):
     _ensure_unlocked(db, pid)
     cur = db.execute("SELECT code FROM boq_items WHERE id = ? AND project_id = ?", (item_id, pid)).fetchone()
     if cur is None:
-        raise AuthError("البند غير موجود.")
+        raise AuthError(_("Item not found."))
     with tx(db):
         db.execute("DELETE FROM boq_items WHERE id = ?", (item_id,))
         audit.log(db, actor_id, "boq_item_deleted", "boq_item", item_id, pid, code=cur["code"])
@@ -248,21 +252,26 @@ def summary(db, pid):
 
 def baseline_checks(db, pid):
     p = db.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
-    _, total, _ = summary(db, pid)
+    total = summary(db, pid)[1]
     n_items = db.execute("SELECT COUNT(*) FROM boq_items WHERE project_id = ?", (pid,)).fetchone()[0]
     zero_rate = db.execute("SELECT COUNT(*) FROM boq_items WHERE project_id = ? AND unit_rate = 0", (pid,)).fetchone()[0]
     empty_wbs = db.execute(
         "SELECT COUNT(*) FROM wbs_nodes w WHERE project_id = ? AND NOT EXISTS (SELECT 1 FROM boq_items b WHERE b.wbs_id = w.id) "
         "AND NOT EXISTS (SELECT 1 FROM wbs_nodes c WHERE c.parent_id = w.id)", (pid,)).fetchone()[0]
     checks = [
-        (n_items > 0, f"جدول الكميات فيه {n_items} بند", True),
-        (zero_rate == 0, "كل البنود مسعّرة" if zero_rate == 0 else f"{zero_rate} بند بسعر صفر", True),
-        (empty_wbs == 0, "لا توجد عناصر WBS فارغة" if empty_wbs == 0 else f"{empty_wbs} عنصر WBS بدون بنود", False),
+        (n_items > 0, _("The BOQ has {n} items", n=n_items), True),
+        (zero_rate == 0, _("All items are priced") if zero_rate == 0 else _("{n} items have a zero rate", n=zero_rate),
+         True),
+        (empty_wbs == 0, _("No empty WBS sections") if empty_wbs == 0 else
+         _("{n} WBS sections have no items", n=empty_wbs), False),
     ]
     if p["contract_value"]:
         diff = p["contract_value"] - total
-        checks.append((diff == 0, "إجمالي الجدول يساوي قيمة العقد" if diff == 0 else
-                       f"الفرق عن قيمة العقد {abs(diff) / 100:,.2f} ريال ({'أقل' if diff > 0 else 'أكبر'})", False))
+        checks.append((diff == 0, _("The BOQ total equals the contract value") if diff == 0 else
+                       (_("The BOQ total is {amount} SAR below the contract value", amount=f"{abs(diff) / 100:,.2f}")
+                        if diff > 0 else
+                        _("The BOQ total is {amount} SAR above the contract value", amount=f"{abs(diff) / 100:,.2f}")),
+                       False))
     blocking_ok = all(ok for ok, _, blocking in checks if blocking)
     return checks, blocking_ok, total
 
@@ -271,7 +280,7 @@ def approve_baseline(db, pid, actor_id):
     _ensure_unlocked(db, pid)
     checks, ok, total = baseline_checks(db, pid)
     if not ok:
-        raise AuthError("لا يمكن الاعتماد: " + "، ".join(t for c, t, b in checks if b and not c))
+        raise AuthError(_("Can't approve yet: {reasons}", reasons=_("; ").join(t for c, t, b in checks if b and not c)))
     with tx(db):
         db.execute("UPDATE projects SET baseline_total = ?, baseline_approved_at = ?, baseline_approved_by = ?, "
                    "status = CASE WHEN status = 'setup' THEN 'active' ELSE status END WHERE id = ?",
@@ -319,7 +328,7 @@ def read_rows(filename, stream):
         import io
         text = stream.read().decode("utf-8-sig", errors="replace")
         return [r for r in csv.reader(io.StringIO(text))]
-    raise AuthError("الملف لازم يكون Excel (.xlsx) أو CSV.")
+    raise AuthError(_("The file must be Excel (.xlsx) or CSV."))
 
 
 def parse_import(rows, default_type):
@@ -331,7 +340,8 @@ def parse_import(rows, default_type):
             header_idx, cols = i, c
             break
     if header_idx is None:
-        raise AuthError("لم أجد صف العناوين. لازم يكون فيه أعمدة: الوصف، الكمية، سعر الوحدة (أو Description, Qty, Rate).")
+        raise AuthError(_("Couldn't find the header row. It needs the columns: Description, Qty, Rate "
+                          "(or الوصف، الكمية، سعر الوحدة)."))
     out, errors = [], []
     for n, r in enumerate(rows[header_idx + 1:], start=header_idx + 2):
         get = lambda k: (r[cols[k]] if k in cols and cols[k] < len(r) else None)
@@ -355,13 +365,14 @@ def parse_import(rows, default_type):
             try:
                 g = parse_rate(given)
                 if abs(g - item["amount"]) > 100:
-                    errors.append((n, f"الإجمالي في الملف {g / 100:,.2f} لا يساوي الكمية × السعر {item['amount'] / 100:,.2f}"))
+                    errors.append((n, _("The file's total {given} doesn't equal quantity × rate {calc}",
+                                        given=f"{g / 100:,.2f}", calc=f"{item['amount'] / 100:,.2f}")))
                     continue
             except AuthError:
                 pass
         out.append({"kind": "item", "row": n, **item})
     if not any(x["kind"] == "item" for x in out) and not errors:
-        raise AuthError("الملف لا يحتوي على بنود بكميات وأسعار.")
+        raise AuthError(_("The file has no items with quantities and rates."))
     return out, errors
 
 
@@ -373,11 +384,11 @@ def commit_import(db, pid, parsed, root_wbs_id, actor_id):
         current = root_wbs_id
         for row in parsed:
             if row["kind"] == "heading":
-                current, _ = add_wbs(db, pid, row["name"], root_wbs_id, actor_id, _in_tx=True)
+                current = add_wbs(db, pid, row["name"], root_wbs_id, actor_id, _in_tx=True)[0]
                 n_heads += 1
             else:
                 if current is None:  # بنود قبل أي عنوان قسم
-                    current, _ = add_wbs(db, pid, "بنود عامة", None, actor_id, _in_tx=True)
+                    current = add_wbs(db, pid, _("General items"), None, actor_id, _in_tx=True)[0]
                     n_heads += 1
                 add_item(db, pid, current, {**row, "qty": Decimal(row["qty_milli"]) / 1000,
                                             "unit_rate": Decimal(row["unit_rate"]) / 100}, actor_id, _in_tx=True)
