@@ -47,8 +47,8 @@ python manage.py migrate      # يقرأ DATABASE_URL من .env.local
 | `DATABASE_URL` | رابط Supabase من Connect → **Transaction pooler** (المنفذ 6543)، مع `?sslmode=require`. الرابط المباشر `db.xxx.supabase.co` لا يعمل على Vercel لأنه IPv6 فقط |
 | `CC_SECRET_KEY` | مفتاح عشوائي ثابت، وهو إلزامي مع Postgres |
 | `CC_SETUP_TOKEN` | رمز صفحة الإعداد الأول |
-| `CC_COOKIE_SECURE` / `CC_BEHIND_PROXY` | `1` / `1` |
-| `CC_PLATFORM_NAME` / `CC_COMPANY_NAME` | اسم المنصة والشركة |
+
+باقي المتغيرات اختيارية وقيمها الافتراضية مناسبة لـ Vercel (`CC_PLATFORM_NAME`، `CC_COMPANY_NAME`، `CC_SESSION_*`).
 
 **3. النشر:** اربط المستودع بـ Vercel (Framework Preset: Other)، أو استخدم `vercel --prod`.
 

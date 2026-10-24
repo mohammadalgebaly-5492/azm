@@ -21,8 +21,8 @@ def create_app(test_config=None):
         SESSION_IDLE_MINUTES=int(os.environ.get("CC_SESSION_IDLE_MINUTES", "120")),
         SESSION_ABSOLUTE_HOURS=int(os.environ.get("CC_SESSION_ABSOLUTE_HOURS", "12")),
         SESSION_COOKIE_SECURE=os.environ.get("CC_COOKIE_SECURE", "1") == "1",
-        COMPANY_NAME=os.environ.get("CC_COMPANY_NAME", "الإنماء الحر للمقاولات"),
-        PLATFORM_NAME=os.environ.get("CC_PLATFORM_NAME", "عزم"),
+        COMPANY_NAME=os.environ.get("CC_COMPANY_NAME", "Al-Inmaa Al-Hurr Contracting"),
+        PLATFORM_NAME=os.environ.get("CC_PLATFORM_NAME", "AZM"),
         MAX_CONTENT_LENGTH=20 * 1024 * 1024,
     )
     if test_config:
@@ -38,7 +38,7 @@ def create_app(test_config=None):
     dbmod.migrate(conn)
     conn.close()
 
-    if os.environ.get("CC_BEHIND_PROXY") == "1":
+    if os.environ.get("CC_BEHIND_PROXY") == "1" or os.environ.get("VERCEL"):  # Vercel يضبط VERCEL=1 تلقائيًا
         from werkzeug.middleware.proxy_fix import ProxyFix
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
