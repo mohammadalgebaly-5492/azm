@@ -4,16 +4,17 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Now
 
-- **Current task:** writing the constitution with Muhammad. Article 3 = part 1, «تخطيط المشروع» (output: «خطة إدارة المشروع»), name approved 2026-10-25. Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; decisions applied 2026-10-25; all applied, including the 10,000 SAR limit per payment (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
+- **Current task:** writing the constitution with Muhammad. Articles 1–4 are all approved (3 and 4 on 2026-10-25). Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; decisions applied 2026-10-25; all applied, including the 10,000 SAR limit per payment (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
 - **Published 2026-10-25 (commits `ba07534` and `17fe87f`, Vercel "Deployment has completed"):** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…», the constitution (articles 1–4), CLAUDE.md rules, and this log. Verified the GitHub copy of the constitution is byte-identical to the local one.
 - **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale). Whether the protection should be off for the team is a programmer/Vercel setting.
-- **Waiting on Muhammad:** the three leftovers: formal approval of articles 3 and 4, whether he sees the new look and the new sign-in sentence on the live site, and the confirmation that contract creation is judged by its total while payments are judged one by one.
+- **Waiting on Muhammad:** (1) his yes to rename the default role labels in the live database (مهندس تحكم تكلفة، المدير التنفيذي، المحاسبة، المشاهد) plus fixing the leftover blue chart bars (`--c-series`); (2) the simpler re-asked question: the contract itself is judged by its total value, payments one by one.
 - **Next planned step:** the item pipeline (سلسلة تنفيذ البنود). Confirm the details with Muhammad, and with the programmer for the engine design, before building. See CLAUDE.md, "Roadmap".
 - **Also open:** the decisions listed in CLAUDE.md, "Roadmap and open decisions".
 
 ## Log
 
+- **2026-10-25.** Muhammad approved articles 3 and 4 («اه اعتمد المواد») and said the new look is good («والشكل الجديد كويس»). He did not understand the question on contract creation vs payments; re-asked in simpler words with an example. The role-rename proposal (migration on the live database) is still awaiting his yes.
 - **2026-10-25.** Titles approved («صح الاسم»; «الكوست كنترول انجنير هيكون مهندس تحكم تكلفة»): Director = «المدير التنفيذي», Cost Control Engineer = «مهندس تحكم تكلفة». Renamed across the constitution; «التحكم في التكاليف» stays only for the function. The app's role names still show the old transliterations and must be renamed when building.
 - **2026-10-25.** The 10,000 SAR limit is judged per payment, not cumulatively per contract («كل دفعه لوحدها»). Reading applied: contract/PO award by its own total, each payment by its own amount, with the approved-commitment ceiling and the anti-splitting rule kept for new POs and contracts only. Director gets an automatic notice for every Cost Control approval within the limit.
 - **2026-10-25.** Article 4 decisions:
