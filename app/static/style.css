@@ -56,7 +56,7 @@
   --glass-line: rgba(255, 255, 255, .06);
   --highlight: inset 0 1px 0 rgba(255, 255, 255, .06);
   --field: #2c3c58;
-  --c-supply: #2394d6; --c-exec: #cf7f22; --c-both: #6a78ff; --c-series: #7f93b5;
+  --c-supply: #2394d6; --c-exec: #cf7f22; --c-both: #2cc483; --c-series: #7f93b5;
   --c-track: var(--sunken);
   color-scheme: dark;
 }

@@ -14,6 +14,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Demo project built on the throwaway demo copy only (never the live database) at Muhammad's request («مشروع كامل ... قيمته 1 مليون ريال سعودي ... 5 مراحل تنفيذ»): P-2026-001 «مبنى إداري من ثلاثة طوابق», contract 1,000,000.00 SAR, 5 execution phases as the WBS top level (10 sections, 21 items), BOQ total equal to the contract, baseline approved, status in execution, team of 5. Built through the platform's own functions, so it passed the platform's baseline checks. Only what exists today can be shown: project, team, WBS, BOQ, baseline, analytics. Contract details, payments, schedule, allocation, procurement, daily reports and EVM are in the constitution but not built yet. Also fixed the BOQ-chart «both» category color (was purple-blue, now brand green).
 - **2026-10-25.** Built locally, not published (demo on a throwaway SQLite copy, port 5056):
   - Migration `010_role_labels` (both folders) renames the default role labels to the constitution's titles, leaving customised names alone; test added (52 tests pass).
   - Chart bars use a neutral slate `--c-series`; green would have clashed with the «complete» status bars.
