@@ -13,6 +13,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Muhammad: every article 3 requirement must be fully recordable in detail, across many fields («يجب ان يكون كل بند من هذه البنود متاح تسجيله بالتفاصيل وفي اكثر من خانة»). Replaced the "current state" table with "from what exists now to what's required", added governing rule 6 (full detail in structured fields), and wrote field tables (field, type, required) for all seven requirements.
 - **2026-10-25.** Article 3, Muhammad's answers:
   - Tendering means pricing the project with the contract; subcontractor and supplier quotes belong to part 2, cost control («اما المقاولين الباطن ولموردين دا هيكون في مرحلة الكوست كنترول»).
   - The detailed technical plan is made in Primavera P6, MS Project or Excel; the platform's own simple schedule is the tracking base.
