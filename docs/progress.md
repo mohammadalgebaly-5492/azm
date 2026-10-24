@@ -4,7 +4,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Now
 
-- **Current task:** writing the constitution with Muhammad. Article 3 = part 1, «تخطيط المشروع» (output: «خطة إدارة المشروع»), name approved 2026-10-25. Now starting article 4 = part 2, «إدارة المشروع وحوكمته», waiting for his description (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
+- **Current task:** writing the constitution with Muhammad. Article 3 = part 1, «تخطيط المشروع» (output: «خطة إدارة المشروع»), name approved 2026-10-25. Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; waiting on the 5 decisions in 4.14 (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
 - **Not yet published:** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…» (commit `bfcc593`); waiting for his yes.
 - **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
 - **Waiting on Muhammad:** confirmation that the live site shows the new look, and the live site's address. The GitHub repo's homepage (`azm-iota-lime.vercel.app`) is stale (`DEPLOYMENT_NOT_FOUND`); the team URLs `azm-mohammad5493.vercel.app` are behind Vercel sign-in.
@@ -13,6 +13,13 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Article 4 drafted from Muhammad's nine points («اربط كل الكلام دا ببالمادة العلمية العالمية»):
+  - **References:** PMBOK, PMI EVM standard, ANSI/EIA-748, ISO 21502, PRINCE2, AACE TCM and RP 29R-03, FIDIC, COSO.
+  - **Governance principles:** segregation of duties; no commitment without budget; no certificate above recorded progress; management by exception; fixed approve/return paths with a «مهامي» page.
+  - **Ten processes**, from PM kick-off through closing, each with workflow and field tables.
+  - **Automation table, RACI and new codes.**
+  - **Five decisions in 4.14:** procurement account type; Director approves the baselines, then the PM's kick-off gate; RAG thresholds 5/10/20% (this also settles the CLAUDE.md "5–10% colour" question); a minimum of 3 quotes; the 10,000 SAR limit scope.
+  - **Dependencies:** file storage, an email provider, and one shared approval engine (this is the item pipeline in CLAUDE.md's roadmap).
 - **2026-10-25.** Make-or-buy per execution step: a company crew or a subcontractor can execute any step of the same item («ممكن يكون طاقم عمل للشركة او مقاول باطن»):
   - Each scope-of-work step has an execution party; the item's method is computed (self, subcontractor or mixed).
   - Subcontractors live in the Article 2 entities list as type «مقاول باطن» (`ENT-SUB-…`), with CR, VAT, specialties, approval status and documents.
