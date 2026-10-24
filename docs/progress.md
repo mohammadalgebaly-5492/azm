@@ -4,14 +4,14 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Now
 
-- **Current task:** the new AZM identity is built locally; Muhammad is reviewing it in the platform.
-- **Waiting on Muhammad:** his review, then an explicit yes to publish.
-- **Not yet published:** the sign-in subtitle change (commit `2574519`) and the new identity. Both are local only.
+- **Current task:** none. The new identity and the sign-in subtitle are published (commit `62ab8bb`). Vercel reported "Deployment has completed".
+- **Waiting on Muhammad:** confirmation that the live site shows the new look, and the live site's address. The GitHub repo's homepage (`azm-iota-lime.vercel.app`) is stale (`DEPLOYMENT_NOT_FOUND`); the team URLs `azm-mohammad5493.vercel.app` are behind Vercel sign-in.
 - **Next planned step:** the item pipeline (سلسلة تنفيذ البنود). Confirm the details with Muhammad, and with the programmer for the engine design, before building. See CLAUDE.md, "Roadmap".
 - **Also open:** the decisions listed in CLAUDE.md, "Roadmap and open decisions".
 
 ## Log
 
+- **2026-10-24.** Published the new identity and the sign-in subtitle to the live site on Muhammad's yes («ماشي اعكس دا على المنصة»). No data-structure changes.
 - **2026-10-24.** New AZM identity, built locally:
   - Muhammad's own logo (`docs/brand/azm-logo-source.png`), traced to a vector `mark()`; full logo on the sign-in panel; new favicon. Alenmaa logo files removed.
   - Green buttons and links; background lighter, without the violet tint (`#1d2a41`).
