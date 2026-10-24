@@ -13,6 +13,11 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Resource allocation (3.6) expanded at Muhammad's request («اديلو حقو في التفنيد وخلي معظم الجدول مربوط بشيء والزامي»):
+  - 29 fields in six groups (identity, link to the plan, period, productivity, cost, governance), mostly linked and required.
+  - 6 validation rules: no double-booking above 100% across projects, inside the activity window, valid status, enough days for the productivity rate, price check against the item analysis, governance after baseline.
+  - Outputs: resource histogram, company-wide occupancy, planned resource cost.
+  - New code `ALC`. Also: «المورد» became «الفرد أو الطاقم أو المعدة», «الوظيفة الأعلى» became «المدير المباشر», and the WBS «القسم الأعلى» became «القسم الرئيسي الذي يتبعه».
 - **2026-10-25.** Equipment (3.6, 3.9):
   - The equipment name is picked from a database catalog, not typed («اسم المعدة يتم ربطه بحيث انه سيكون ضمن الداتا بيز»).
   - Types split into 5 (heavy, light, transport, power and services, tools) at his request («خليهم 4 انواع على الاقل»); type is picked first, then the name within it.
