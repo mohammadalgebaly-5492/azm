@@ -3,6 +3,6 @@
 (() => {
   const root = document.documentElement;
   root.style.colorScheme = "dark";
-  root.style.backgroundColor = "#04051a";
+  root.style.backgroundColor = "#1d2a41";
   root.classList.add("js");
 })();

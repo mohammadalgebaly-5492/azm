@@ -143,10 +143,10 @@ Rules:
 
 ## Design rules (keep the same rhythm)
 
-- **Read `docs/identity.md` first.** From the company brand we take only its colors, mark, and names. Everything else is our system: calm and precise, Apple-like in feel, but not a copy.
+- **Read `docs/identity.md` first.** AZM has its own identity (Muhammad's logo, green, dark navy), independent of the company using it, which appears by name only. Everything else is our system: calm and precise, Apple-like in feel, but not a copy.
 - **Change the look only through the tokens** at the top of `app/static/style.css`.
-  - **There is one theme: dark, in the brand ink navy.** No light mode, by the programmer's decision. Do not add one.
-  - The brand blue is only for actions, links, the active item, and focus. No colored glows or tinted backgrounds.
+  - **There is one theme: dark navy.** No light mode, by the programmer's decision. Do not add one.
+  - The green is only for actions, links, the active item, and focus. No colored glows or tinted backgrounds.
 - **Reuse the existing components:**
   - page head;
   - `fsection` form sections with a sticky `form-actions` bar;

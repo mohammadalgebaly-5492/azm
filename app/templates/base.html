@@ -9,7 +9,8 @@
 <link rel="preload" href="{{ url_for('static', filename='fonts/inter-latin-wght.woff2') }}" as="font" type="font/woff2" crossorigin>
 {% if lang == 'ar' %}{% for w in (400, 500, 600) %}<link rel="preload" href="{{ url_for('static', filename='fonts/plex-arabic-%d.woff2' % w) }}" as="font" type="font/woff2" crossorigin>{% endfor %}{% endif %}
 <link rel="stylesheet" href="{{ asset('style.css') }}">
-<link rel="icon" href="{{ url_for('static', filename='logo-mark.png') }}">
+<link rel="icon" href="{{ asset('azm-icon.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('azm-icon.png') }}">
 <script src="{{ asset('app.js') }}" defer></script>
 </head>
 <body>

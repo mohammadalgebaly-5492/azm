@@ -1,5 +1,5 @@
 /* AZM design system — follows docs/identity.md
-   One theme: the brand ink navy, with the sky → electric-blue brand gradient for actions and highlights.
+   One theme: dark navy, with the AZM green gradient (from the logo) for actions and highlights.
    All colors, radii and motion are tokens: change the look here, not in templates.
    Layout uses logical properties (inline-start/end) so one stylesheet serves Arabic (RTL) and English (LTR). */
 
@@ -17,40 +17,42 @@
   --side-w: 260px;
   --font: "Inter", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
   --blur: saturate(180%) blur(20px);
-  --bg: #04051a;
-  --surface: #0c0e29;
-  --surface-2: #101233;
-  --sunken: #15183b;
-  --ink: #eef0fc;
-  --ink-2: #c9cce8;
-  --muted: #9396bb;
-  --faint: #6d7096;
-  --line: rgba(255, 255, 255, .08);
-  --line-2: rgba(255, 255, 255, .14);
-  --accent: #5b6bff;
-  --accent-hover: #7a87ff;
-  --accent-soft: rgba(91, 107, 255, .16);
-  --accent-ink: #bcc3ff;
+  --bg: #1d2a41;
+  --surface: #25344e;
+  --surface-2: #2b3b56;
+  --sunken: #344665;
+  --ink: #f0f3f9;
+  --ink-2: #cfd6e3;
+  --muted: #a3afc5;
+  --faint: #8591a9;
+  --line: rgba(255, 255, 255, .1);
+  --line-2: rgba(255, 255, 255, .16);
+  --brand: #18a86a;
+  --accent: #2cc483;
+  --accent-hover: #4fd49a;
+  --accent-soft: rgba(44, 196, 131, .16);
+  --accent-ink: #a8ecc9;
   --sky: #38bdff;
   --sky-soft: rgba(56, 189, 255, .14);
   --ok: #3fcf7f;   --ok-soft: rgba(63, 207, 127, .13);
   --warn: #f2b14a; --warn-soft: rgba(242, 177, 74, .13);
   --bad: #ff6b7d;  --bad-soft: rgba(255, 107, 125, .13);
   --violet: #a48bff; --violet-soft: rgba(164, 139, 255, .14);
-  --brand-grad: linear-gradient(125deg, #2fb8ff 0%, #4a5bff 58%, #2b35e0 100%);
-  --brand-grad-soft: linear-gradient(125deg, rgba(47, 184, 255, .16), rgba(74, 91, 255, .14));
-  --glow-a: rgba(0, 172, 255, .14);
-  --glow-b: rgba(74, 91, 255, .18);
-  --grid: rgba(140, 160, 255, .055);
+  --brand-grad: linear-gradient(125deg, #2fd08f 0%, #18a86a 58%, #017f4d 100%);
+  --brand-grad-soft: linear-gradient(125deg, rgba(47, 208, 143, .16), rgba(1, 127, 77, .14));
+  --brand-shadow: rgba(1, 127, 77, .55);
+  --glow-a: rgba(47, 208, 143, .08);
+  --glow-b: rgba(1, 127, 77, .14);
+  --grid: rgba(170, 190, 215, .05);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -8px rgba(0, 0, 0, .45);
   --shadow-lg: 0 2px 6px rgba(0, 0, 0, .35), 0 24px 60px -16px rgba(0, 0, 0, .6);
-  --ring: 0 0 0 4px rgba(91, 107, 255, .3);
-  --glass: rgba(12, 14, 41, .66);
-  --glass-strong: rgba(12, 14, 41, .84);
+  --ring: 0 0 0 4px rgba(44, 196, 131, .3);
+  --glass: rgba(37, 52, 78, .66);
+  --glass-strong: rgba(37, 52, 78, .84);
   --glass-line: rgba(255, 255, 255, .06);
   --highlight: inset 0 1px 0 rgba(255, 255, 255, .06);
-  --field: #12153a;
+  --field: #2c3c58;
   --c-supply: #2394d6; --c-exec: #cf7f22; --c-both: #6a78ff; --c-series: #6a78ff;
   --c-track: var(--sunken);
   color-scheme: dark;
@@ -99,8 +101,7 @@ a.code { color: var(--accent); }
   view-transition-name: sidebar; z-index: 30; }
 .brand { display: flex; align-items: center; gap: 11px; padding: 4px 10px 16px; color: var(--ink); }
 .brand:hover { color: var(--ink); }
-.brand b { display: block; font-size: 19px; font-weight: 700; line-height: 1.2; background: var(--brand-grad);
-  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.brand b { display: block; font-size: 19px; font-weight: 700; line-height: 1.2; color: var(--ink); }
 .brand small { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
 .nav { display: flex; flex-direction: column; gap: 1px; overflow-y: auto; flex: 1; padding-bottom: 8px; }
 .nav-group { font-size: 11px; font-weight: 600; color: var(--faint); padding: 16px 12px 6px; text-transform: uppercase; letter-spacing: .06em; }
@@ -147,7 +148,7 @@ a.code { color: var(--accent); }
 .avatar.preset { color: #fff; box-shadow: none; }
 .avatar.p-helmet { background: linear-gradient(140deg, #ffb020, #f08c00); }
 .avatar.p-crane { background: linear-gradient(140deg, var(--sky), #0a7fd6); }
-.avatar.p-compass { background: linear-gradient(140deg, #3d4bff, var(--accent)); }
+.avatar.p-compass { background: linear-gradient(140deg, #3d4bff, #5b6bff); }
 .avatar.p-blueprint { background: linear-gradient(140deg, #1f4fd1, #0b2a8f); }
 .avatar.p-square { background: linear-gradient(140deg, #8a5cf0, #5b2bc9); }
 .avatar.p-beam { background: linear-gradient(140deg, #4a5068, #262a3d); }
@@ -233,14 +234,14 @@ html.hide-guide :is(.page-head .lead, .fsection-head p, .row-label > span, .card
 .chip.warn { color: var(--warn); background: var(--warn-soft); }
 .chip.bad { color: var(--bad); background: var(--bad-soft); }
 .chip.violet { color: var(--violet); background: var(--violet-soft); }
-.chip.brand { color: #fff; background: var(--brand-grad); box-shadow: 0 6px 14px -6px rgba(13, 28, 242, .55); }
+.chip.brand { color: #fff; background: var(--brand-grad); box-shadow: 0 6px 14px -6px var(--brand-shadow); }
 .stat b { font-size: 30px; font-weight: 650; line-height: 1.15; direction: ltr; unicode-bidi: isolate; margin-top: 8px; display: block; }
 :lang(en) .stat b { letter-spacing: -.02em; }
 .stat small { font-size: 12px; color: var(--faint); }
 .stat.warn b { color: var(--warn); }
 .stat.bad b { color: var(--bad); }
 .stat.accent { background: var(--brand-grad-soft), var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 22%, var(--line)); }
-.stat.hero { color: #fff; background: var(--brand-grad); border-color: transparent; box-shadow: 0 18px 40px -18px rgba(13, 28, 242, .6); }
+.stat.hero { color: #fff; background: var(--brand-grad); border-color: transparent; box-shadow: 0 18px 40px -18px var(--brand-shadow); }
 .stat.hero span, .stat.hero small, .stat.hero .stat-top > span { color: rgba(255, 255, 255, .8); }
 .stat.hero .chip { color: #fff; background: rgba(255, 255, 255, .18); }
 
@@ -312,7 +313,7 @@ td a.row-link:hover { color: var(--accent); }
 .btn:hover { background: var(--sunken); color: var(--ink); }
 .btn:active { transform: scale(.98); }
 .btn-primary { background: var(--brand-grad); border-color: transparent; color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(13, 28, 242, .25), 0 6px 16px -6px rgba(13, 28, 242, .45); }
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(1, 127, 77, .25), 0 6px 16px -6px rgba(1, 127, 77, .45); }
 .btn-primary:hover { background: var(--brand-grad); color: #fff; filter: brightness(1.08) saturate(1.05); }
 .btn-danger { color: var(--bad); }
 .btn-danger:hover { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 35%, var(--line-2)); color: var(--bad); }
@@ -509,7 +510,7 @@ pre.msg { white-space: pre-wrap; font: inherit; font-size: 14px; background: var
 .auth-main { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; position: relative; }
 .auth-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 28px; }
 .auth-logo { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); }
-.auth-logo b { font-size: 17px; font-weight: 700; background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-logo b { font-size: 17px; font-weight: 700; color: var(--ink); }
 .auth-center { display: grid; place-items: center; padding: 12px 24px 40px; }
 .auth-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 22px; animation: fade-in .35s var(--ease) both; }
 .auth-card.wide { max-width: 440px; }
@@ -521,20 +522,20 @@ pre.msg { white-space: pre-wrap; font: inherit; font-size: 14px; background: var
 .auth-foot { padding: 20px 28px; font-size: 12.5px; color: var(--faint); }
 .auth-note { font-size: 12.5px; color: var(--muted); text-align: center; flex-direction: row !important; justify-content: center; }
 
-/* لوحة الهوية: حبر الشركة الداكن مع سحب ضوئية بألوان الشعار وشبكة مخطط هندسي */
-.auth-panel { position: relative; overflow: hidden; isolation: isolate; background: #02021a; color: #fff; margin: 12px; border-radius: 28px;
+/* لوحة الهوية: كحلي أعمق من الخلفية مع سحب ضوئية بألوان الشعار وشبكة مخطط هندسي */
+.auth-panel { position: relative; overflow: hidden; isolation: isolate; background: #172234; color: #fff; margin: 12px; border-radius: 28px;
   display: grid; place-items: center; padding: 48px; }
 .auth-panel::after { content: ""; position: absolute; inset: 0; z-index: -1;
   background-image: linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
   background-size: 40px 40px; mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, #000 20%, transparent 80%); }
 .aurora { position: absolute; inset: 0; z-index: -2; }
 .aurora span { position: absolute; border-radius: 50%; filter: blur(90px); animation: aurora 18s ease-in-out infinite alternate; }
-.aurora span:nth-child(1) { width: 60%; height: 60%; top: -15%; left: 10%; background: rgba(0, 172, 255, .55); }
-.aurora span:nth-child(2) { width: 55%; height: 55%; top: 25%; right: -10%; background: rgba(13, 28, 242, .7); animation-delay: -6s; }
-.aurora span:nth-child(3) { width: 45%; height: 45%; bottom: -15%; left: -5%; background: rgba(60, 40, 220, .5); animation-delay: -12s; }
+.aurora span:nth-child(1) { width: 60%; height: 60%; top: -15%; left: 10%; background: rgba(47, 208, 143, .32); }
+.aurora span:nth-child(2) { width: 55%; height: 55%; top: 25%; right: -10%; background: rgba(1, 127, 77, .55); animation-delay: -6s; }
+.aurora span:nth-child(3) { width: 45%; height: 45%; bottom: -15%; left: -5%; background: rgba(20, 90, 110, .45); animation-delay: -12s; }
 @keyframes aurora { 0% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(6%, 4%, 0) scale(1.08); } 100% { transform: translate3d(-4%, -3%, 0) scale(.96); } }
 .auth-panel-inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 26px; }
-.panel-mark .mark polygon:first-child { fill: #fff; }
+.panel-logo { width: 240px; height: auto; }
 .panel-title { font-size: 26px; font-weight: 600; line-height: 1.35; letter-spacing: -.01em; text-wrap: balance; }
 :lang(ar) .panel-title { letter-spacing: 0; line-height: 1.6; }
 .panel-card { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); border-radius: 22px; padding: 20px;
@@ -545,7 +546,7 @@ pre.msg { white-space: pre-wrap; font: inherit; font-size: 14px; background: var
 .panel-flow li { display: flex; align-items: center; gap: 10px; }
 .panel-flow i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .35); flex: none; }
 .panel-flow li.done { color: rgba(255, 255, 255, .9); }
-.panel-flow li.done i { background: #38bdff; border-color: #38bdff; }
+.panel-flow li.done i { background: var(--accent); border-color: var(--accent); }
 .panel-flow li.now { color: #fff; font-weight: 600; }
 .panel-flow li.now i { border-color: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, .15); }
 

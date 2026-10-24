@@ -1,38 +1,39 @@
-# Visual identity — Alenmaa Alhor Construction · AZM
+# Visual identity — AZM
 
-Source of truth: the logo files in `app/static/` (no public brand guide exists). Read this before building or changing any screen.
+AZM is Muhammad's own product, independent of any one company. It can serve Alenmaa Alhor Construction or any other contractor. Read this before building or changing any screen.
 
-**What we take from the company brand:** its colors, its mark, and its names. Nothing else. The company's own designs are not a reference for layout or style. Everything else is the AZM design system: simple and calm, with the precision of an engineering tool.
+**The platform's identity is AZM's own:** its logo, its green, and its dark navy. The company using the platform appears **by name only** (Settings), never with its logo or colors. Everything else is the AZM design system: simple and calm, with the precision of an engineering tool.
 
 ## Names
 
 | | Arabic | English |
 |---|---|---|
-| Company | الإنماء الحر للمقاولات | Alenmaa Alhor Construction |
 | Platform | عزم | AZM |
+| Company using it (today) | الإنماء الحر للمقاولات | Alenmaa Alhor Construction |
 
 Both are editable by the System Owner in **Settings**; templates read them from there, never hard-code them.
 
 ## Logo
 
-- `logo-lockup.png`: mark and company name in both languages. `logo-mark.png`: the mark alone (favicon).
-- The mark is two angled shapes rising toward the upper right: electric blue at the lower left, sky blue at the upper right. In templates use the `mark()` macro in `_icons.html` (vector, follows the theme).
-- `brand-strip.png` (repeating stepped arrows) is an archive asset. It is not used in the interface.
+- Source artwork from Muhammad: `docs/brand/azm-logo-source.png` (green `#017F4D` and black on white, with a geometric «عزم» wordmark). Use it for print and light backgrounds.
+- The mark is a green stepped band rising to the upper right, above two black angled shapes. In templates use the `mark()` macro in `_icons.html` (vector, traced from the source): green uses `--brand`, the black parts use `--ink`, so they show on the dark theme.
+- `app/static/azm-logo-dark.png`: mark and wordmark recolored for dark screens (sign-in panel).
+- `app/static/azm-icon.png`: favicon and home-screen icon (the mark on a navy tile).
 
 ## Color
 
-**One theme only: the brand's deep ink navy (dark).** There is no light mode, by the programmer's decision. Do not add one.
+**One theme only: dark navy.** There is no light mode, by the programmer's decision. Do not add one.
 
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#04051a` | page background (the brand ink, `#02021a`, lifted slightly) |
-| `--surface` | `#0c0e29` | cards and panels |
-| `--accent` | `#5b6bff` | the brand electric blue `#0d1cf2`, lifted for contrast on dark: buttons, links, active items, focus |
-| `--sky` | `#38bdff` | the brand sky `#00acff`, lifted for dark: small highlights |
-| `--brand-grad` | sky → electric blue | the signature gradient, from the logo: primary buttons, hero cards, the platform name, the active menu marker |
-| `--ink` | `#eef0fc` | text |
+| `--bg` | `#1d2a41` | page background (lifted on Muhammad's request, easy on the eyes) |
+| `--surface` | `#25344e` | cards and panels |
+| `--brand` | `#18a86a` | the logo green `#017F4D`, lifted for dark: the mark only |
+| `--accent` | `#2cc483` | buttons, links, active items, focus |
+| `--brand-grad` | light green → logo green | primary buttons, hero cards, the active menu marker |
+| `--ink` | `#f0f3f9` | text, and the black parts of the logo |
 
-Status colors (`--ok`, `--warn`, `--bad`) are for status only.
+Status colors (`--ok`, `--warn`, `--bad`) are for status only. `--ok` is also green, so status pills always keep their dot to stay distinct from buttons.
 
 ## Type
 
@@ -43,7 +44,7 @@ Status colors (`--ok`, `--warn`, `--bad`) are for status only.
 
 Clean, precise, professional: an engineering tool, not a marketing site. Simple on the surface, with structure you can feel underneath.
 
-- Neutral, warm surfaces with hairline borders and soft shadows. No colored glows or tinted backgrounds: the brand blue appears only on actions, links, the active item and focus.
+- Neutral surfaces with hairline borders and soft shadows. No colored glows or tinted backgrounds: the green appears only on actions, links, the active item and focus.
 - Color carries meaning, never decoration.
 - Generous spacing, clear hierarchy, one primary action per screen.
 - Short, formal copy. Arabic is Modern Standard Arabic, never colloquial. No chatty or personal hints in the interface.
