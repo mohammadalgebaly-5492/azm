@@ -125,6 +125,7 @@ Rules:
   - `projects.py`
   - `boq.py`
   - `audit.py`: append-only log, plus readable details via `describe()`.
+  - `registers.py`: shared registers (constitution article 2 and 3.9): lookup lists (`catalog_items`), entities (owner, consultant, subcontractor) with addresses and people, and each project's parties and representatives.
   - `analytics/`: one module per card.
   - `i18n.py` and `i18n_ar.py`: languages.
   - `views/`: routes.

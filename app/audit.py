@@ -49,6 +49,15 @@ ACTION_LABELS = {
     "invite_created": "Sign-up link created",
     "invite_revoked": "Sign-up link revoked",
     "invite_used": "Account created from a sign-up link",
+    "entity_created": "Entity created",
+    "entity_updated": "Entity updated",
+    "entity_address_added": "Entity address added",
+    "entity_address_removed": "Entity address removed",
+    "entity_person_added": "Person added to an entity",
+    "entity_person_updated": "Entity person updated",
+    "catalog_item_added": "Lookup list entry added",
+    "catalog_item_updated": "Lookup list entry updated",
+    "project_parties_updated": "Project parties updated",
 }
 
 
@@ -70,6 +79,10 @@ FIELD_LABELS = {
     "company_name_ar": "Company name (Arabic)", "company_name_en": "Company name (English)",
     "session_idle_minutes": "Inactivity timeout (minutes)", "session_absolute_hours": "Maximum session length (hours)",
     "signup_enabled": "Sign-up links", "expires_at": "Expires", "max_uses": "Uses allowed", "user": "Username",
+    "kind": "Type", "list": "List", "cr_no": "Commercial registration no.", "vat_no": "VAT number",
+    "classification": "Classification grade", "approval_status": "Approval status", "website": "Website",
+    "city": "City", "label": "Address type", "details": "Address", "specialties": "Specialties", "active": "Active",
+    "parent_code": "Equipment type", "cost_unit": "Cost unit", "representatives": "Representatives",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",
@@ -99,6 +112,13 @@ def _value(key, v):
         return _(TYPES[v][0]) if v in TYPES else str(v)
     if key == "reason":
         return _(REASONS[v]) if v in REASONS else str(v)
+    from .registers import ADDRESS_LABELS, APPROVAL, CATALOGS, COST_UNITS, ENTITY_KINDS
+    named = {"kind": {k: t[0] for k, t in ENTITY_KINDS.items()}, "approval_status": APPROVAL, "label": ADDRESS_LABELS,
+             "list": {k: t[0] for k, t in CATALOGS.items()}, "cost_unit": COST_UNITS}
+    if key in named and v in named[key]:
+        return _(named[key][v])
+    if key == "specialties" and isinstance(v, list):
+        return "، ".join(v) if v else "—"
     if key in ("added", "removed") and isinstance(v, list):
         names = [_(PERMISSIONS[p.split(":")[-1]][0]) if p.split(":")[-1] in PERMISSIONS else p for p in v]
         return "، ".join(names) if names else "—"

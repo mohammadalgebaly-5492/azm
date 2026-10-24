@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, flash, g, make_response, redirect, render_template, request, url_for
 
-from .. import avatars, projects as P
+from .. import avatars, projects as P, registers as R
 from ..auth import AuthError, login_required
 from ..db import get_db, utcnow
 from ..i18n import _
@@ -48,8 +48,12 @@ def project(pid):
     boq_count, boq_total = db.execute(
         "SELECT COUNT(*), CAST(COALESCE(SUM(amount), 0) AS BIGINT) FROM boq_items WHERE project_id = ?",
         (pid,)).fetchone()
+    parties = {kind: R.entity(db, p[f"{kind}_entity_id"]) if p[f"{kind}_entity_id"] else None
+               for kind in ("owner", "consultant")}
+    reps = R.representatives(db, pid)
     return render_template("project.html", p=p, team=team, candidates=candidates, activity=activity,
-                           boq_count=boq_count, boq_total=boq_total)
+                           boq_count=boq_count, boq_total=boq_total, parties=parties, reps=reps,
+                           parties_complete=R.parties_complete(db, pid), MIN_REPS=R.MIN_REPRESENTATIVES)
 
 
 @bp.get("/analytics")

@@ -40,6 +40,9 @@ def table_strings():
     out |= set(FIELD_LABELS.values()) | set(REASONS.values()) | set(STATUS_LABELS.values()) | {g[0] for g in PERMISSION_GROUPS}
     out |= {s for pair in PERMISSIONS.values() for s in pair} | {s for pair in ERRORS.values() for s in pair}
     out |= {w.TITLE for w in WIDGETS} | {u for _, u in COMPACT_UNITS}
+    from app.registers import ADDRESS_LABELS, APPROVAL, CATALOGS, COST_UNITS, ENTITY_KINDS
+    out |= {s for pair in CATALOGS.values() for s in pair} | {v[0] for v in ENTITY_KINDS.values()}
+    out |= set(APPROVAL.values()) | set(ADDRESS_LABELS.values()) | set(COST_UNITS.values())
     return out
 
 

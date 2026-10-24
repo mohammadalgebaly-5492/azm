@@ -53,10 +53,13 @@ PERMISSIONS = {
     "admin.sessions": ("Manage active sessions", "See who is signed in and end their sessions."),
     "audit.view": ("View audit log", "Read the full history of actions on the platform."),
     "admin.settings": ("Edit platform settings", "Change the platform and company names and the session limits."),
+    "registers.manage": ("Manage shared registers",
+                         "Owners, consultants and subcontractors with their addresses and people, and the lookup lists."),
 }
 PERMISSION_GROUPS = (
     ("Projects", ("projects.view_all", "projects.create", "projects.manage", "boq.manage")),
     ("Analytics", ("analytics.view",)),
+    ("Registers", ("registers.manage",)),
     ("Accounts", ("users.manage", "admin.invites")),
     ("Administration", ("admin.sessions", "audit.view", "admin.settings")),
 )

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Entities') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Entities') }}</h1><p class="lead">{{ _('One shared list of owners, consultants and subcontractors. Each entity is recorded once and chosen in every project.') }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('registers.entity_new', kind=kind or 'owner') }}">{{ icon('plus', 16) }} {{ _('New entity') }}</a>
+</header>
+<nav class="tabs" aria-label="{{ _('Entity type') }}">
+  <a href="{{ url_for('registers.entities', q=q) }}" class="{{ 'on' if not kind }}">{{ _('All') }}</a>
+  {% for k, v in KINDS.items() %}<a href="{{ url_for('registers.entities', kind=k, q=q) }}" class="{{ 'on' if kind == k }}">{{ _(v[0]) }}</a>{% endfor %}
+</nav>
+<form method="get" class="searchbar">
+  {% if kind %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
+  <input name="q" value="{{ q }}" placeholder="{{ _('Search by name or code') }}" aria-label="{{ _('Search') }}">
+  <button class="btn" type="submit">{{ icon('search', 16) }} {{ _('Search') }}</button>
+</form>
+<section class="card flush">
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Name') }}</th><th>{{ _('Type') }}</th><th>{{ _('Email') }}</th><th class="num">{{ _('People') }}</th><th class="num">{{ _('Projects') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for e in rows %}
+      <tr>
+        <td><a class="row-link" href="{{ url_for('registers.entity_edit', eid=e.id) }}">{{ e.name }}</a><span class="sub"><span class="code">{{ e.code }}</span></span></td>
+        <td>{{ _(KINDS[e.kind][0]) }}{% if e.approval_status %} <span class="pill {{ 'ok' if e.approval_status == 'approved' else ('bad' if e.approval_status == 'suspended' else 'warn') }}">{{ _(APPROVAL[e.approval_status]) }}</span>{% endif %}</td>
+        <td class="code">{{ e.email }}</td>
+        <td class="num">{{ e.n_people }}</td>
+        <td class="num">{{ e.n_projects }}</td>
+        <td>{% if e.active %}<span class="pill ok">{{ _('Active') }}</span>{% else %}<span class="pill bad">{{ _('Stopped') }}</span>{% endif %}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">{{ icon('building', 28) }}<p>{{ _('No matching entities.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

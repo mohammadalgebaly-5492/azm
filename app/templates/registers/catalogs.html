@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Lookup lists') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Lookup lists') }}</h1><p class="lead">{{ _('Every name that repeats is chosen from these lists, so data stays consistent and reports stay correct. An entry in use is never deleted; it is stopped.') }}</p></div>
+</header>
+<nav class="tabs" aria-label="{{ _('Lookup lists') }}">
+  {% for k, v in CATALOGS.items() %}<a href="{{ url_for('registers.catalogs', kind=k) }}" class="{{ 'on' if kind == k }}">{{ _(v[0]) }}</a>{% endfor %}
+</nav>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _(CATALOGS[kind][0]) }}</h2><p>{{ _(CATALOGS[kind][1]) }}</p></div><span class="count">{{ rows|length }}</span></div>
+  {% if rows %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Name (Arabic)') }}</th><th>{{ _('Name (English)') }}</th>{% if kind == 'equipment' %}<th>{{ _('Equipment type') }}</th><th>{{ _('Cost unit') }}</th>{% endif %}<th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr>
+        <td class="code">{{ r.code }}</td>
+        <td lang="ar" dir="rtl">{{ r.name_ar }}</td>
+        <td lang="en" dir="ltr">{{ r.name_en }}</td>
+        {% if kind == 'equipment' %}<td>{{ types.get(r.parent_code, r.parent_code) }}</td><td>{{ _(COST_UNITS[r.cost_unit]) if r.cost_unit in COST_UNITS else '—' }}</td>{% endif %}
+        <td>{% if r.active %}<span class="pill ok">{{ _('Active') }}</span>{% else %}<span class="pill bad">{{ _('Stopped') }}</span>{% endif %}</td>
+        <td class="cell-actions">
+          <a class="btn btn-ghost btn-icon" href="{{ url_for('registers.catalog_edit', iid=r.id) }}" title="{{ _('Edit') }}" aria-label="{{ _('Edit') }}">{{ icon('edit', 16) }}</a>
+          <form method="post" action="{{ url_for('registers.catalog_status', iid=r.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="active" value="{{ '0' if r.active else '1' }}">
+            <button class="btn btn-ghost btn-icon" type="submit" title="{{ _('Stop') if r.active else _('Reactivate') }}" aria-label="{{ _('Stop') if r.active else _('Reactivate') }}">{{ icon('power' if r.active else 'check', 16) }}</button></form>
+        </td>
+      </tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">{{ icon('table', 28) }}<p>{{ _('This list is empty.') }}</p></div>{% endif %}
+</section>
+<section class="card">
+  <div class="card-head"><div><h2>{{ _('Add an entry') }}</h2><p>{{ _('The code is 3 English capital letters and never changes.') }}</p></div></div>
+  <form method="post" action="{{ url_for('registers.catalog_add', kind=kind) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar">
+      <input name="code" required maxlength="3" pattern="[A-Za-z]{3}" dir="ltr" placeholder="{{ _('Code') }}" aria-label="{{ _('Code') }}">
+      <input name="name_ar" required dir="rtl" lang="ar" placeholder="{{ _('Name (Arabic)') }}" aria-label="{{ _('Name (Arabic)') }}">
+      <input name="name_en" required dir="ltr" lang="en" placeholder="{{ _('Name (English)') }}" aria-label="{{ _('Name (English)') }}">
+    </div>
+    {% if kind == 'equipment' %}
+    <div class="searchbar">
+      <select name="parent_code" required aria-label="{{ _('Equipment type') }}">{% for t in active_types %}<option value="{{ t.code }}">{{ label(t) }}</option>{% endfor %}</select>
+      <select name="cost_unit" required aria-label="{{ _('Cost unit') }}">{% for k, v in COST_UNITS.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+    </div>
+    {% endif %}
+    <div class="searchbar"><button class="btn btn-primary" type="submit">{{ icon('plus', 16) }} {{ _('Add to the list') }}</button></div>
+  </form>
+</section>
+{% endblock %}

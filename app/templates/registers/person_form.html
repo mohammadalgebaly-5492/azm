@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ person.full_name }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('registers.entity_edit', eid=e.id) }}#people">{{ icon('back', 15) }} {{ e.name }}</a><span class="code">{{ person.code }}</span></div>
+  <h1>{{ person.full_name }}</h1>
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Personal details') }}</h2><p>{{ _('Codes are permanent and can\'t be changed.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="full_name" class="req">{{ _('Full name') }}</label><input id="full_name" name="full_name" required value="{{ form.get('full_name') or '' }}"></div>
+      <div class="field"><label for="job_title" class="req">{{ _('Job title') }}</label><input id="job_title" name="job_title" required value="{{ form.get('job_title') or '' }}"></div>
+      <div class="field"><label for="phone" class="req">{{ _('Phone') }}</label><input id="phone" name="phone" dir="ltr" inputmode="tel" required value="{{ form.get('phone') or '' }}"></div>
+      <div class="field wide"><label for="email" class="req">{{ _('Email') }}</label><input id="email" name="email" type="email" dir="ltr" required value="{{ form.get('email') or '' }}"></div>
+      <div class="field wide"><label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if form.get('active') }}><span>{{ _('Active: can be chosen as a project representative') }}</span></label></div>
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('registers.entity_edit', eid=e.id) }}#people">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') }}</button>
+  </div>
+</form>
+{% endblock %}

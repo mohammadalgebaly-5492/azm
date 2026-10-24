@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Project parties') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Project parties') }}</h1>
+  <p class="lead">{{ _('Choose the owner and the consultant from the entities register, then at least {n} representatives from each.', n=MIN) }}</p>
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  {% for kind, title, required in (('owner', _('Owner'), True), ('consultant', _('Consultant'), False)) %}
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ title }}</h2><p>{{ _('Required.') if required else _('Optional. If chosen, it needs representatives too.') }}</p></div>
+    <div class="fsection-body">
+      {% if groups[kind] %}
+      <div class="field wide"><label for="{{ kind }}_entity_id" class="{{ 'req' if required }}">{{ _('Entity') }}</label>
+        <select id="{{ kind }}_entity_id" name="{{ kind }}_entity_id" data-shows="{{ kind }}-reps" {{ 'required' if required }}>
+          {% if not required %}<option value="">{{ _('No consultant') }}</option>{% endif %}
+          {% for ent, ppl in groups[kind] %}<option value="{{ ent.id }}" {{ 'selected' if sel[kind] == ent.id|string }}>{{ ent.name }} · {{ ent.code }}</option>{% endfor %}
+        </select></div>
+      <div class="field wide"><span class="label {{ 'req' if required }}">{{ _('Representatives in this project') }}</span>
+        {% for ent, ppl in groups[kind] %}
+        <div class="checks" data-group="{{ kind }}-reps" data-value="{{ ent.id }}">
+          {% for person in ppl %}<label class="check"><input type="checkbox" name="{{ kind }}_reps" value="{{ person.id }}" {{ 'checked' if person.id in picked }}><span>{{ person.full_name }}<span class="sub">{{ person.job_title }} · <span class="code">{{ person.code }}</span></span></span></label>
+          {% else %}<span class="hint">{{ _('{name} has no active people yet.', name=ent.name) }} {% if can('registers.manage') %}<a href="{{ url_for('registers.entity_edit', eid=ent.id) }}#people">{{ _('Add people') }}</a>{% endif %}</span>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="field wide"><span class="hint">{{ _('There are no entities of this type yet.') }} {% if can('registers.manage') %}<a href="{{ url_for('registers.entity_new', kind=kind) }}">{{ _('Create one') }}</a>{% endif %}</span></div>
+      {% endif %}
+    </div>
+  </section>
+  {% endfor %}
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('main.project', pid=p.id) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') }}</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ e.name if e else _('New entity') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('registers.entities', kind=kind) }}">{{ icon('back', 15) }} {{ _('Entities') }}</a>{% if e %}<span class="code">{{ e.code }}</span>{% endif %}<span class="pill plain">{{ _(KINDS[kind][0]) }}</span></div>
+    <h1>{{ e.name if e else _('New entity') }}</h1>
+    {% if not e %}<p class="lead">{{ _('The entity code is generated automatically. After saving, add its addresses and people.') }}</p>{% endif %}
+  </div>
+</header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+{% if not e %}
+<nav class="tabs" aria-label="{{ _('Entity type') }}">{% for k, v in KINDS.items() %}<a href="{{ url_for('registers.entity_new', kind=k) }}" class="{{ 'on' if kind == k }}">{{ _(v[0]) }}</a>{% endfor %}</nav>
+{% endif %}
+<form method="post" action="{{ url_for('registers.entity_edit', eid=e.id) if e else url_for('registers.entity_new', kind=kind) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Entity details') }}</h2><p>{{ _('As they appear in every project that uses this entity.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="name" class="req">{{ _('Name') }}</label><input id="name" name="name" required value="{{ form.get('name') or '' }}"></div>
+      <div class="field wide"><label for="name_en">{{ _('Name (English)') }}</label><input id="name_en" name="name_en" dir="ltr" value="{{ form.get('name_en') or '' }}"></div>
+      <div class="field"><label for="email" class="req">{{ _('Email') }}</label><input id="email" name="email" type="email" dir="ltr" required value="{{ form.get('email') or '' }}"></div>
+      <div class="field"><label for="phone">{{ _('Phone') }}</label><input id="phone" name="phone" dir="ltr" inputmode="tel" value="{{ form.get('phone') or '' }}"></div>
+      <div class="field wide"><label for="website">{{ _('Website') }}</label><input id="website" name="website" dir="ltr" value="{{ form.get('website') or '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Registration') }}</h2><p>{{ _('Required for subcontractors.') if kind == 'subcontractor' else _('Optional for owners and consultants.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="cr_no" class="{{ 'req' if kind == 'subcontractor' }}">{{ _('Commercial registration no.') }}</label><input id="cr_no" name="cr_no" dir="ltr" {{ 'required' if kind == 'subcontractor' }} value="{{ form.get('cr_no') or '' }}"></div>
+      <div class="field"><label for="vat_no" class="{{ 'req' if kind == 'subcontractor' }}">{{ _('VAT number') }}</label><input id="vat_no" name="vat_no" dir="ltr" {{ 'required' if kind == 'subcontractor' }} value="{{ form.get('vat_no') or '' }}"></div>
+      {% if kind == 'subcontractor' %}
+      <div class="field"><label for="classification">{{ _('Classification grade') }}</label><input id="classification" name="classification" value="{{ form.get('classification') or '' }}"></div>
+      <div class="field"><label for="approval_status" class="req">{{ _('Approval status') }}</label>
+        <select id="approval_status" name="approval_status" required>{% for k, v in APPROVAL.items() %}<option value="{{ k }}" {{ 'selected' if form.get('approval_status') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field wide"><span class="label req">{{ _('Specialties') }}</span>
+        <div class="checks">{% for s in specialties %}<label class="check"><input type="checkbox" name="specialties" value="{{ s.code }}" {{ 'checked' if s.code in chosen }}><span><span class="code">{{ s.code }}</span> {{ label(s) }}</span></label>{% endfor %}</div></div>
+      {% endif %}
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Notes') }}</h2><p>{{ _('Anything worth knowing about this entity.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="notes">{{ _('Notes') }}</label><textarea id="notes" name="notes" rows="3">{{ form.get('notes') or '' }}</textarea></div>
+      {% if e %}<div class="field wide"><label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if form.get('active') }}><span>{{ _('Active: can be chosen in new projects') }}</span></label></div>{% endif %}
+    </div>
+  </section>
+  <div class="alert" role="note">{{ icon('file', 17) }}<span>{{ _('Uploading the company profile needs file storage, which will be added in the next step.') }}</span></div>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('registers.entities', kind=kind) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if e else _('Create entity') }}</button>
+  </div>
+</form>
+{% if e %}
+<div class="grid-2">
+  <section class="card" id="addresses">
+    <div class="card-head"><div><h2>{{ _('Addresses') }}</h2><p>{{ _('Head office and branches.') }}</p></div><span class="count">{{ addresses|length }}</span></div>
+    {% if addresses %}
+    <div class="table-wrap"><table><thead><tr><th>{{ _('Type') }}</th><th>{{ _('City') }}</th><th>{{ _('Address') }}</th><th></th></tr></thead>
+      <tbody>{% for a in addresses %}<tr><td>{{ _(ADDRESS_LABELS[a.label]) }}</td><td>{{ a.city }}</td><td>{{ a.details }}</td>
+        <td class="cell-actions"><form method="post" action="{{ url_for('registers.address_remove', eid=e.id, aid=a.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost btn-icon" type="submit" title="{{ _('Remove') }}" aria-label="{{ _('Remove') }}">{{ icon('x', 16) }}</button></form></td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="empty">{{ icon('map-pin', 28) }}<p>{{ _('No addresses yet.') }}</p></div>{% endif %}
+    <form method="post" action="{{ url_for('registers.address_add', eid=e.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="searchbar">
+        <select name="label" aria-label="{{ _('Type') }}">{% for k, v in ADDRESS_LABELS.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+        <input name="city" required placeholder="{{ _('City') }}" aria-label="{{ _('City') }}">
+      </div>
+      <div class="searchbar"><input name="details" required placeholder="{{ _('Address') }}" aria-label="{{ _('Address') }}">
+        <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add address') }}</button></div>
+    </form>
+  </section>
+  <section class="card" id="people">
+    <div class="card-head"><div><h2>{{ _('People') }}</h2><p>{{ _('Each project chooses at least two of them as its representatives.') }}</p></div><span class="count">{{ people|length }}</span></div>
+    {% if people %}
+    <div class="table-wrap"><table><thead><tr><th>{{ _('Name') }}</th><th>{{ _('Phone') }}</th><th>{{ _('Status') }}</th></tr></thead>
+      <tbody>{% for p in people %}<tr>
+        <td><a class="row-link" href="{{ url_for('registers.person_edit', eid=e.id, person_id=p.id) }}">{{ p.full_name }}</a><span class="sub"><span class="code">{{ p.code }}</span> · {{ p.job_title }}</span></td>
+        <td class="code">{{ p.phone }}<span class="sub">{{ p.email }}</span></td>
+        <td>{% if p.active %}<span class="pill ok">{{ _('Active') }}</span>{% else %}<span class="pill bad">{{ _('Stopped') }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No people yet.') }}</p></div>{% endif %}
+    <form method="post" action="{{ url_for('registers.person_add', eid=e.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="searchbar"><input name="full_name" required placeholder="{{ _('Full name') }}" aria-label="{{ _('Full name') }}"><input name="job_title" required placeholder="{{ _('Job title') }}" aria-label="{{ _('Job title') }}"></div>
+      <div class="searchbar"><input name="phone" required dir="ltr" inputmode="tel" placeholder="{{ _('Phone') }}" aria-label="{{ _('Phone') }}"><input name="email" type="email" required dir="ltr" placeholder="{{ _('Email') }}" aria-label="{{ _('Email') }}">
+        <button class="btn" type="submit">{{ icon('user-plus', 16) }} {{ _('Add person') }}</button></div>
+    </form>
+  </section>
+</div>
+{% if projects %}
+<section class="card flush"><div class="card-head"><h2>{{ _('Projects') }}</h2><span class="count">{{ projects|length }}</span></div>
+  <div class="table-wrap"><table><tbody>{% for pr in projects %}<tr><td><a class="row-link" href="{{ url_for('main.project', pid=pr.id) }}">{{ pr.name }}</a> <span class="code">{{ pr.code }}</span></td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

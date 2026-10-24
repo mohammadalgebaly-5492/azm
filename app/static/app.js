@@ -421,4 +421,15 @@ ENHANCERS.push((root) => {
   });
 });
 
+// قائمة تُظهر مجموعة واحدة حسب اختيارها: <select data-shows="x"> ومجموعات <div data-group="x" data-value="...">
+// (مثل ممثلي الجهة المختارة في أطراف المشروع). بدون JavaScript تظهر كل المجموعات والخادم يتحقق.
+ENHANCERS.push((root) => {
+  root.querySelectorAll("select[data-shows]").forEach((sel) => {
+    const groups = root.querySelectorAll(`[data-group="${sel.dataset.shows}"]`);
+    const sync = () => groups.forEach((g) => { g.hidden = g.dataset.value !== sel.value; });
+    sel.addEventListener("change", sync);
+    sync();
+  });
+});
+
 enhance(document);

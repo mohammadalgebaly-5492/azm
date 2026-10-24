@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ label(item) }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('registers.catalogs', kind=item.kind) }}">{{ icon('back', 15) }} {{ _(CATALOGS[item.kind][0]) }}</a><span class="code">{{ item.code }}</span></div>
+  <h1>{{ label(item) }}</h1>
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <input type="hidden" name="code" value="{{ item.code }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Entry') }}</h2><p>{{ _('Codes are permanent and can\'t be changed.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="code_ro">{{ _('Code') }}</label><input id="code_ro" value="{{ item.code }}" dir="ltr" disabled></div>
+      <div class="field"><label for="name_ar" class="req">{{ _('Name (Arabic)') }}</label><input id="name_ar" name="name_ar" dir="rtl" lang="ar" required value="{{ form.get('name_ar') or '' }}"></div>
+      <div class="field"><label for="name_en" class="req">{{ _('Name (English)') }}</label><input id="name_en" name="name_en" dir="ltr" lang="en" required value="{{ form.get('name_en') or '' }}"></div>
+      {% if item.kind == 'equipment' %}
+      <div class="field"><label for="parent_code" class="req">{{ _('Equipment type') }}</label>
+        <select id="parent_code" name="parent_code" required>{% for t in active_types %}<option value="{{ t.code }}" {{ 'selected' if form.get('parent_code') == t.code }}>{{ label(t) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="cost_unit" class="req">{{ _('Cost unit') }}</label>
+        <select id="cost_unit" name="cost_unit" required>{% for k, v in COST_UNITS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('cost_unit') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      {% endif %}
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('registers.catalogs', kind=item.kind) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') }}</button>
+  </div>
+</form>
+{% endblock %}

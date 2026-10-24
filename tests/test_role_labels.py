@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from app import create_app
-from app.db import _split_sql, connect
+from app.db import _split_sql, connect, tx
 
 from _db import fresh_database
 
@@ -33,12 +33,13 @@ class RoleLabelsTests(unittest.TestCase):
         self.assertEqual(n["viewer"], ("المشاهد", "Viewer"))
 
     def test_customised_role_names_are_left_alone(self):
-        self.db.execute("UPDATE roles SET name_ar = 'الكوست كنترول (المسؤول)', name_en = 'Cost Control (Admin)' WHERE key = 'admin'")
-        self.db.execute("UPDATE roles SET name_ar = 'مدير المالية' WHERE key = 'accountant'")
-        self.db.commit()
-        for stmt in _split_sql(MIGRATION.read_text(encoding="utf-8")):
-            self.db.execute(stmt)
-        self.db.commit()
+        with tx(self.db):
+            self.db.execute("UPDATE roles SET name_ar = 'الكوست كنترول (المسؤول)', name_en = 'Cost Control (Admin)' "
+                            "WHERE key = 'admin'")
+            self.db.execute("UPDATE roles SET name_ar = 'مدير المالية' WHERE key = 'accountant'")
+        with tx(self.db):
+            for stmt in _split_sql(MIGRATION.read_text(encoding="utf-8")):
+                self.db.execute(stmt)
         n = self.names()
         self.assertEqual(n["admin"], ("مهندس تحكم تكلفة", "Cost Control Engineer"))  # كان على الاسم الافتراضي القديم
         self.assertEqual(n["accountant"][0], "مدير المالية")  # اسم غيّره المدير: لا يُمسّ

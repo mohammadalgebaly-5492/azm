@@ -23,8 +23,13 @@
   <section class="fsection">
     <div class="fsection-head"><h2>{{ _('Parties') }}</h2><p>{{ _('The client and the supervising consultant.') }}</p></div>
     <div class="fsection-body">
-      <div class="field"><label for="client">{{ _('Client') }}</label><input id="client" name="client" value="{{ form.get('client') or '' }}"></div>
-      <div class="field"><label for="consultant">{{ _('Consultant') }}</label><input id="consultant" name="consultant" value="{{ form.get('consultant') or '' }}"></div>
+      {% if p %}
+      <div class="field"><span class="label">{{ _('Client') }}</span><span>{{ p.client or '—' }}</span></div>
+      <div class="field"><span class="label">{{ _('Consultant') }}</span><span>{{ p.consultant or '—' }}</span></div>
+      <div class="field wide"><a class="btn" href="{{ url_for('registers.project_parties', pid=p.id) }}">{{ icon('users', 16) }} {{ _('Edit parties') }}</a></div>
+      {% else %}
+      <div class="field wide"><span class="hint">{{ _('After creating the project, choose the owner and the consultant from the entities register, with their representatives.') }}</span></div>
+      {% endif %}
     </div>
   </section>
   <section class="fsection">

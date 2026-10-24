@@ -14,6 +14,13 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Building the constitution started («عايزك ترفع كل الي في الدستور على المنصة وتحط كل المميزات»). Done in round 1, without needing the programmer:
+  - Migration `011_registers` (both folders): `catalog_items` seeded with the constitution's codes (units, document types, professions, specialties, job titles, five equipment types, 17 equipment names); `entities` (ENT-OWN/CNS/SUB-0001) with `entity_addresses`, `entity_people` (…-R01) and `entity_specialties`; `projects.owner_entity_id`/`consultant_entity_id`; `project_representatives`.
+  - New permission `registers.manage`, granted to Cost Control by default.
+  - Screens: Registers → Entities / Lookup lists, entity page with addresses and people, project parties page (owner required, at least 2 representatives per party), parties card on the project page.
+  - Tests: 60 pass on SQLite and on a local Postgres 16 (portable EDB binaries in the scratchpad, port 54329).
+  - Trial copy `data/azm.sqlite3` holds demo entities linked to the demo project.
+  - Not done yet: the profile file upload, which waits for file storage (programmer).
 - **2026-10-25.** Demo project built on the throwaway demo copy only (never the live database) at Muhammad's request («مشروع كامل ... قيمته 1 مليون ريال سعودي ... 5 مراحل تنفيذ»): P-2026-001 «مبنى إداري من ثلاثة طوابق», contract 1,000,000.00 SAR, 5 execution phases as the WBS top level (10 sections, 21 items), BOQ total equal to the contract, baseline approved, status in execution, team of 5. Built through the platform's own functions, so it passed the platform's baseline checks. Only what exists today can be shown: project, team, WBS, BOQ, baseline, analytics. Contract details, payments, schedule, allocation, procurement, daily reports and EVM are in the constitution but not built yet. Also fixed the BOQ-chart «both» category color (was purple-blue, now brand green).
 - **2026-10-25.** Built locally, not published (demo on a throwaway SQLite copy, port 5056):
   - Migration `010_role_labels` (both folders) renames the default role labels to the constitution's titles, leaving customised names alone; test added (52 tests pass).

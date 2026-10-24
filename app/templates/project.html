@@ -15,8 +15,8 @@
   <section class="card">
     <div class="card-head"><h2>{{ _('Project and contract') }}</h2></div>
     <dl class="kv">
-      <dt>{{ _('Client') }}</dt><dd>{{ p.client or '—' }}</dd>
-      <dt>{{ _('Consultant') }}</dt><dd>{{ p.consultant or '—' }}</dd>
+      <dt>{{ _('Client') }}</dt><dd>{% if parties.owner and can('registers.manage') %}<a href="{{ url_for('registers.entity_edit', eid=parties.owner.id) }}">{{ parties.owner.name }}</a>{% else %}{{ p.client or '—' }}{% endif %}</dd>
+      <dt>{{ _('Consultant') }}</dt><dd>{% if parties.consultant and can('registers.manage') %}<a href="{{ url_for('registers.entity_edit', eid=parties.consultant.id) }}">{{ parties.consultant.name }}</a>{% else %}{{ p.consultant or '—' }}{% endif %}</dd>
       <dt>{{ _('Main contract no.') }}</dt><dd class="code">{{ p.contract_no or '—' }}</dd>
       <dt>{{ _('Contract value') }}</dt><dd><span class="num">{{ money(p.contract_value) }}</span> {{ _('SAR') }}</dd>
       <dt>{{ _('Start date') }}</dt><dd class="num">{{ p.start_date or '—' }}</dd>
@@ -55,6 +55,20 @@
     {% endif %}
   </section>
 </div>
+<section class="card" id="parties">
+  <div class="card-head"><div><h2>{{ _('Project parties') }}</h2><p>{{ _('The owner and the consultant, and their representatives in this project.') }}</p></div>
+    {% if can('projects.manage') %}<a class="btn" href="{{ url_for('registers.project_parties', pid=p.id) }}">{{ icon('edit', 16) }} {{ _('Edit parties') }}</a>{% endif %}</div>
+  {% if not parties_complete %}<div class="alert warn" role="note">{{ icon('alert', 17) }}<span>{{ _('Choose the owner from the entities register, and at least {n} representatives for each party.', n=MIN_REPS) }}</span></div>{% endif %}
+  {% if reps %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Representative') }}</th><th>{{ _('Party') }}</th><th>{{ _('Phone') }}</th><th>{{ _('Email') }}</th></tr></thead>
+    <tbody>{% for r in reps %}<tr>
+      <td>{{ r.full_name }}<span class="sub">{{ r.job_title }} · <span class="code">{{ r.code }}</span></span></td>
+      <td>{{ _('Owner') if r.kind == 'owner' else _('Consultant') }}</td>
+      <td class="code">{{ r.phone }}</td><td class="code">{{ r.email }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+</section>
 {% if activity %}
 <section class="card flush">
   <div class="card-head"><h2>{{ _('Recent activity') }}</h2></div>

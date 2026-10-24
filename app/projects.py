@@ -80,6 +80,9 @@ def update_project(db, pid, form, actor_id):
         raise AuthError(_("Unknown project status."))
     data["status"] = status
     cur = db.execute("SELECT * FROM projects WHERE id = ?", (pid,)).fetchone()
+    for k in ("client", "consultant"):  # الأطراف تُختار من سجل الجهات في صفحة أطراف المشروع
+        if k not in form:
+            data[k] = cur[k]
     changes = {k: v for k, v in data.items() if cur[k] != v}
     if not changes:
         return
