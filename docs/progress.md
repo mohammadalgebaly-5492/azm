@@ -5,7 +5,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 ## Now
 
 - **Current task:** writing the constitution with Muhammad. Article 3 = part 1, «تخطيط المشروع» (output: «خطة إدارة المشروع»), name approved 2026-10-25. Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; decisions applied 2026-10-25; one left: the 10,000 SAR limit, cumulative or per payment (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
-- **Not yet published:** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…» (commit `bfcc593`); waiting for his yes.
+- **Published 2026-10-25 (commit `ba07534`, Vercel "Deployment has completed"):** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…», the constitution (articles 1–4), CLAUDE.md rules, and this log. Verified the GitHub copy of the constitution is byte-identical to the local one.
 - **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
 - **Waiting on Muhammad:** confirmation that the live site shows the new look, and the live site's address. The GitHub repo's homepage (`azm-iota-lime.vercel.app`) is stale (`DEPLOYMENT_NOT_FOUND`); the team URLs `azm-mohammad5493.vercel.app` are behind Vercel sign-in.
 - **Next planned step:** the item pipeline (سلسلة تنفيذ البنود). Confirm the details with Muhammad, and with the programmer for the engine design, before building. See CLAUDE.md, "Roadmap".
