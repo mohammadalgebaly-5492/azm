@@ -13,6 +13,12 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Constitution:
+  - **Language rule:** «العربي يكون بالعربي والانجليزي بالانجلزي»: no English words in Arabic letters, in chat, interface or docs. Added to CLAUDE.md and as a glossary in the constitution. Director is «المدير التنفيذي» (assumption, awaiting his confirmation).
+  - **Later, when building:** the interface still shows transliterated role names («الكوست كنترول (المسؤول)», «الدايركتور»).
+  - **Article 3 rewritten as a full PMO-based specification**, at his request («تناقش مع نفسك وتطور القصه»): five project phases, governing rules, each requirement detailed, RACI, codes.
+  - **Governance principle made a general approved rule** («دا لازم تضيفه»).
+  - **Schedule:** built on the platform as the base, simpler than Primavera, showing items, time and cost, planned and actual; import from Excel and Primavera is extra («الاساس يتم الاعداد على المنصة»).
 - **2026-10-25.** Constitution article 3 drafted: Part 1 of the platform, project management. Muhammad's 7 components: documents, contract, BOQ + tendering, technical plan (Excel-like tables and charts), WBS linked to cost and schedule, team and assets, scope of work per item as a chain. Everything coded per section («كل قسم ليه SKU خاص بيه»), merged with PMO («عايزك تدمج نظريات PMO مع الشغل الي انا قلتو»). Proposals added for his approval: baseline freeze plus change requests, contract fields, document fields, coding system. Five open questions are in the file.
 - **2026-10-24.** Constitution articles 1 and 2 approved («نعم ووخلينا نمشي باقتراحاتك ونخش عالبند الي بعدو»): the Director's past approvals keep the real approver's name after a transfer; consultants also go in the shared list; an entity can have several addresses; people belong to the entity, and each project picks at least 2 of them.
 - **2026-10-24.** Constitution: Director stays one account, transferable to another person («يبقى حساب واحد يمكن نقله باسم شخص اخر»); owners repeat across projects and go in one shared list in the database; at least 2 representatives per entity («يسجل على الاقل عدد 2 اشخاص من كل جهة»).

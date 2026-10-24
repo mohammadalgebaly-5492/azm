@@ -29,6 +29,7 @@ Muhammad knows the business well: cost control, BOQ, WBS, contracts, approvals. 
 
 - **Always speak to Muhammad in Arabic, in every message,** even if he writes in English or mixes languages. He does not understand English well. Keep it simple and clear.
 - Keep in English only what must stay in English: IDs and codes (`P-2026-001`, `USR-PM-03`), file names, commands, and technical names like BOQ, WBS, Excel.
+- **Arabic in Arabic, English in English (Muhammad's rule).** Never write an English word in Arabic letters: no «كوست كنترول», «دايركتور», «تندرنج», «بروفايل», «داتا بيز». Use the Arabic term («التحكم في التكاليف», «المدير التنفيذي», «المناقصات», «الملف التعريفي»); if the English term is needed, write it in English letters. This applies to chat, the interface and the docs. The approved terms are in the glossary at the end of `docs/constitution.md`.
 - Talk about the platform, not the code. Say "المنصة اللي الناس شغالة عليها" or "the live site", never `main`. Say "تعديل في شكل البيانات", never "migration". Say "أنزّل التعديل على المنصة", never "push".
 
 ### Before building
