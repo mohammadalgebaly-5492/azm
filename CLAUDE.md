@@ -13,7 +13,7 @@ Two people work on this project with Claude:
 
 Muhammad may open and close chats often. Never make him start over.
 
-1. Read `docs/progress.md` first, then glance at `git status` and `git log --oneline -5`. That's where things were left.
+1. Read `docs/progress.md` first, then glance at `git status` and `git log --oneline -5`. That's where things were left. Read `docs/constitution.md` (الدستور) too: Muhammad's numbered business rules. Every feature must follow it, and only he changes it.
 2. If `.env.local` and `.venv` exist, setup is done. Do not repeat setup or the full introduction. Greet him briefly in Arabic and pick up from "Now", e.g. «أهلًا يا محمد، آخر مرة كنا في … نكمل؟».
 3. If he pastes the handover file again, the project is already set up: confirm everything works, then continue from `docs/progress.md`.
 4. **Keep `docs/progress.md` current.** After each meaningful step, update:

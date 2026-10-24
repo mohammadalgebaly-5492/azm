@@ -4,13 +4,20 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Now
 
-- **Current task:** none. The new identity and the sign-in subtitle are published (commit `62ab8bb`). Vercel reported "Deployment has completed".
+- **Current task:** writing the constitution with Muhammad (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
+- **Not yet published:** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…» (commit `bfcc593`); waiting for his yes.
+- **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
 - **Waiting on Muhammad:** confirmation that the live site shows the new look, and the live site's address. The GitHub repo's homepage (`azm-iota-lime.vercel.app`) is stale (`DEPLOYMENT_NOT_FOUND`); the team URLs `azm-mohammad5493.vercel.app` are behind Vercel sign-in.
 - **Next planned step:** the item pipeline (سلسلة تنفيذ البنود). Confirm the details with Muhammad, and with the programmer for the engine design, before building. See CLAUDE.md, "Roadmap".
 - **Also open:** the decisions listed in CLAUDE.md, "Roadmap and open decisions".
 
 ## Log
 
+- **2026-10-24.** Constitution articles 1 and 2 approved («نعم ووخلينا نمشي باقتراحاتك ونخش عالبند الي بعدو»): the Director's past approvals keep the real approver's name after a transfer; consultants also go in the shared list; an entity can have several addresses; people belong to the entity, and each project picks at least 2 of them.
+- **2026-10-24.** Constitution: Director stays one account, transferable to another person («يبقى حساب واحد يمكن نقله باسم شخص اخر»); owners repeat across projects and go in one shared list in the database; at least 2 representatives per entity («يسجل على الاقل عدد 2 اشخاص من كل جهة»).
+- **2026-10-24.** Muhammad: «متبنيش الا لما نخلص نقاش»: no building until the discussion ends. Constitution updated: each licensee gets its own copy on a separate server in the future, and today is a trial platform; viewer accounts unlimited; new article 2, owner and consultant data per project (addresses, representatives, emails, an upload field for their company profile). The profile upload needs file storage, which isn't built yet (also needed for accounting invoices).
+- **2026-10-24.** Constitution article 1 updated with Muhammad's answers: the main account belongs to whoever gets the usage rights («الحساب الرئيسي للي هيحصل على حقوق استخدام المنصة»); Cost Control and Accounting unlimited; no accounts for owner or consultant, but their data is recorded per project («لا يوجد دور للمالك والاستشاري في المنصة لكن يجب تسجيل بياناتهم في كل مشروع»). Today a project stores only `client` and `consultant` names as text.
+- **2026-10-24.** Started `docs/constitution.md` (الدستور), Muhammad's numbered business rules. Article 1, accounts, is under discussion: one main account creates the others; one Cost Control, one Director, one Accounting, unlimited project engineers («دار قم واحد في الدستور خلينا نسميه الدستور»). The current platform already has these roles but no count limits, plus viewer / owner's rep / consultant roles. Nothing built yet.
 - **2026-10-24.** Sign-in panel sentence changed to «إدارة وأتمتة المشاريع وأكثر…» (was «التحكم في تكلفة كل مشروع…») at Muhammad's request. Local only.
 - **2026-10-24.** Published the new identity and the sign-in subtitle to the live site on Muhammad's yes («ماشي اعكس دا على المنصة»). No data-structure changes.
 - **2026-10-24.** New AZM identity, built locally:
