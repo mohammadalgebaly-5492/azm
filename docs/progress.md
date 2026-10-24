@@ -11,6 +11,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-24.** Sign-in panel sentence changed to «إدارة وأتمتة المشاريع وأكثر…» (was «التحكم في تكلفة كل مشروع…») at Muhammad's request. Local only.
 - **2026-10-24.** Published the new identity and the sign-in subtitle to the live site on Muhammad's yes («ماشي اعكس دا على المنصة»). No data-structure changes.
 - **2026-10-24.** New AZM identity, built locally:
   - Muhammad's own logo (`docs/brand/azm-logo-source.png`), traced to a vector `mark()`; full logo on the sign-in panel; new favicon. Alenmaa logo files removed.

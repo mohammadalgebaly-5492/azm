@@ -678,7 +678,7 @@ AR = {
     "Save and continue": "حفظ ومتابعة",
     "Live": "مباشر",
     "{n} temporarily locked": "{n} مقفول مؤقتًا",
-    "Cost control for every project, from the BOQ to the final payment.": "التحكم في تكلفة كل مشروع، من جدول الكميات حتى آخر دفعة.",
+    "Project management, automation and more…": "إدارة وأتمتة المشاريع وأكثر…",
     "Contracts": "العقود",
     "Payments": "الدفعات",
     # ---------- التفضيلات ----------
