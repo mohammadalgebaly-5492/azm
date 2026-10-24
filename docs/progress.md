@@ -13,6 +13,11 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Make-or-buy per execution step: a company crew or a subcontractor can execute any step of the same item («ممكن يكون طاقم عمل للشركة او مقاول باطن»):
+  - Each scope-of-work step has an execution party; the item's method is computed (self, subcontractor or mixed).
+  - Subcontractors live in the Article 2 entities list as type «مقاول باطن» (`ENT-SUB-…`), with CR, VAT, specialties, approval status and documents.
+  - Allocation supports subcontractors (quantity × estimated unit rate), with two new validation rules: the party matches the step, and the subcontractor is approved with a matching specialty.
+  - Reference drawings in scope of work are now required. Asked whether reference specifications should be too.
 - **2026-10-25.** Resource allocation (3.6) expanded at Muhammad's request («اديلو حقو في التفنيد وخلي معظم الجدول مربوط بشيء والزامي»):
   - 29 fields in six groups (identity, link to the plan, period, productivity, cost, governance), mostly linked and required.
   - 6 validation rules: no double-booking above 100% across projects, inside the activity window, valid status, enough days for the productivity rate, price check against the item analysis, governance after baseline.
