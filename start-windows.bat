@@ -12,12 +12,20 @@ if errorlevel 1 (
   exit /b 1
 )
 
+if exist ".git" (
+  where git >nul 2>nul
+  if not errorlevel 1 (
+    echo Checking for updates...
+    git pull --ff-only
+  )
+)
+
 if not exist ".venv" (
   echo First run: preparing the environment...
   python -m venv .venv
 )
 call ".venv\Scripts\activate.bat"
-pip install -q --disable-pip-version-check Flask==3.1.3 openpyxl==3.1.5
+pip install -q --disable-pip-version-check -r requirements.txt
 
 set CC_COOKIE_SECURE=0
 set CC_DATABASE=%~dp0data\azm.sqlite3
