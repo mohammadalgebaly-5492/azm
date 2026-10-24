@@ -76,6 +76,10 @@ def create_app(test_config=None):
         app.register_error_handler(code, lambda e, c=code, t=title: (
             render_template("error.html", code=c, title=t, message=getattr(e, "description", "")), c))
 
+    @app.get("/healthz")
+    def healthz():
+        return "ok", 200, {"Content-Type": "text/plain"}
+
     from .views import admin, auth_views, boq_views, main
     app.register_blueprint(auth_views.bp)
     app.register_blueprint(main.bp)
