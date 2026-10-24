@@ -13,6 +13,12 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Article 3, Muhammad's answers:
+  - Tendering means pricing the project with the contract; subcontractor and supplier quotes belong to part 2, cost control («اما المقاولين الباطن ولموردين دا هيكون في مرحلة الكوست كنترول»).
+  - The detailed technical plan is made in Primavera P6, MS Project or Excel; the platform's own simple schedule is the tracking base.
+  - Team and assets are for both planning and cost.
+  - He left the scope-of-work chain and the coding system to me («انت الي تحدد»). Decided: the chain is the technical steps per item with weights (rules of credit), separate from the administrative item pipeline. Full coding system written, including people (`EMP-…`) and equipment (`EQP-…`), auto-generated and immutable.
+  - Still to confirm: «المدير التنفيذي» as the Arabic title for Director.
 - **2026-10-25.** Constitution:
   - **Language rule:** «العربي يكون بالعربي والانجليزي بالانجلزي»: no English words in Arabic letters, in chat, interface or docs. Added to CLAUDE.md and as a glossary in the constitution. Director is «المدير التنفيذي» (assumption, awaiting his confirmation).
   - **Later, when building:** the interface still shows transliterated role names («الكوست كنترول (المسؤول)», «الدايركتور»).
