@@ -299,7 +299,7 @@ class OwnerMigration(unittest.TestCase):
         roles = dict(conn.execute("SELECT username, role FROM users").fetchall())
         self.assertEqual(roles, {"first": "admin", "second": "superadmin", "third": "admin"})
         # 7 من المهاجرات الأولى، والثامنة إدارة السجلات المشتركة (المهاجرة 011)
-        self.assertEqual(conn.execute("SELECT COUNT(*) FROM role_permissions WHERE role = 'admin'").fetchone()[0], 15)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM role_permissions WHERE role = 'admin'").fetchone()[0], 16)
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM roles").fetchone()[0], 9)
         with self.assertRaises(dbmod.IntegrityError):  # الدور لازم يكون موجودًا في جدول الأدوار
             conn.execute("UPDATE users SET role = 'ghost' WHERE username = 'first'")

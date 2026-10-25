@@ -52,9 +52,10 @@ def committed(db, item_id) -> int:
 
 
 def available(db, item_id) -> int:
-    """الميزانية المتاحة للبند: ميزانيته ناقص الالتزامات المعتمدة (لا التزام بدون ميزانية)."""
+    """الميزانية المتاحة للبند: ميزانيته مع تعديلات طلبات التغيير المعتمدة، ناقص الالتزامات (لا التزام بدون ميزانية)."""
+    from .changes import adjustments
     amount = db.execute("SELECT amount FROM boq_items WHERE id = ?", (item_id,)).fetchone()[0]
-    return amount - committed(db, item_id)
+    return amount + adjustments(db, item_id) - committed(db, item_id)
 
 
 def suggested_date(db, pid, item_id):

@@ -62,6 +62,8 @@ def table_strings():
     from app.billing import STATUS as IPC_STATUS
     from app.payables import KINDS as PAY_KINDS, STATUS as PAY_STATUS
     out |= set(IPC_STATUS.values()) | set(PAY_KINDS.values()) | set(PAY_STATUS.values())
+    from app.changes import KINDS as CR_KINDS, SOURCES, STATUS as CR_STATUS
+    out |= set(CR_KINDS.values()) | set(SOURCES.values()) | set(CR_STATUS.values())
     return out
 
 

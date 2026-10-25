@@ -71,12 +71,14 @@ PERMISSIONS = {
                          "Approve certificates and invoices up to 10,000 SAR; above it the Director approves too."),
     "payables.pay": ("Pay and collect", "Record payments of approved certificates and invoices, and collections from the owner."),
     "billing.prepare": ("Prepare owner certificates", "Prepare the company's certificates to the owner, submit them and record their certification."),
+    "changes.request": ("Raise and review change requests",
+                        "Raise a change request on the project plan, or review one raised by another engineer."),
     "registers.manage": ("Manage shared registers",
                          "Owners, consultants and subcontractors with their addresses and people, and the lookup lists."),
 }
 PERMISSION_GROUPS = (
     ("Projects", ("projects.view_all", "projects.create", "projects.manage", "boq.manage", "documents.manage",
-                  "schedule.manage", "changes.approve")),
+                  "schedule.manage", "changes.request", "changes.approve")),
     ("Procurement", ("procurement.request", "procurement.quotes", "procurement.select", "procurement.approve")),
     ("Payments", ("payables.raise", "payables.approve", "payables.pay", "billing.prepare")),
     ("Analytics", ("analytics.view",)),

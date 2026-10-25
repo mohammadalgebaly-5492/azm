@@ -166,7 +166,7 @@ def create_app(test_config=None):
     def healthz():
         return "ok", 200, {"Content-Type": "text/plain"}
 
-    from .views import (admin, auth_views, boq_views, contracts, daily, documents, main, payables, procurement, registers,
+    from .views import (admin, auth_views, boq_views, changes, contracts, daily, documents, main, payables, procurement, registers,
                         resources,                         schedule, scope)
     app.register_blueprint(auth_views.bp)
     app.register_blueprint(main.bp)
@@ -181,4 +181,5 @@ def create_app(test_config=None):
     app.register_blueprint(daily.bp)
     app.register_blueprint(procurement.bp)
     app.register_blueprint(payables.bp)
+    app.register_blueprint(changes.bp)
     return app

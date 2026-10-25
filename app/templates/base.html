@@ -39,8 +39,9 @@
     <a class="brand" href="{{ url_for('main.home') }}">{{ mark(30) }}<span><b>{{ platform }}</b><small>{{ company }}</small></span></a>
     <nav class="nav" aria-label="{{ _('Main menu') }}">
       {{ nav_tree('projects', _('Projects'), 'home', [
-           ('main.home', _('All projects') if can('projects.view_all') else _('My projects'), None, ('main.project', 'admin.project_edit', 'registers.project_parties', 'contracts.page', 'contracts.edit', 'resources.project', 'documents.page', 'documents.form', 'documents.view', 'scope.page', 'scope.item', 'schedule.page', 'schedule.activity', 'daily.page', 'daily.form', 'daily.view', 'daily.performance', 'procurement.page', 'procurement.new', 'procurement.view', 'payables.page', 'payables.billing', 'boq.page', 'boq.item_new', 'boq.item_edit', 'boq.import_upload', 'boq.import_confirm')),
+           ('main.home', _('All projects') if can('projects.view_all') else _('My projects'), None, ('main.project', 'admin.project_edit', 'registers.project_parties', 'contracts.page', 'contracts.edit', 'resources.project', 'documents.page', 'documents.form', 'documents.view', 'scope.page', 'scope.item', 'schedule.page', 'schedule.activity', 'daily.page', 'daily.form', 'daily.view', 'daily.performance', 'procurement.page', 'procurement.new', 'procurement.view', 'payables.page', 'payables.billing', 'changes.page', 'boq.page', 'boq.item_new', 'boq.item_edit', 'boq.import_upload', 'boq.import_confirm')),
            ('admin.project_new', _('New project'), 'projects.create', ())]) }}
+      {{ nav_item('changes.tasks', _('My tasks'), 'check') }}
       {% if can('analytics.view') %}{{ nav_item('main.analytics', _('Analytics'), 'chart') }}{% endif %}
       {{ nav_tree('registers', _('Registers'), 'building', [
            ('registers.entities', _('Entities'), 'registers.manage', ('registers.entity_new', 'registers.entity_edit', 'registers.person_edit')),

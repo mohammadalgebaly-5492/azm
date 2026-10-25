@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Change requests') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Change requests') }}</h1>
+  <p class="lead">{{ _('Any change to the project plan goes through an approved change request, and the original stays for comparison.') }}</p>
+</div></header>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Requests') }}</h2><p>{{ _('Project engineer, then project manager, then cost control studies the impact and approves internal changes up to 10,000 SAR; the Director approves above it and every contractual change.') }}</p></div><span class="count">{{ rows|length }}</span></div>
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Request') }}</th><th>{{ _('Type') }}</th><th>{{ _('Affected items') }}</th><th class="num">{{ _('Cost impact') }}</th><th class="num">{{ _('Days') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><span class="code">{{ r.code }}</span><span class="sub">{{ r.description }}</span>{% if r.resource_impact %}<span class="sub">{{ r.resource_impact }}</span>{% endif %}</td>
+      <td>{{ _(KINDS[r.kind]) }}<span class="sub">{{ _(SOURCES[r.source]) }}</span></td>
+      <td>{% for x in items[r.id] %}<span class="code">{{ x.code }}</span>{% if x.amount %} <span class="num">{{ money(x.amount) }}</span>{% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      <td class="num">{{ money(r.cost_impact) }}</td><td class="num">{{ '%+d'|format(r.days_impact) if r.days_impact else '0' }}</td>
+      <td><span class="pill {{ 'ok' if r.status == 'approved' else ('bad' if r.status == 'returned' else 'warn') }}">{{ _(STATUS[r.status]) }}</span>{% if r.vo_code %}<span class="sub code">{{ r.vo_code }}</span>{% endif %}{% if r.return_reason %}<span class="sub">{{ r.return_reason }}</span>{% endif %}</td>
+      <td class="cell-actions">
+        {% set need = {'pm_review': 'changes.request', 'cc_review': 'projects.manage', 'dir_review': 'changes.approve'}.get(r.status) %}
+        {% if need and can(need) and g.user.id not in (r.created_by, r.pm_by, r.cc_by) %}
+        <form method="post" action="{{ url_for('changes.act', pid=p.id, cid=r.id, action='approve') }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Approve') }}</button></form>
+        <details class="row-menu"><summary class="btn btn-ghost">{{ _('Return') }}</summary><form method="post" action="{{ url_for('changes.act', pid=p.id, cid=r.id, action='return') }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for returning') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Return') }}</button></form></details>
+        {% endif %}
+      </td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('No change requests yet.') }}</p></div>{% endif %}
+  {% if can('changes.request') %}
+  <form method="post" action="{{ url_for('changes.new', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="c_kind" class="req">{{ _('Type') }}</label><select id="c_kind" name="kind" required>{% for k, v in KINDS.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="c_src" class="req">{{ _('Source') }}</label><select id="c_src" name="source" required>{% for k, v in SOURCES.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="c_days">{{ _('Effect on the duration in days') }}</label><input id="c_days" name="days_impact" dir="ltr" inputmode="numeric" value="0"></div>
+      <div class="field wide"><label for="c_desc" class="req">{{ _('Description and reason') }}</label><textarea id="c_desc" name="description" required></textarea></div>
+      <div class="field wide"><span class="label req">{{ _('Affected items and the cost effect on each (negative for a decrease)') }}</span>
+        <div class="table-wrap"><table><tbody>{% for b in boq %}<tr><td class="tight"><input type="checkbox" name="items" value="{{ b.id }}" aria-label="{{ b.code }}"></td><td><span class="code">{{ b.code }}</span><span class="sub">{{ b.description }}</span></td><td class="num tight"><input name="amount_{{ b.id }}" dir="ltr" inputmode="decimal" class="cell-input" aria-label="{{ _('Cost impact') }}"></td></tr>{% endfor %}</tbody></table></div></div>
+      {% if acts %}<div class="field wide"><span class="label">{{ _('Affected activities') }}</span><div class="checks">{% for a in acts %}<label class="check"><input type="checkbox" name="activities" value="{{ a.id }}"><span>{{ a.name }}<span class="sub"><span class="code">{{ a.code }}</span></span></span></label>{% endfor %}</div></div>{% endif %}
+      <div class="field wide"><label for="c_res">{{ _('Effect on resources') }}</label><input id="c_res" name="resource_impact"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Raise the change request') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -96,6 +96,9 @@ ACTION_LABELS = {
     "payable_paid": "Payment recorded", "ipc_drafted": "Owner certificate drafted", "ipc_agree": "Owner certificate agreed",
     "ipc_submit": "Owner certificate submitted", "ipc_certify": "Owner certificate certified",
     "ipc_collect": "Owner certificate collected",
+    "cr_raised": "Change request raised", "cr_reviewed": "Change request reviewed by the project manager",
+    "cr_studied": "Change request studied by cost control", "cr_approved": "Change request approved",
+    "cr_returned": "Change request returned",
 }
 
 
