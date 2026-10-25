@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Owner certificates') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Owner certificates') }}</h1>
+  <p class="lead">{{ _('When an activity reaches the progress of its payment, the platform prepares the draft. The project manager submits it after the cost control engineer agrees.') }}</p>
+</div></header>
+{% if due %}
+<section class="card">
+  <div class="card-head"><div><h2>{{ _('Payments due without a certificate') }}</h2><p>{{ _('Their activities reached the required progress.') }}</p></div><span class="count">{{ due|length }}</span></div>
+  <ul class="plain-list">{% for m in due %}<li>{{ m.m.description }} · <span class="num">{{ money(m.value) }}</span> {{ _('SAR') }}
+    {% if can('billing.prepare') %}<form method="post" action="{{ url_for('payables.billing_new', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="milestone_id" value="{{ m.m.id }}"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Prepare the draft') }}</button></form>{% endif %}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Certificates') }}</h2><p>{{ _('Retention, advance recovery and VAT come from the main contract.') }}</p></div><span class="count">{{ rows|length }}</span></div>
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Payment') }}</th><th class="num">{{ _('Value of works') }}</th><th class="num">{{ _('Retention') }}</th><th class="num">{{ _('Advance recovery') }}</th><th class="num">{{ _('VAT') }}</th><th class="num">{{ _('Net due') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>{% for o in rows %}<tr>
+      <td class="code">{{ o.code }}<span class="sub num">{{ o.period_to|string|truncate(10, True, '') }}</span></td>
+      <td>{{ o.ms_desc or '—' }}</td>
+      <td class="num">{{ money(o.gross) }}</td><td class="num">{{ money(o.retention) }}</td><td class="num">{{ money(o.advance) }}</td><td class="num">{{ money(o.vat) }}</td>
+      <td class="num"><b>{{ money(o.net) }}</b>{% if o.certified_amount %}<span class="sub">{{ _('Certified') }}: {{ money(o.certified_amount) }}</span>{% endif %}</td>
+      <td><span class="pill {{ 'ok' if o.status == 'collected' else 'warn' }}">{{ _(STATUS[o.status]) }}</span></td>
+      <td class="cell-actions">
+        {% if o.status == 'draft' and can('projects.manage') and o.created_by != g.user.id %}<form method="post" action="{{ url_for('payables.billing_step', pid=p.id, oid=o.id, step='agree') }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Agree') }}</button></form>{% endif %}
+        {% set step = {'agreed': 'submit', 'submitted': 'certify', 'certified': 'collect'}.get(o.status) %}
+        {% set perm = 'payables.pay' if step == 'collect' else 'billing.prepare' %}
+        {% if step and can(perm) %}<details class="row-menu"><summary class="btn">{{ {'submit': _('Record submission'), 'certify': _('Record certification'), 'collect': _('Record collection')}[step] }}</summary>
+          <form method="post" action="{{ url_for('payables.billing_step', pid=p.id, oid=o.id, step=step) }}" class="row-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <input name="on" type="date" required {{ date_attrs|safe }} aria-label="{{ _('Date') }}">
+            {% if step == 'certify' %}<input name="amount" dir="ltr" inputmode="decimal" data-money required placeholder="{{ _('Certified amount') }}" aria-label="{{ _('Certified amount') }}">{% endif %}
+            <button class="btn btn-primary" type="submit">{{ _('Confirm') }}</button></form></details>{% endif %}
+      </td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('No certificates yet.') }}</p></div>{% endif %}
+  {% if can('billing.prepare') %}
+  <form method="post" action="{{ url_for('payables.billing_new', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar">
+      <input name="gross" dir="ltr" inputmode="decimal" data-money required placeholder="{{ _('Value of works in this certificate') }}" aria-label="{{ _('Value of works') }}">
+      <input name="period_to" type="date" required {{ date_attrs|safe }} aria-label="{{ _('Period to') }}">
+      <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Certificate not linked to a payment') }}</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Receivables from the owner') }}</h2><p>{{ _('Certified and not collected, with their age against the payment period in the contract.') }}</p></div></div>
+  {% if receivables %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th class="num">{{ _('Certified amount') }}</th><th>{{ _('Due date') }}</th><th class="num">{{ _('Age in days') }}</th><th class="num">{{ _('Days late') }}</th></tr></thead>
+    <tbody>{% for x in receivables %}<tr><td class="code">{{ x.o.code }}</td><td class="num">{{ money(x.o.certified_amount) }}</td><td class="num">{{ x.due }}</td><td class="num">{{ x.age }}</td><td class="num {{ 'warn-text' if x.late }}">{{ x.late }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('Nothing waiting for collection.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

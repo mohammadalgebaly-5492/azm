@@ -91,6 +91,11 @@ ACTION_LABELS = {
     "pr_cc_approved": "Request approved by cost control", "pr_director_approved": "Request approved by the Director",
     "order_issued": "Order issued as a commitment", "pr_returned": "Purchase request returned",
     "pr_cancelled": "Purchase request cancelled",
+    "goods_received": "Goods receipt recorded", "payable_raised": "Certificate or invoice raised",
+    "payable_approved": "Certificate or invoice approved", "payable_returned": "Certificate or invoice returned",
+    "payable_paid": "Payment recorded", "ipc_drafted": "Owner certificate drafted", "ipc_agree": "Owner certificate agreed",
+    "ipc_submit": "Owner certificate submitted", "ipc_certify": "Owner certificate certified",
+    "ipc_collect": "Owner certificate collected",
 }
 
 
@@ -131,7 +136,7 @@ FIELD_LABELS = {
     "title": "Document title", "issuer": "Issued by", "issuer_ref": "Document number at the issuer",
     "issued_on": "Issue date", "summary": "Document summary", "weight_bp": "Weight of the item progress",
     "seq": "Order", "party": "Executed by", "planned_start": "Planned start", "planned_finish": "Planned finish",
-    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on",
+    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on", "order": "Order",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",

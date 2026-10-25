@@ -59,6 +59,9 @@ def table_strings():
     out |= set(IDLE.values()) | set(DSR_STATUS.values()) | set(RAG.values())
     from app.procurement import EVALUATION, KINDS as PR_KINDS, STATUS as PR_STATUS
     out |= set(EVALUATION.values()) | set(PR_KINDS.values()) | set(PR_STATUS.values())
+    from app.billing import STATUS as IPC_STATUS
+    from app.payables import KINDS as PAY_KINDS, STATUS as PAY_STATUS
+    out |= set(IPC_STATUS.values()) | set(PAY_KINDS.values()) | set(PAY_STATUS.values())
     return out
 
 

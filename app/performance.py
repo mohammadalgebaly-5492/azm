@@ -1,6 +1,6 @@
 """متابعة التقدم والتكلفة بالقيمة المكتسبة (الدستور، البند 4.3): القيمة المخططة والمكتسبة والتكلفة الفعلية، ومؤشرا أداء
 الزمن والتكلفة، والتكلفة المتوقعة عند الإنجاز، وحالة البند والقسم والمشروع بالألوان (الأسوأ بين الزمن والتكلفة)."""
-from . import daily, schedule as T
+from . import daily, payables, schedule as T
 
 FULL = 10000
 RAG = {"green": "On track", "yellow": "Watch", "red": "At risk", "critical": "Critical"}
@@ -46,6 +46,8 @@ def indicators(db, pid, now=None) -> dict:
     under, items = T._subtree(db, pid)
     prog = T.item_progress(db, pid)
     ac = daily.actual_cost(db, pid)
+    for iid, v in payables.cost_by_item(db, pid).items():  # المستخلصات والفواتير المعتمدة
+        ac[iid] = ac.get(iid, 0) + v
     direct = {r["a"]["boq_item_id"] for r in rows if r["a"]["boq_item_id"]}
     pv = {i["id"]: 0 for i in items}
     for r, v in _pv_rows(rows, now):
