@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ cur.code if cur else _('New daily report') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Daily site reports') }}</a>{% if cur %}<span class="code">{{ cur.code }}</span>{% endif %}</div>
+  <h1>{{ _('Daily site report') }} <bdi class="num" dir="ltr">{{ on }}</bdi></h1>
+  {% if cur and cur.status == 'returned' %}<p class="lead keep warn-text">{{ _('Returned') }}: {{ cur.return_reason }}</p>{% endif %}
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+{% if not cur %}
+<form method="get" class="searchbar">
+  <input name="report_date" type="date" required {{ date_attrs|safe }} value="{{ on }}" aria-label="{{ _('Report date') }}">
+  <button class="btn" type="submit">{{ icon('calendar', 16) }} {{ _('Show the resources of this day') }}</button>
+</form>
+{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <input type="hidden" name="report_date" value="{{ on }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Activities worked on') }}</h2><p>{{ _('Each report is compared with the approved schedule at once, so a delay shows on the day it happens.') }}</p></div>
+    <div class="fsection-body">
+      {% if acts %}<div class="field wide"><div class="checks">{% for a in acts %}<label class="check"><input type="checkbox" name="activities" value="{{ a.id }}" {{ 'checked' if a.id in chosen.activities }}><span>{{ a.name }}<span class="sub"><span class="code">{{ a.code }}</span> · <span class="code">{{ a.planned_start|string|truncate(10, True, '') }} → {{ a.planned_finish|string|truncate(10, True, '') }}</span></span></span></label>{% endfor %}</div></div>
+      {% else %}<p class="hint wide">{{ _('Add the schedule activities first.') }}</p>{% endif %}
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Scope steps finished today') }}</h2><p>{{ _('After approval, each step counts its weight in the item progress, dated by this report.') }}</p></div>
+    <div class="fsection-body">
+      {% if steps %}<div class="field wide"><div class="checks">{% for s in steps %}<label class="check"><input type="checkbox" name="steps" value="{{ s.id }}" {{ 'checked' if s.id in chosen.steps }}><span>{{ s.name }}<span class="sub"><span class="code">{{ s.item_code }}</span> · {{ fmt_pct(s.weight_bp) }}</span></span></label>{% endfor %}</div></div>
+      {% else %}<p class="hint wide">{{ _('No open scope steps.') }}</p>{% endif %}
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Quantities executed today') }}</h2><p>{{ _('In the unit of each item. Leave empty what was not worked on.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><div class="table-wrap"><table>
+        <thead><tr><th>{{ _('Item') }}</th><th>{{ _('Unit') }}</th><th class="num">{{ _('Quantity today') }}</th></tr></thead>
+        <tbody>{% for b in items %}{% set k = 'qty_' ~ b.id %}<tr>
+          <td><span class="code">{{ b.code }}</span><span class="sub">{{ b.description }}</span></td><td>{{ b.unit }}</td>
+          <td class="num tight"><input name="{{ k }}" dir="ltr" inputmode="decimal" class="cell-input" aria-label="{{ b.code }}" value="{{ form.get(k) if form.get(k) is not none else (fmt_qty(chosen.quantities[b.id]) if b.id in chosen.quantities else '') }}"></td>
+        </tr>{% endfor %}</tbody></table></div></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('People, crews and equipment on site') }}</h2><p>{{ _('The approved allocations of this day. The hours times the daily cost give the actual cost.') }}</p></div>
+    <div class="fsection-body">
+      {% if allocs %}<div class="field wide"><div class="table-wrap"><table>
+        <thead><tr><th>{{ _('Allocated') }}</th><th>{{ _('Item') }}</th><th class="num">{{ _('Hours') }}</th><th>{{ _('Stopped equipment') }}</th></tr></thead>
+        <tbody>{% for a in allocs %}{% set hk, ik = 'hours_' ~ a.id, 'idle_' ~ a.id %}{% set prev = chosen.resources.get(a.id) %}<tr>
+          <td>{{ eq_names.get(a.eq_catalog, a.eq_catalog) ~ (' · ' ~ a.res_name if a.res_name else '') if a.eq_catalog else a.res_name }}<span class="sub"><span class="code">{{ a.code }}</span> · {{ a.hours_per_day }} {{ _('hours a day') }}</span></td>
+          <td><span class="code">{{ a.item_code }}</span></td>
+          <td class="num tight"><input name="{{ hk }}" dir="ltr" inputmode="decimal" class="cell-input" aria-label="{{ _('Hours') }}" value="{{ form.get(hk) if form.get(hk) is not none else (fmt_qty(prev.hours_milli) if prev else '') }}"></td>
+          <td>{% if a.resource_kind == 'equipment' %}<select name="{{ ik }}" aria-label="{{ _('Reason for stopping') }}"><option value="">{{ _('Working') }}</option>{% for k, v in IDLE.items() %}<option value="{{ k }}" {{ 'selected' if (form.get(ik) or (prev.idle_reason if prev else '')) == k }}>{{ _(v) }}</option>{% endfor %}</select>{% else %}<span class="faint">—</span>{% endif %}</td>
+        </tr>{% endfor %}</tbody></table></div></div>
+      {% else %}<p class="hint wide">{{ _('No approved allocations cover this day.') }}</p>{% endif %}
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Obstacles and problems') }}</h2><p>{{ _('Anything that slowed or stopped the work.') }}</p></div>
+    <div class="fsection-body"><div class="field wide"><textarea name="issues" aria-label="{{ _('Obstacles and problems') }}">{{ issues }}</textarea></div></div>
+  </section>
+  <div class="alert" role="note">{{ icon('file', 17) }}<span>{{ _('Site photos need file storage, which the programmer will add.') }}</span></div>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('daily.view', pid=p.id, rid=cur.id) if cur else url_for('daily.page', pid=p.id) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Submit for review') }}</button>
+  </div>
+</form>
+{% endblock %}

@@ -45,6 +45,10 @@
       <a class="btn" href="{{ url_for('scope.page', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open the scope') }}</a>
     </div>
     <div class="boq-summary">
+      <div><b>{{ _('Daily site reports and performance') }}</b><br><span class="muted">{{ _('The daily report, its review, and the earned value with the project status in colour.') }}</span></div>
+      <div class="actions"><a class="btn" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('log', 16) }} {{ _('Daily site reports') }}</a><a class="btn" href="{{ url_for('daily.performance', pid=p.id) }}">{{ icon('chart', 16) }} {{ _('Project performance') }}</a></div>
+    </div>
+    <div class="boq-summary">
       <div><b>{{ _('Project schedule') }}</b><br><span class="muted">{{ _('Activities with planned and actual dates, the Gantt chart, the progress curve and the cash flow.') }}</span></div>
       <a class="btn" href="{{ url_for('schedule.page', pid=p.id) }}">{{ icon('calendar', 16) }} {{ _('Open the schedule') }}</a>
     </div>

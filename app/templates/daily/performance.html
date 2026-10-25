@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Project performance') }}{% endblock %}
+{% macro status(key) -%}
+{% if key %}<span class="pill {{ {'green': 'ok', 'yellow': 'warn', 'red': 'bad', 'critical': 'crit'}[key] }}">{{ _(RAG[key]) }}</span>{% else %}<span class="faint">—</span>{% endif %}
+{%- endmacro %}
+{% macro idx(v) -%}{{ '%.2f'|format(v / 10000) if v is not none else '—' }}{%- endmacro %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+    <h1>{{ _('Project performance') }}</h1>
+    <p class="lead">{{ _('Earned value from the approved daily reports. The colour is the worse of time and cost, for each item, section and the whole project.') }}</p>
+  </div>
+  <div class="actions"><a class="btn" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('log', 16) }} {{ _('Daily site reports') }}</a></div>
+</header>
+{% if waiting %}<div class="alert warn" role="status">{{ icon('alert', 17) }}<span>{{ _('{n} reports wait for review and are not counted yet.', n=waiting) }}</span></div>{% endif %}
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Project status') }}</span></div><b>{{ status(m.status) if m.status else _('Not started') }}</b><span>{{ _('Progress') }}: <span class="num">{{ fmt_pct(m.progress) }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Schedule performance index') }}</span></div><b class="num">{{ idx(m.spi) }}</b><span>{{ _('Earned ÷ planned value') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Cost performance index') }}</span></div><b class="num">{{ idx(m.cpi) }}</b><span>{{ _('Earned value ÷ actual cost') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Expected finish') }}</span></div><b class="num {{ 'warn-text' if m.delay > 0 }}">{{ m.forecast or '—' }}</b><span>{% if m.delay > 0 %}{{ _('{n} days late', n=m.delay) }}{% elif m.finish %}{{ _('On time') }}{% endif %}</span></div>
+</div>
+<section class="card">
+  <dl class="kv">
+    <dt>{{ _('Budget at completion') }}</dt><dd class="num">{{ money(m.bac) }}</dd>
+    <dt>{{ _('Planned value to date') }}</dt><dd class="num">{{ money(m.pv) }}</dd>
+    <dt>{{ _('Earned value') }}</dt><dd class="num">{{ money(m.ev) }}</dd>
+    <dt>{{ _('Actual cost') }}</dt><dd class="num">{{ money(m.ac) }}</dd>
+    <dt>{{ _('Expected cost at completion') }}</dt><dd class="num">{{ money(m.eac) }}</dd>
+  </dl>
+  <p class="hint keep">{{ _('The actual cost now comes from the hours of people, crews and equipment. Subcontractor certificates and supplier invoices are added with procurement.') }}</p>
+</section>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('By WBS section') }}</h2><p>{{ _('Green up to 5% off, yellow 5% to 10%, red 10% to 30%, critical beyond 30%.') }}</p></div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Section') }}</th><th class="num">{{ _('Budget') }}</th><th class="num">{{ _('Planned') }}</th><th class="num">{{ _('Earned') }}</th><th class="num">{{ _('Actual cost') }}</th><th class="num">{{ _('Time index') }}</th><th class="num">{{ _('Cost index') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for n in ind.wbs %}{% set x = ind.nodes[n.id] %}<tr class="{{ 'g-group' if n.parent_id is none }}">
+      <td><span class="code">{{ n.code }}</span> {{ n.name }}</td><td class="num">{{ money(x.bac) }}</td><td class="num">{{ money(x.pv) }}</td>
+      <td class="num">{{ money(x.ev) }}</td><td class="num">{{ money(x.ac) }}</td><td class="num">{{ idx(x.spi) }}</td><td class="num">{{ idx(x.cpi) }}</td><td>{{ status(x.status) }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+</section>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Most deviating items') }}</h2><p>{{ _('Items whose time or cost index is below 0.95.') }}</p></div></div>
+  {% if worst %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Item') }}</th><th class="num">{{ _('Progress') }}</th><th class="num">{{ _('Time index') }}</th><th class="num">{{ _('Cost index') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for b in worst %}{% set x = ind.by_item[b.id] %}<tr><td><span class="code">{{ b.code }}</span><span class="sub">{{ b.description }}</span></td>
+      <td class="num">{{ fmt_pct(x.progress) }}</td><td class="num">{{ idx(x.spi) }}</td><td class="num">{{ idx(x.cpi) }}</td><td>{{ status(x.status) }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('check', 28) }}<p>{{ _('No item is off track.') }}</p></div>{% endif %}
+  <details class="hint card-form"><summary>{{ _('All items') }}</summary><div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Item') }}</th><th class="num">{{ _('Budget') }}</th><th class="num">{{ _('Planned') }}</th><th class="num">{{ _('Earned') }}</th><th class="num">{{ _('Actual cost') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for b in ind.item_rows %}{% set x = ind.by_item[b.id] %}<tr><td><span class="code">{{ b.code }}</span></td><td class="num">{{ money(x.bac) }}</td><td class="num">{{ money(x.pv) }}</td><td class="num">{{ money(x.ev) }}</td><td class="num">{{ money(x.ac) }}</td><td>{{ status(x.status) }}</td></tr>{% endfor %}</tbody></table></div></details>
+</section>
+{% endblock %}

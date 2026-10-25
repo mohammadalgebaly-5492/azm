@@ -54,6 +54,9 @@ def table_strings():
     out |= set(ISSUERS.values()) | set(REV_STATUS.values()) | set(METHODS.values()) | set(PARTIES.values())
     from app.schedule import STATUS as ACT_STATUS
     out |= set(ACT_STATUS.values())
+    from app.daily import IDLE, STATUS as DSR_STATUS
+    from app.performance import RAG
+    out |= set(IDLE.values()) | set(DSR_STATUS.values()) | set(RAG.values())
     return out
 
 

@@ -5,14 +5,21 @@ The project's memory between chats. Claude reads this at the start of **every** 
 ## Now
 
 - **Current task:** building the whole constitution on the platform and publishing it step by step («زي ما كتبنا المشروع في الدستور ارفعو على المنصة بالكامل»). Muhammad asked Claude to keep going overnight without breaking the live site («مش عايز اصحى الاقي المنصة الاون لاين مش شغاله»), so each step is published only after all tests pass on SQLite and Postgres.
-- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), resources: people, crews, equipment, organization chart and allocation (3.6), project documents with revisions and approvals (3.1), the scope of work with execution steps (3.7), and the schedule with Gantt, progress curve, cash flow and the contract payment schedule (3.4, 3.2).
-- **Next, in order:** schedule import from Excel / Primavera / MS Project (3.4); the daily report, EVM and RAG status (4.3); then part 2: procurement, payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
+- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), resources: people, crews, equipment, organization chart and allocation (3.6), project documents with revisions and approvals (3.1), the scope of work with execution steps (3.7), the schedule with Gantt, progress curve, cash flow and the contract payment schedule (3.4, 3.2), and the daily site report with review, earned value and the colour status (4.3, 4.4).
+- **Next, in order:** procurement with quotes and the approval limits (4.2); subcontractor certificates and supplier invoices (4.7); owner certificates (4.8); change requests (4.9); alerts and recovery plans (4.6); schedule import from Excel / Primavera / MS Project (3.4); then the rest of part 2: kickoff gate (4.1), payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
 - **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
 - **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 6, the daily site report, its review, earned value and the colour status (4.3, 4.4):
+  - Migration `016_daily_reports` (both folders): `daily_reports` (`P-…-DSR-0001`, one per day), `dsr_activities`, `dsr_steps`, `dsr_quantities`, `dsr_resources` (hours, stop reason, cost).
+  - Screens: project page → «التقارير اليومية والأداء»: report list, report form (by date: activities, steps finished, quantities, hours of the day's approved allocations, stopped equipment, obstacles), report page with approve / return with reason, and «أداء المشروع» (status, the two indices, PV/EV/AC/EAC, by section, most deviating items).
+  - Governance: only approved reports count; the preparer can't approve or return; a returned report is edited and resubmitted; scope steps are now finished only through approved reports (the manual button on the activity page was removed). Approval sets the activity's actual start and, when all its item's steps are done, its actual finish.
+  - 92 tests pass on SQLite and Postgres.
+  - The trial demo project starts on 2026-11-01, so it has no daily reports yet; the screens show its planned state.
 
 - **2026-10-25.** Round 5, the schedule (3.4) and the contract payment schedule (3.2):
   - Migration `015_schedule` (both folders): `activities`, `activity_links`, schedule review and approval columns on `projects`, `scope_steps.finished_on`, `allocations.activity_id`, `payment_milestones`. New permission `schedule.manage`, granted to Cost Control and PM.

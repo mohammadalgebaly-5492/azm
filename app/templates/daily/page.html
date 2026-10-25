@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Daily site reports') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+    <h1>{{ _('Daily site reports') }}</h1>
+    <p class="lead">{{ _('The only thing the project engineer enters each day. The platform calculates the progress, the earned value and the actual cost from it after review.') }}</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('daily.performance', pid=p.id) }}">{{ icon('chart', 16) }} {{ _('Project performance') }}</a>
+    {% if can('schedule.manage') %}<a class="btn btn-primary" href="{{ url_for('daily.form', pid=p.id) }}">{{ icon('plus', 16) }} {{ _('New daily report') }}</a>{% endif %}
+  </div>
+</header>
+{% if waiting and can('projects.manage') %}<div class="alert warn" role="status">{{ icon('alert', 17) }}<span>{{ _('{n} reports wait for your review. Their data counts in the indicators only after approval.', n=waiting) }}</span></div>{% endif %}
+<section class="card flush">
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Report') }}</th><th>{{ _('Date') }}</th><th class="num">{{ _('Activities') }}</th><th class="num">{{ _('Finished steps') }}</th><th class="num">{{ _('Resource cost') }}</th><th>{{ _('Status') }}</th><th>{{ _('Prepared by') }}</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a class="row-link code" href="{{ url_for('daily.view', pid=p.id, rid=r.id) }}">{{ r.code }}</a></td>
+      <td class="num">{{ r.report_date|string|truncate(10, True, '') }}</td>
+      <td class="num">{{ r.n_acts }}</td><td class="num">{{ r.n_steps }}</td><td class="num">{{ money(r.cost) }}</td>
+      <td><span class="pill {{ 'ok' if r.status == 'approved' else ('bad' if r.status == 'returned' else 'warn') }}">{{ _(STATUS[r.status]) }}</span></td>
+      <td>{{ users.get(r.created_by, '') }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('log', 28) }}<p>{{ _('No daily reports yet.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

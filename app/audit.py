@@ -84,6 +84,9 @@ ACTION_LABELS = {
     "schedule_reviewed": "Schedule reviewed", "schedule_approved": "Schedule approved as the time baseline",
     "schedule_reopened": "Schedule reopened for changes", "payment_added": "Contract payment added",
     "payment_removed": "Contract payment removed",
+    "dsr_submitted": "Daily site report submitted", "dsr_updated": "Daily site report updated",
+    "dsr_resubmitted": "Daily site report resubmitted", "dsr_approved": "Daily site report approved",
+    "dsr_returned": "Daily site report returned",
 }
 
 

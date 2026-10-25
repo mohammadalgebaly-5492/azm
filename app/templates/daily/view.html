@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ r.code }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Daily site reports') }}</a><span class="code">{{ r.code }}</span></div>
+    <h1>{{ _('Daily site report') }} <bdi class="num" dir="ltr">{{ r.report_date|string|truncate(10, True, '') }}</bdi></h1>
+    <p class="lead keep">{{ _('Prepared by') }} {{ users.get(r.created_by, '') }}{% if r.reviewed_by %} · {{ _('Reviewed by') }} {{ users.get(r.reviewed_by, '') }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    <span class="pill {{ 'ok' if r.status == 'approved' else ('bad' if r.status == 'returned' else 'warn') }}">{{ _(STATUS[r.status]) }}</span>
+    {% if r.status != 'approved' and can('schedule.manage') %}<a class="btn" href="{{ url_for('daily.form', pid=p.id, rid=r.id) }}">{{ icon('edit', 16) }} {{ _('Edit and resubmit') if r.status == 'returned' else _('Edit') }}</a>{% endif %}
+  </div>
+</header>
+{% if r.status == 'returned' %}<div class="alert bad" role="status">{{ icon('alert', 17) }}<span>{{ _('Returned') }}: {{ r.return_reason }}</span></div>{% endif %}
+{% if r.status == 'review' and can('projects.manage') and r.created_by != g.user.id %}
+<section class="card">
+  <div class="card-head"><div><h2>{{ _('Review') }}</h2><p>{{ _('The data counts in the official indicators only after approval.') }}</p></div></div>
+  <div class="card-actions">
+    <form method="post" action="{{ url_for('daily.approve', pid=p.id, rid=r.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ _('Approve') }}</button></form>
+    <details class="row-menu"><summary class="btn">{{ _('Return with a reason') }}</summary>
+      <form method="post" action="{{ url_for('daily.send_back', pid=p.id, rid=r.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for returning') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Return') }}</button></form></details>
+  </div>
+</section>
+{% endif %}
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Activities worked on') }}</h2><span class="count">{{ d.activities|length }}</span></div>
+    <ul class="plain-list">{% for aid in d.activities|sort %}{% set a = acts.get(aid) %}{% if a %}<li><a class="code" href="{{ url_for('schedule.activity', pid=p.id, aid=a.id) }}">{{ a.code }}</a> {{ a.name }}</li>{% endif %}{% endfor %}</ul>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Scope steps finished') }}</h2><span class="count">{{ steps|length }}</span></div>
+    {% if steps %}<ul class="plain-list">{% for s in steps %}<li><span class="code">{{ s.item_code }}</span> {{ s.name }} · <span class="num">{{ fmt_pct(s.weight_bp) }}</span></li>{% endfor %}</ul>{% else %}<p class="hint">—</p>{% endif %}
+  </section>
+</div>
+<section class="card flush">
+  <div class="card-head"><h2>{{ _('Quantities executed') }}</h2></div>
+  {% if d.quantities %}<div class="table-wrap"><table><thead><tr><th>{{ _('Item') }}</th><th class="num">{{ _('Quantity') }}</th></tr></thead>
+    <tbody>{% for iid, q in d.quantities.items() %}{% set b = items[iid] %}<tr><td><span class="code">{{ b.code }}</span><span class="sub">{{ b.description }}</span></td><td class="num">{{ fmt_qty(q) }} {{ b.unit }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>—</p></div>{% endif %}
+</section>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('People, crews and equipment on site') }}</h2><p>{{ _('Actual cost of the day') }}: <b class="num">{{ money(total) }}</b> {{ _('SAR') }}</p></div></div>
+  {% if d.resources %}<div class="table-wrap"><table><thead><tr><th>{{ _('Allocated') }}</th><th>{{ _('Item') }}</th><th class="num">{{ _('Hours') }}</th><th>{{ _('Stopped equipment') }}</th><th class="num">{{ _('Cost') }}</th></tr></thead>
+    <tbody>{% for aid, x in d.resources.items() %}{% set a = allocs.get(aid) %}<tr>
+      <td>{% if a %}{{ eq_names.get(a.eq_catalog, a.eq_catalog) ~ (' · ' ~ a.res_name if a.res_name else '') if a.eq_catalog else a.res_name }}<span class="sub code">{{ a.code }}</span>{% endif %}</td>
+      <td>{% if a %}<span class="code">{{ a.item_code }}</span>{% endif %}</td>
+      <td class="num">{{ fmt_qty(x.hours_milli) }}</td>
+      <td>{% if x.idle_reason %}<span class="pill warn">{{ _(IDLE[x.idle_reason]) }}</span>{% else %}<span class="faint">—</span>{% endif %}</td>
+      <td class="num">{{ money(x.cost) }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('No people, crews or equipment are recorded for this day.') }}</p></div>{% endif %}
+</section>
+{% if r.issues %}<section class="card"><div class="card-head"><h2>{{ _('Obstacles and problems') }}</h2></div><p class="prose">{{ r.issues }}</p></section>{% endif %}
+{% endblock %}

@@ -46,17 +46,12 @@
 </div>
 
 <section class="card flush" id="steps">
-  <div class="card-head"><div><h2>{{ _('Progress by scope steps') }}</h2><p>{{ _('The progress is the total weight of the finished steps of the item.') }}</p></div></div>
+  <div class="card-head"><div><h2>{{ _('Progress by scope steps') }}</h2><p>{{ _('The progress is the total weight of the finished steps of the item. Steps are finished from the approved daily site reports.') }}</p></div></div>
   {% if steps %}<div class="table-wrap"><table>
-    <thead><tr><th class="num">{{ _('Order') }}</th><th>{{ _('Step') }}</th><th class="num">{{ _('Weight') }}</th><th>{{ _('Finished on') }}</th>{% if can('schedule.manage') %}<th></th>{% endif %}</tr></thead>
+    <thead><tr><th class="num">{{ _('Order') }}</th><th>{{ _('Step') }}</th><th class="num">{{ _('Weight') }}</th><th>{{ _('Finished on') }}</th></tr></thead>
     <tbody>{% for s in steps %}<tr>
       <td class="num">{{ s.seq }}</td><td>{{ s.name }}<span class="sub code">{{ s.code }}</span></td><td class="num">{{ fmt_pct(s.weight_bp) }}</td>
       <td>{% if s.finished_on %}<span class="pill ok">{{ s.finished_on|string|truncate(10, True, '') }}</span>{% else %}<span class="faint">{{ _('Not finished') }}</span>{% endif %}</td>
-      {% if can('schedule.manage') %}<td class="cell-actions">
-        {% if s.finished_on %}<form method="post" action="{{ url_for('schedule.step', pid=p.id, aid=a.id, sid=s.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="finished_on" value=""><button class="btn btn-ghost" type="submit">{{ _('Undo') }}</button></form>
-        {% else %}<details class="row-menu"><summary class="btn">{{ icon('check', 16) }} {{ _('Mark finished') }}</summary>
-          <form method="post" action="{{ url_for('schedule.step', pid=p.id, aid=a.id, sid=s.id) }}" class="org-end"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="date" name="finished_on" required {{ date_attrs|safe }} aria-label="{{ _('Finished on') }}"><button class="btn btn-primary" type="submit">{{ _('Confirm') }}</button></form></details>{% endif %}
-      </td>{% endif %}
     </tr>{% endfor %}</tbody></table></div>
   {% elif a.boq_item_id %}<div class="empty">{{ icon('table', 28) }}<p>{{ _('The item has no scope steps yet.') }} <a href="{{ url_for('scope.item', pid=p.id, iid=a.boq_item_id) }}">{{ _('Open the scope') }}</a></p></div>
   {% else %}<div class="empty">{{ icon('table', 28) }}<p>{{ _('A section activity takes its progress from the items under it that have no activity of their own.') }}</p></div>{% endif %}

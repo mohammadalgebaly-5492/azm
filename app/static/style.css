@@ -491,9 +491,14 @@ html.loading .app::before { content: ""; position: fixed; top: 0; inset-inline: 
 .seg.k-crew, .tdot.k-crew { fill: var(--c-crew); background: var(--c-crew); }
 .seg.k-equipment, .tdot.k-equipment { fill: var(--c-equipment); background: var(--c-equipment); }
 .card-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 14px; }
+.plain-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+input.cell-input { width: 110px; height: 34px; }
+/* الحالة الحرجة: ما بعد الأحمر، بلون الخطر مُشبعًا */
+.pill.crit { background: var(--bad); color: #fff; }
+.pill.crit::before { background: #fff; }
 /* الجدول الزمني: لكل نشاط شريط المخطط فوق شريط الفعلي والمتوقع، والوقت من اليسار لليمين */
 table.gantt .g-cell { width: 52%; min-width: 420px; padding-block: 4px; direction: ltr; }
-table.gantt tr.g-group td { background: var(--surface-2); font-weight: 600; font-size: 13px; }
+tr.g-group td { background: var(--surface-2); font-weight: 600; font-size: 13px; }
 .g-axis { display: block; width: 100%; height: 18px; overflow: visible; }
 .g-axis line { stroke: var(--line); }
 .g-axis text { fill: var(--muted); font-size: 11px; font-weight: 400; }

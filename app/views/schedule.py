@@ -136,14 +136,6 @@ def actual(pid, aid):
                 url_for("schedule.activity", pid=pid, aid=aid))
 
 
-@bp.post("/projects/<int:pid>/schedule/<int:aid>/steps/<int:sid>")
-@permission_required("schedule.manage")
-def step(pid, aid, sid):
-    db, _p = _project(pid)
-    return _run(lambda: T.finish_step(db, pid, sid, request.form.get("finished_on"), g.user["id"]), _("Progress saved."),
-                url_for("schedule.activity", pid=pid, aid=aid) + "#steps")
-
-
 @bp.post("/projects/<int:pid>/schedule/review")
 @permission_required("projects.manage")
 def review(pid):
