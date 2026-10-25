@@ -189,6 +189,106 @@ def finish_step(db, pid, sid, finished_on, actor_id):
                   finished_on=on)
 
 
+# ---------- الاستيراد من Primavera P6 أو Microsoft Project أو Excel ----------
+
+IMPORT_HEADERS = {
+    "id": ("المعرف", "رقم النشاط", "id", "activity id", "unique id", "task id"),
+    "name": ("اسم النشاط", "النشاط", "name", "activity name", "task name"),
+    "link": ("البند", "كود البند", "القسم", "البند أو القسم", "item", "wbs", "boq code", "item code"),
+    "start": ("البدء", "تاريخ البدء", "البدء المخطط", "start", "planned start", "start date"),
+    "finish": ("الانتهاء", "تاريخ الانتهاء", "الانتهاء المخطط", "finish", "planned finish", "finish date", "end"),
+    "preds": ("السابق", "الأنشطة السابقة", "predecessors", "predecessor"),
+}
+
+
+def _import_date(v):
+    from datetime import datetime
+    if isinstance(v, datetime):
+        return v.date().isoformat()
+    if isinstance(v, date):
+        return v.isoformat()
+    s = str(v or "").strip()
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d-%b-%y", "%d-%b-%Y", "%d %b %Y", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(s.split(" ")[0] if fmt.count(" ") == 0 else s, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def import_rows(db, pid, rows, actor_id) -> tuple[int, list[str]]:
+    """يستورد الأنشطة كلها أو لا شيء: أي خطأ في أي سطر يُعرض ولا يُستورد شيء."""
+    import re
+    _ensure_open(db, pid)
+    head_at, cols = None, {}
+    for i, row in enumerate(rows[:10]):
+        found = {}
+        for j, cell in enumerate(row):
+            h = re.sub(r"\s+", " ", str(cell or "").strip().lower())
+            for key, names in IMPORT_HEADERS.items():
+                if key not in found and h in names:
+                    found[key] = j
+        if {"name", "link", "start", "finish"} <= set(found):
+            head_at, cols = i, found
+            break
+    if head_at is None:
+        raise AuthError(_("The file needs the columns: activity name, item or section, start and finish."))
+    items = {r["code"]: r for r in db.execute("SELECT id, code, wbs_id FROM boq_items WHERE project_id = ?", (pid,)).fetchall()}
+    wbs = {r["code"]: r for r in db.execute("SELECT id, code FROM wbs_nodes WHERE project_id = ?", (pid,)).fetchall()}
+    cell = lambda row, k: row[cols[k]] if k in cols and cols[k] < len(row) else None  # noqa: E731
+    parsed, errors, ids = [], [], {}
+    for n, row in enumerate(rows[head_at + 1:], start=1):
+        name = str(cell(row, "name") or "").strip()
+        if not name:
+            continue
+        link = str(cell(row, "link") or "").strip()
+        start, finish = _import_date(cell(row, "start")), _import_date(cell(row, "finish"))
+        line = _("Row {n}", n=n)
+        if link in items:
+            target = {"wbs_id": items[link]["wbs_id"], "boq_item_id": items[link]["id"]}
+        elif link in wbs:
+            target = {"wbs_id": wbs[link]["id"], "boq_item_id": None}
+        else:
+            errors.append(f"{line}: " + _("the item or section code {code} isn't in this project.", code=link or "—"))
+            continue
+        if not start or not finish or finish < start:
+            errors.append(f"{line}: " + _("the start and finish dates are missing or reversed."))
+            continue
+        key = str(cell(row, "id") or "").strip() or str(n)
+        ids[key] = len(parsed)
+        refs = [x for x in re.split(r"[,;،\s]+", str(cell(row, "preds") or "")) if x]
+        parsed.append({"name": name[:200], "start": start, "finish": finish, "refs": refs, "line": line, **target})
+    for p in parsed:
+        p["preds"] = []
+        for ref in p["refs"]:
+            m = re.match(r"^([A-Za-z0-9._-]*?\d+)(?:FS|SS|FF|SF)?([+-]\d+.*)?$", ref)
+            k = m.group(1) if m else ref
+            if k not in ids:
+                errors.append(f"{p['line']}: " + _("the predecessor {ref} isn't in the file.", ref=ref))
+            else:
+                p["preds"].append(ids[k])
+    graph = {i: p["preds"] for i, p in enumerate(parsed)}
+    if not errors and _cycle(graph):
+        errors.append(_("These predecessors make a loop: an activity would wait for itself."))
+    if errors or not parsed:
+        return 0, errors or [_("No activities found in the file.")]
+    with tx(db):
+        made = []
+        for p in parsed:
+            code = db.execute("SELECT code FROM wbs_nodes WHERE id = ?", (p["wbs_id"],)).fetchone()["code"]
+            code = f"{code}-A{next_counter(db, 'act-%d' % p['wbs_id']) * 10:03d}"
+            made.append(db.execute("INSERT INTO activities(project_id, code, name, wbs_id, boq_item_id, planned_start, planned_finish, "
+                                   "created_at, created_by) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id",
+                                   (pid, code, p["name"], p["wbs_id"], p["boq_item_id"], p["start"], p["finish"], utcnow(),
+                                    actor_id)).fetchone()[0])
+        for i, p in enumerate(parsed):
+            for j in sorted(set(p["preds"])):
+                db.execute("INSERT INTO activity_links(activity_id, predecessor_id) VALUES (?, ?)", (made[i], made[j]))
+        _reset_review(db, pid)
+        audit.log(db, actor_id, "schedule_imported", "project", pid, pid, count=len(made))
+    return len(made), []
+
+
 # ---------- الحسابات ----------
 
 def item_progress(db, pid, until=None) -> dict[int, int]:

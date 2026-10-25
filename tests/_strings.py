@@ -69,6 +69,8 @@ def table_strings():
     out |= set(RESPONSIBLE.values())
     from app.pricing import COST_TYPES
     out |= set(COST_TYPES.values())
+    from app.authority import LEVELS
+    out |= set(LEVELS.values())
     return out
 
 

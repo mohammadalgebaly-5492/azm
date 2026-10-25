@@ -11,13 +11,17 @@ The project's memory between chats. Claude reads this at the start of **every** 
 - **Also built:** change requests and the «مهامي» page (4.9, governance principle 6).
 - **Also built:** kickoff gate (4.1), delays and their cost (4.5), early warning and recovery plans (4.6), closeout and archive (4.10).
 - **Also built:** item price analysis (3.3).
-- **Next, in order:** schedule import from Excel (3.4); the project engineer's authority levels and performance indicators (4.4); weekly and monthly reports (4.3). Waiting on the programmer: file storage and email.
+- **Also built:** schedule import from Excel/CSV (3.4), engineer authority levels and scorecards (4.4).
+- **Left:** automatic weekly and monthly reports (4.3); team indicators (4.4); re-planning as a saved baseline revision (4.5); the planned vs actual cost curve (3.4).
+- **Waits on the programmer:** file storage (attachments, photos, profile files, quote and certificate files) and the email provider (alert and reminder emails).
 - **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
 - **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Rounds 12 and 13: schedule import from Excel/CSV (P6, MS Project or Excel exports; all or nothing; predecessors by ID or row), and engineer authority levels with scorecards (migration `023_authority`: `engineer_levels`, `authority_changes`, `daily_reports.needs_pm/pm_checked_*/times_returned`). 111 tests pass on SQLite and Postgres.
 
 - **2026-10-25.** Round 11, item price analysis (3.3): migration `022_price_analysis` (`price_lines`, `item_pricing`); screens «تحليل سعر البند» (all items with cost and margin; item page with lines and rates). 109 tests pass on SQLite and Postgres.
 

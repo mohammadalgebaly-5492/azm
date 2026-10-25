@@ -104,7 +104,8 @@ ACTION_LABELS = {
     "recovery_approved": "Recovery plan approved", "recovery_returned": "Recovery plan returned",
     "lessons_saved": "Lessons learned saved", "project_closed": "Project closed and archived",
     "price_line_added": "Price analysis line added", "price_line_removed": "Price analysis line removed",
-    "pricing_rates_set": "Overhead and profit rates set",
+    "pricing_rates_set": "Overhead and profit rates set", "schedule_imported": "Schedule activities imported",
+    "authority_changed": "Engineer authority changed", "dsr_pm_checked": "Daily report checked by the project manager",
 }
 
 
@@ -146,7 +147,7 @@ FIELD_LABELS = {
     "issued_on": "Issue date", "summary": "Document summary", "weight_bp": "Weight of the item progress",
     "seq": "Order", "party": "Executed by", "planned_start": "Planned start", "planned_finish": "Planned finish",
     "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on", "order": "Order", "element": "Plan element", "decision": "Decision", "overhead_bp": "Overheads",
-    "profit_bp": "Profit",
+    "profit_bp": "Profit", "level": "Authority level",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",

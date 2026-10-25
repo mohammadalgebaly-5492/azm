@@ -107,6 +107,30 @@ def add(pid):
                 url_for("schedule.page", pid=pid) + "#activities")
 
 
+@bp.post("/projects/<int:pid>/schedule/import")
+@permission_required("schedule.manage")
+def import_file(pid):
+    db, _p = _project(pid)
+    from ..boq import read_rows
+    f = request.files.get("file")
+    try:
+        if not f or not f.filename:
+            raise AuthError(_("Choose an Excel file."))
+        n, errors = T.import_rows(db, pid, read_rows(f.filename, f.stream), g.user["id"])
+    except AuthError as e:
+        flash(str(e), "bad")
+    except Exception:
+        flash(_("The file couldn't be read. Make sure it's a valid Excel file (.xlsx) or CSV."), "bad")
+    else:
+        if errors:
+            flash(_("Nothing was imported. Fix these rows and try again:"), "bad")
+            for e in errors[:15]:
+                flash(e, "warn")
+        else:
+            flash(_("{n} activities imported.", n=n), "ok")
+    return redirect(url_for("schedule.page", pid=pid) + "#activities")
+
+
 @bp.post("/projects/<int:pid>/schedule/<int:aid>/edit")
 @permission_required("schedule.manage")
 def edit(pid, aid):

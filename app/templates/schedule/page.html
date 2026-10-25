@@ -73,6 +73,11 @@
       <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add activity') }}</button></div>
     </div>
   </form>
+  <form method="post" action="{{ url_for('schedule.import_file', pid=p.id) }}" enctype="multipart/form-data" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar"><input type="file" name="file" accept=".xlsx,.csv" required aria-label="{{ _('File') }}"><button class="btn" type="submit">{{ icon('upload', 16) }} {{ _('Import activities from Excel') }}</button></div>
+    <p class="hint">{{ _('Export from Primavera P6, Microsoft Project or Excel with the columns: activity name, item or section code, start, finish, and optionally the activity ID and predecessors. Everything is imported or nothing.') }}</p>
+  </form>
   {% endif %}
 </section>
 

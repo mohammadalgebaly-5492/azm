@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Engineer performance') }}{% endblock %}
+{% macro idx(v) -%}{{ '%.2f'|format(v / 10000) if v is not none else '—' }}{%- endmacro %}
+{% block content %}
+<header class="page-head"><div>
+  <h1>{{ _('Engineer performance') }}</h1>
+  <p class="lead">{{ _('Calculated by the platform from the daily reports and the projects of each engineer. The cost control engineer sets the authority level from it.') }}</p>
+</div></header>
+<section class="card flush">
+  {% if cards %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Engineer') }}</th><th class="num">{{ _('Reports') }}</th><th class="num">{{ _('Reports on time') }}</th><th class="num">{{ _('Data accuracy') }}</th><th class="num">{{ _('Time index') }}</th><th class="num">{{ _('Cost index') }}</th><th class="num">{{ _('Average submission delay in days') }}</th><th>{{ _('Authority level') }}</th></tr></thead>
+    <tbody>{% for c in cards %}<tr>
+      <td>{{ c.user.full_name }}<span class="sub code">{{ c.user.code }}</span></td><td class="num">{{ c.reports }}</td>
+      <td class="num">{{ fmt_pct(c.on_time) if c.on_time is not none else '—' }}</td><td class="num">{{ fmt_pct(c.accuracy) if c.accuracy is not none else '—' }}</td>
+      <td class="num">{{ idx(c.spi) }}</td><td class="num">{{ idx(c.cpi) }}</td><td class="num">{{ '%.1f'|format(c.delay) if c.delay is not none else '—' }}</td>
+      <td><span class="pill {{ 'ok' if c.level == 'full' else ('warn' if c.level == 'restricted' else 'bad') }}">{{ _(LEVELS[c.level]) }}</span>
+        {% if can('projects.manage') and c.user.id != g.user.id %}<details class="row-menu"><summary class="btn btn-ghost">{{ _('Change') }}</summary>
+          <form method="post" class="row-form"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="user_id" value="{{ c.user.id }}">
+            <select name="level" aria-label="{{ _('Authority level') }}">{% for k, v in LEVELS.items() %}<option value="{{ k }}" {{ 'selected' if k == c.level }}>{{ _(v) }}</option>{% endfor %}</select>
+            <input name="reason" required placeholder="{{ _('Reason for the change') }}" aria-label="{{ _('Reason') }}">
+            <button class="btn btn-primary" type="submit">{{ _('Save') }}</button></form></details>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No daily reports yet, so no indicators.') }}</p></div>{% endif %}
+</section>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Authority changes') }}</h2><p>{{ _('Full: raises requests to cost control directly. Restricted: requests and reports go through the project manager first. Suspended: prepares only, and raises nothing except through the project manager.') }}</p></div></div>
+  {% if changes %}<div class="table-wrap"><table><thead><tr><th>{{ _('Engineer') }}</th><th>{{ _('From') }}</th><th>{{ _('To') }}</th><th>{{ _('Reason') }}</th><th>{{ _('Changed by') }}</th></tr></thead>
+    <tbody>{% for x in changes %}<tr><td>{{ x.full_name }}</td><td>{{ _(LEVELS[x.from_level]) }}</td><td>{{ _(LEVELS[x.to_level]) }}</td><td class="details">{{ x.reason }}</td><td>{{ names.get(x.set_by, '') }}<span class="sub num">{{ x.set_at|string|truncate(10, True, '') }}</span></td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('No changes yet.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

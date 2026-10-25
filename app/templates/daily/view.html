@@ -14,7 +14,11 @@
   </div>
 </header>
 {% if r.status == 'returned' %}<div class="alert bad" role="status">{{ icon('alert', 17) }}<span>{{ _('Returned') }}: {{ r.return_reason }}</span></div>{% endif %}
-{% if r.status == 'review' and can('projects.manage') and r.created_by != g.user.id %}
+{% if r.status == 'review' and r.needs_pm and not r.pm_checked_at %}
+<div class="alert warn" role="status">{{ icon('alert', 17) }}<span>{{ _('The engineer\'s authority is restricted: the project manager checks this report before cost control.') }}</span></div>
+{% if can('project.lead') and r.created_by != g.user.id %}<form method="post" action="{{ url_for('daily.pm_check', pid=p.id, rid=r.id) }}" class="card-actions"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ _('Check as project manager') }}</button></form>{% endif %}
+{% endif %}
+{% if r.status == 'review' and can('projects.manage') and r.created_by != g.user.id and (not r.needs_pm or r.pm_checked_at) %}
 <section class="card">
   <div class="card-head"><div><h2>{{ _('Review') }}</h2><p>{{ _('The data counts in the official indicators only after approval.') }}</p></div></div>
   <div class="card-actions">

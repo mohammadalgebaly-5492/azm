@@ -107,6 +107,18 @@ def approve(pid, rid):
     return redirect(url_for("daily.view", pid=pid, rid=rid))
 
 
+@bp.post("/projects/<int:pid>/reports/<int:rid>/pm-check")
+@permission_required("project.lead")
+def pm_check(pid, rid):
+    db, _p = _project(pid)
+    try:
+        Y.pm_check(db, pid, rid, g.user["id"])
+        flash(_("Checked by the project manager. It waits for the cost control engineer."), "ok")
+    except AuthError as e:
+        flash(str(e), "bad")
+    return redirect(url_for("daily.view", pid=pid, rid=rid))
+
+
 @bp.post("/projects/<int:pid>/reports/<int:rid>/return")
 @permission_required("projects.manage")
 def send_back(pid, rid):
@@ -117,6 +129,30 @@ def send_back(pid, rid):
     except AuthError as e:
         flash(str(e), "bad")
     return redirect(url_for("daily.view", pid=pid, rid=rid))
+
+
+@bp.route("/engineers", methods=["GET", "POST"])
+@login_required
+def engineers():
+    from .. import authority as A
+    from ..rbac import can
+    if not (can(g.user, "projects.manage") or can(g.user, "changes.approve")):
+        abort(403)
+    db = get_db()
+    if request.method == "POST":
+        if not can(g.user, "projects.manage"):
+            abort(403)
+        uid = str(request.form.get("user_id") or "")
+        try:
+            if not uid.isdigit():
+                raise AuthError(_("Choose the engineer."))
+            A.set_level(db, int(uid), request.form.get("level"), request.form.get("reason"), g.user["id"])
+            flash(_("Authority changed. The Director is notified."), "ok")
+        except AuthError as e:
+            flash(str(e), "bad")
+        return redirect(url_for("daily.engineers"))
+    return render_template("daily/engineers.html", cards=A.scorecards(db), LEVELS=A.LEVELS, changes=A.recent_changes(db, 90),
+                           fmt_pct=fmt_pct, names={r[0]: r[1] for r in db.execute("SELECT id, full_name FROM users").fetchall()})
 
 
 @bp.get("/projects/<int:pid>/performance")

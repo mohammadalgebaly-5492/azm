@@ -146,8 +146,11 @@ def create_report(db, pid, form, actor_id) -> tuple[int, str, list]:
     counter = "dsr-%d" % pid
     with tx(db):
         code = f"{p['code']}-DSR-{next_counter(db, counter):04d}"
-        rid = db.execute("INSERT INTO daily_reports(project_id, code, report_date, issues, created_at, created_by) "
-                         "VALUES (?,?,?,?,?,?) RETURNING id", (pid, code, d["date"], d["issues"], utcnow(), actor_id)).fetchone()[0]
+        from .authority import level_of
+        needs_pm = level_of(db, actor_id) != "full"
+        rid = db.execute("INSERT INTO daily_reports(project_id, code, report_date, issues, needs_pm, created_at, created_by) "
+                         "VALUES (?,?,?,?,?,?,?) RETURNING id",
+                         (pid, code, d["date"], d["issues"], needs_pm, utcnow(), actor_id)).fetchone()[0]
         _write(db, rid, d)
         audit.log(db, actor_id, "dsr_submitted", "project", pid, pid, code=code)
     return rid, code, warns
@@ -163,8 +166,8 @@ def update_report(db, pid, rid, form, actor_id) -> list:
         raise AuthError(_("There is already a report for this day. Open it and edit it instead."))
     warns = warnings(db, pid, d, rid)
     with tx(db):
-        db.execute("UPDATE daily_reports SET report_date = ?, issues = ?, status = 'review', updated_at = ? WHERE id = ?",
-                   (d["date"], d["issues"], utcnow(), rid))
+        db.execute("UPDATE daily_reports SET report_date = ?, issues = ?, status = 'review', updated_at = ?, pm_checked_at = NULL, "
+                   "pm_checked_by = NULL WHERE id = ?", (d["date"], d["issues"], utcnow(), rid))
         _write(db, rid, d)
         audit.log(db, actor_id, "dsr_resubmitted" if cur["status"] == "returned" else "dsr_updated", "project", pid, pid,
                   code=cur["code"])
@@ -178,6 +181,8 @@ def approve_report(db, pid, rid, actor_id):
         raise AuthError(_("Only a report under review can be approved."))
     if cur["created_by"] == actor_id:
         raise AuthError(_("Whoever prepares a report can't review it."))
+    if cur["needs_pm"] and not cur["pm_checked_at"]:
+        raise AuthError(_("The project manager checks this report first: its engineer's authority is restricted."))
     on = str(cur["report_date"])[:10]
     d = details(db, rid)
     with tx(db):
@@ -210,9 +215,21 @@ def return_report(db, pid, rid, reason, actor_id):
     if len(reason) < 5:
         raise AuthError(_("Write the reason for returning the report."))
     with tx(db):
-        db.execute("UPDATE daily_reports SET status = 'returned', return_reason = ?, reviewed_at = ?, reviewed_by = ? WHERE id = ?",
-                   (reason, utcnow(), actor_id, rid))
+        db.execute("UPDATE daily_reports SET status = 'returned', return_reason = ?, reviewed_at = ?, reviewed_by = ?, "
+                   "times_returned = times_returned + 1 WHERE id = ?", (reason, utcnow(), actor_id, rid))
         audit.log(db, actor_id, "dsr_returned", "project", pid, pid, code=cur["code"], reason=reason)
+
+
+def pm_check(db, pid, rid, actor_id):
+    """فحص مدير المشروع لتقرير مهندس صلاحيته مقيّدة أو موقوفة، قبل مراجعة مهندس تحكم تكلفة."""
+    cur = report(db, pid, rid)
+    if cur is None or cur["status"] != "review" or not cur["needs_pm"] or cur["pm_checked_at"]:
+        raise AuthError(_("This report doesn't need the project manager's check now."))
+    if cur["created_by"] == actor_id:
+        raise AuthError(_("Whoever prepares a report can't review it."))
+    with tx(db):
+        db.execute("UPDATE daily_reports SET pm_checked_at = ?, pm_checked_by = ? WHERE id = ?", (utcnow(), actor_id, rid))
+        audit.log(db, actor_id, "dsr_pm_checked", "project", pid, pid, code=cur["code"])
 
 
 def actual_cost(db, pid, until=None) -> dict[int, int]:

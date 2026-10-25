@@ -36,6 +36,8 @@ def items_of(db, cr_id):
 
 
 def create(db, pid, form, actor_id) -> str:
+    from .authority import ensure_can_raise
+    ensure_can_raise(db, actor_id)
     kind, source = form.get("kind") or "", form.get("source") or ""
     if kind not in KINDS:
         raise AuthError(_("Choose the type of change."))

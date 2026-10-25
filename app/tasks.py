@@ -98,9 +98,19 @@ def collect(db, user) -> list[dict]:
             for x in db.execute("SELECT code, cc_at FROM recovery_plans WHERE project_id = ? AND status = 'cc_reviewed' "
                                 "AND ? NOT IN (created_by, cc_by)", (pid, me)):
                 add(p, _("Approve a recovery plan"), x["code"], url_for("governance.control", pid=pid) + "#plans", x["cc_at"])
+        if can(user, "project.lead"):
+            for r in db.execute("SELECT id, code, created_at FROM daily_reports WHERE project_id = ? AND status = 'review' "
+                                "AND needs_pm = ? AND pm_checked_at IS NULL AND created_by != ?", (pid, True, me)):
+                add(p, _("Check a daily report of a restricted engineer"), r["code"], url_for("daily.view", pid=pid, rid=r["id"]),
+                    r["created_at"])
         if can(user, "schedule.manage"):
             for r in db.execute("SELECT id, code, reviewed_at FROM daily_reports WHERE project_id = ? AND status = 'returned' "
                                 "AND created_by = ?", (pid, me)):
                 add(p, _("Fix and resubmit a returned daily report"), r["code"], url_for("daily.form", pid=pid, rid=r["id"]),
                     r["reviewed_at"])
+    if can(user, "changes.approve"):
+        from .authority import recent_changes
+        for c in recent_changes(db):
+            out.append({"project": {"name": c["full_name"], "code": "—"}, "what": _("Note an authority change"),
+                        "code": c["to_level"], "link": url_for("daily.engineers"), "age": _age(c["set_at"])})
     return sorted(out, key=lambda t: -t["age"])

@@ -70,6 +70,8 @@ def _ids(form, key, valid):
 
 
 def create_request(db, pid, form, actor_id) -> tuple[int, str]:
+    from .authority import ensure_can_raise
+    ensure_can_raise(db, actor_id)
     p = db.execute("SELECT code FROM projects WHERE id = ?", (pid,)).fetchone()
     kind = form.get("kind") or ""
     if kind not in KINDS:
