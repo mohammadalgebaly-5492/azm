@@ -90,6 +90,14 @@ def collect(db, user) -> list[dict]:
             for r in db.execute("SELECT code, created_at FROM change_requests WHERE project_id = ? AND status = 'pm_review' "
                                 "AND created_by != ?", (pid, me)):
                 add(p, _("Review a change request"), r["code"], url_for("changes.page", pid=pid), r["created_at"])
+        if can(user, "projects.manage"):
+            for x in db.execute("SELECT code, created_at FROM recovery_plans WHERE project_id = ? AND status = 'review' "
+                                "AND created_by != ?", (pid, me)):
+                add(p, _("Review a recovery plan"), x["code"], url_for("governance.control", pid=pid) + "#plans", x["created_at"])
+        if can(user, "changes.approve"):
+            for x in db.execute("SELECT code, cc_at FROM recovery_plans WHERE project_id = ? AND status = 'cc_reviewed' "
+                                "AND ? NOT IN (created_by, cc_by)", (pid, me)):
+                add(p, _("Approve a recovery plan"), x["code"], url_for("governance.control", pid=pid) + "#plans", x["cc_at"])
         if can(user, "schedule.manage"):
             for r in db.execute("SELECT id, code, reviewed_at FROM daily_reports WHERE project_id = ? AND status = 'returned' "
                                 "AND created_by = ?", (pid, me)):

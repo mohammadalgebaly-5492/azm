@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Early warning and recovery') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Early warning and recovery') }}</h1>
+  <p class="lead">{{ _('Management by exception: the platform follows everything and escalates only what goes beyond the tolerances.') }}</p>
+</div></header>
+{% if alert %}<div class="alert {{ alert.level }}" role="status">{{ icon('alert', 17) }}<span>{{ _('Project status: {s}. Alert to {to}.', s=_(RAG[status]), to=alert.to) }}{% if alert.plan %} {{ _('A recovery plan is mandatory within 7 days.') }}{% endif %}{% if alert.meeting %} {{ _('A meeting is mandatory, and restricting the project engineer\'s authority is proposed.') }}{% endif %}</span></div>
+{% elif status %}<div class="alert ok" role="status">{{ icon('check', 17) }}<span>{{ _('Project status: {s}.', s=_(RAG[status])) }}</span></div>{% endif %}
+{% if plan_due %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ _('No recovery plan is raised yet.') }}</span></div>{% endif %}
+
+<section class="card flush" id="suggestions">
+  <div class="card-head"><div><h2>{{ _('Alternatives calculated by the platform') }}</h2><p>{{ _('Estimates from the planned productivity and daily cost of the allocated resources. The decision stays with people.') }}</p></div></div>
+  {% if suggestions %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Late activity') }}</th><th class="num">{{ _('Days late') }}</th>{% for k in ('resources', 'overtime', 'fast_track') %}<th class="num">{{ _(OPTIONS[k]) }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for s in suggestions %}<tr>
+      <td><span class="code">{{ s.a.code }}</span><span class="sub">{{ s.a.name }}</span></td><td class="num warn-text">{{ s.late }}</td>
+      {% for o in s.options %}<td class="num">{{ _('{n} days saved', n=o.days) }}<span class="sub">{{ money(o.cost) }} {{ _('SAR') }}</span></td>{% endfor %}
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('check', 28) }}<p>{{ _('No activity is expected to be late.') }}</p></div>{% endif %}
+</section>
+
+<section class="card flush" id="plans">
+  <div class="card-head"><div><h2>{{ _('Recovery plans') }}</h2><p>{{ _('The project manager prepares, the cost control engineer reviews, and the Director approves.') }}</p></div><span class="count">{{ plans|length }}</span></div>
+  {% if plans %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Plan') }}</th><th>{{ _('Option') }}</th><th class="num">{{ _('Days saved') }}</th><th class="num">{{ _('Extra cost') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>{% for x in plans %}<tr>
+      <td><span class="code">{{ x.code }}</span><span class="sub">{{ x.description }}</span></td><td>{{ _(OPTIONS[x.option]) }}</td>
+      <td class="num">{{ x.days_saved }}</td><td class="num">{{ money(x.extra_cost) }}</td>
+      <td><span class="pill {{ 'ok' if x.status == 'approved' else ('bad' if x.status == 'returned' else 'warn') }}">{{ _(PLAN_STATUS[x.status]) }}</span>{% if x.return_reason %}<span class="sub">{{ x.return_reason }}</span>{% endif %}</td>
+      <td class="cell-actions">{% set need = {'review': 'projects.manage', 'cc_reviewed': 'changes.approve'}.get(x.status) %}
+        {% if need and can(need) and g.user.id not in (x.created_by, x.cc_by) %}
+        <form method="post" action="{{ url_for('governance.plan_decide', pid=p.id, plan_id=x.id, action='approve') }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Approve') }}</button></form>
+        <details class="row-menu"><summary class="btn btn-ghost">{{ _('Return') }}</summary><form method="post" action="{{ url_for('governance.plan_decide', pid=p.id, plan_id=x.id, action='return') }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for returning') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Return') }}</button></form></details>
+        {% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('No recovery plans yet.') }}</p></div>{% endif %}
+  {% if can('project.lead') %}
+  <form method="post" action="{{ url_for('governance.plan_add', pid=p.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="rp_opt" class="req">{{ _('Option') }}</label><select id="rp_opt" name="option" required>{% for k, v in OPTIONS.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="rp_days">{{ _('Days saved') }}</label><input id="rp_days" name="days_saved" dir="ltr" inputmode="numeric"></div>
+      <div class="field"><label for="rp_cost">{{ _('Extra cost') }}</label><div class="affix"><input id="rp_cost" name="extra_cost" dir="ltr" inputmode="decimal" data-money><span>{{ _('SAR') }}</span></div></div>
+      <div class="field wide"><label for="rp_desc" class="req">{{ _('Description of the plan') }}</label><textarea id="rp_desc" name="description" required></textarea></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Raise the recovery plan') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card flush" id="delays">
+  <div class="card-head"><div><h2>{{ _('Delays and who is responsible') }}</h2><p>{{ _('The company: a loss on the project. The owner, the consultant or an outside event: an extension of time and a claim.') }} {{ _('Cost of each day of delay now') }}: <b class="num">{{ money(cost.total) }}</b> {{ _('SAR') }} ({{ _('penalty') }} <span class="num">{{ money(cost.penalty) }}</span>)</p></div><span class="count">{{ delays|length }}</span></div>
+  {% if delays %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Activity') }}</th><th class="num">{{ _('Days') }}</th><th>{{ _('Cause') }}</th><th>{{ _('Responsible') }}</th><th class="num">{{ _('Cost of the delay') }}</th></tr></thead>
+    <tbody>{% for d in delays %}<tr><td class="code">{{ d.code }}</td><td>{% if d.act_code %}<span class="code">{{ d.act_code }}</span><span class="sub">{{ d.act_name }}</span>{% else %}—{% endif %}</td>
+      <td class="num">{{ d.days }}</td><td class="details">{{ d.cause }}</td><td>{{ _(RESPONSIBLE[d.responsible]) }}{% if d.responsible != 'company' %}<span class="sub">{{ _('Extension of time and claim') }}</span>{% endif %}</td>
+      <td class="num">{{ money(d.cost_per_day * d.days) }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('No delays recorded.') }}</p></div>{% endif %}
+  {% if can('projects.manage') %}
+  <form method="post" action="{{ url_for('governance.delay_add', pid=p.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="d_act">{{ _('Activity') }}</label><select id="d_act" name="activity_id"><option value="">—</option>{% for a in acts %}<option value="{{ a.id }}">{{ a.code }} · {{ a.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="d_days" class="req">{{ _('Days') }}</label><input id="d_days" name="days" dir="ltr" inputmode="numeric" required></div>
+      <div class="field"><label for="d_who" class="req">{{ _('Responsible') }}</label><select id="d_who" name="responsible" required>{% for k, v in RESPONSIBLE.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field wide"><label for="d_cause" class="req">{{ _('Cause') }}</label><input id="d_cause" name="cause" required></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Record the delay') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

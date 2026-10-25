@@ -99,6 +99,10 @@ ACTION_LABELS = {
     "cr_raised": "Change request raised", "cr_reviewed": "Change request reviewed by the project manager",
     "cr_studied": "Change request studied by cost control", "cr_approved": "Change request approved",
     "cr_returned": "Change request returned",
+    "kickoff_element": "Plan element reviewed at kickoff", "kickoff": "Execution started",
+    "delay_recorded": "Delay recorded", "recovery_added": "Recovery plan raised", "recovery_reviewed": "Recovery plan reviewed",
+    "recovery_approved": "Recovery plan approved", "recovery_returned": "Recovery plan returned",
+    "lessons_saved": "Lessons learned saved", "project_closed": "Project closed and archived",
 }
 
 
@@ -139,7 +143,7 @@ FIELD_LABELS = {
     "title": "Document title", "issuer": "Issued by", "issuer_ref": "Document number at the issuer",
     "issued_on": "Issue date", "summary": "Document summary", "weight_bp": "Weight of the item progress",
     "seq": "Order", "party": "Executed by", "planned_start": "Planned start", "planned_finish": "Planned finish",
-    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on", "order": "Order",
+    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on", "order": "Order", "element": "Plan element", "decision": "Decision",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",

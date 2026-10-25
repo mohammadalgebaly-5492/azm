@@ -64,6 +64,9 @@ def table_strings():
     out |= set(IPC_STATUS.values()) | set(PAY_KINDS.values()) | set(PAY_STATUS.values())
     from app.changes import KINDS as CR_KINDS, SOURCES, STATUS as CR_STATUS
     out |= set(CR_KINDS.values()) | set(SOURCES.values()) | set(CR_STATUS.values())
+    from app.governance import DECISIONS, ELEMENTS, OPTIONS, PLAN_STATUS, RESPONSIBLE
+    out |= set(DECISIONS.values()) | set(ELEMENTS.values()) | set(OPTIONS.values()) | set(PLAN_STATUS.values())
+    out |= set(RESPONSIBLE.values())
     return out
 
 

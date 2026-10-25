@@ -56,7 +56,14 @@ def project(pid):
                            boq_count=boq_count, boq_total=boq_total, parties=parties, reps=reps,
                            parties_complete=R.parties_complete(db, pid), MIN_REPS=R.MIN_REPRESENTATIVES,
                            contract=contract, contract_summary=C.summary(db, contract) if contract else None,
-                           contract_alerts=C.expiring(db, contract['id']) if contract else [])
+                           contract_alerts=C.expiring(db, contract['id']) if contract else [], perf=_perf(db, pid))
+
+
+def _perf(db, pid):
+    """حالة المشروع بالألوان للتنبيه داخل المنصة (البندان 4.3 و4.6)."""
+    from .. import governance as G, performance as P
+    status = P.indicators(db, pid)["project"]["status"]
+    return {"status": status, "alert": G.alert(status), "plan_due": G.plan_due(db, pid, status), "RAG": P.RAG}
 
 
 @bp.get("/analytics")

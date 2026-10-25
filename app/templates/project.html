@@ -11,6 +11,7 @@
   </div>
   {% if can('projects.manage') %}<a class="btn" href="{{ url_for('admin.project_edit', pid=p.id) }}">{{ icon('edit', 16) }} {{ _('Edit project') }}</a>{% endif %}
 </header>
+{% if perf.alert %}<div class="alert {{ perf.alert.level }}" role="status">{{ icon('alert', 17) }}<span>{{ _('Project status: {s}. Alert to {to}.', s=_(perf.RAG[perf.status]), to=perf.alert.to) }}{% if perf.plan_due %} {{ _('A recovery plan is mandatory within 7 days.') }}{% endif %} <a href="{{ url_for('governance.control', pid=p.id) }}">{{ _('Early warning and recovery') }}</a></span></div>{% endif %}
 <div class="grid-2">
   <section class="card">
     <div class="card-head"><h2>{{ _('Project and contract') }}</h2></div>
@@ -47,6 +48,10 @@
     <div class="boq-summary">
       <div><b>{{ _('Procurement') }}</b><br><span class="muted">{{ _('Purchase and subcontract requests, quotes, approvals within the limits, and the orders issued against the item budgets.') }}</span></div>
       <a class="btn" href="{{ url_for('procurement.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open procurement') }}</a>
+    </div>
+    <div class="boq-summary">
+      <div><b>{{ _('Project governance') }}</b><br><span class="muted">{{ _('Execution kickoff, early warning with recovery plans and delays, and closeout.') }}</span></div>
+      <div class="actions"><a class="btn" href="{{ url_for('governance.kickoff', pid=p.id) }}">{{ _('Execution kickoff') }}</a><a class="btn" href="{{ url_for('governance.control', pid=p.id) }}">{{ _('Early warning and recovery') }}</a><a class="btn" href="{{ url_for('governance.closeout', pid=p.id) }}">{{ _('Project closeout') }}</a></div>
     </div>
     <div class="boq-summary">
       <div><b>{{ _('Change requests') }}</b><br><span class="muted">{{ _('Internal changes to the plan and contractual changes that become change orders.') }}</span></div>

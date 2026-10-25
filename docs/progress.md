@@ -9,13 +9,16 @@ The project's memory between chats. Claude reads this at the start of **every** 
 - **Also built:** procurement with quotes, the approval limits and commitments (4.2).
 - **Also built:** certificates, invoices, goods receipts and payments (4.7); owner certificates and receivables (4.8).
 - **Also built:** change requests and the «مهامي» page (4.9, governance principle 6).
-- **Next, in order:** alerts and recovery plans (4.6); schedule import from Excel / Primavera / MS Project (3.4); then the rest of part 2: kickoff gate (4.1), payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
+- **Also built:** kickoff gate (4.1), delays and their cost (4.5), early warning and recovery plans (4.6), closeout and archive (4.10).
+- **Next, in order:** schedule import from Excel (3.4); the project engineer's authority levels and performance indicators (4.4); weekly and monthly reports (4.3). Waiting on the programmer: file storage and email.
 - **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
 - **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 10, governance: migration `021_governance` (`kickoff_reviews`, `delays`, `recovery_plans`, `closeouts`, `projects.kickoff_at/by`), permission `project.lead` (PM). The project page now shows the colour-status alert. 108 tests pass on SQLite and Postgres.
 
 - **2026-10-25.** Round 9, change requests (4.9) and «مهامي»: migration `020_change_requests` (`change_requests`, `cr_items`, `cr_activities`, `budget_adjustments`), permission `changes.request` (Cost Control, PM). 104 tests pass on SQLite and Postgres.
 

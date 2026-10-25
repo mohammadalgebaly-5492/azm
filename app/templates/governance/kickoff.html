@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Execution kickoff') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Execution kickoff') }}</h1>
+  <p class="lead">{{ _('The appointed project manager receives the project management plan and approves it element by element. A change is raised as a change request, never edited directly.') }}</p>
+</div></header>
+{% if p.kickoff_at %}<div class="alert ok" role="status">{{ icon('check', 17) }}<span>{{ _('Execution started on {d} by {name}. Kickoff record {code}.', d=p.kickoff_at|string|truncate(10, True, ''), name=users.get(p.kickoff_by, ''), code=p.code ~ '-KOF') }}</span></div>{% endif %}
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Plan review checklist') }}</h2><p>{{ _('Execution starts only after every element is reviewed and the Director has approved the budget and schedule baselines.') }}</p></div><span class="count">{{ reviews|length }} / {{ ELEMENTS|length }}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Plan element') }}</th><th>{{ _('Decision') }}</th><th>{{ _('Notes') }}</th><th></th></tr></thead>
+    <tbody>{% for k, v in ELEMENTS.items() %}{% set r = reviews.get(k) %}<tr>
+      <td>{{ _(v) }}</td>
+      <td>{% if r %}<span class="pill {{ 'ok' if r.decision == 'approved' else 'warn' }}">{{ _(DECISIONS[r.decision]) }}</span><span class="sub">{{ users.get(r.decided_by, '') }}</span>{% else %}<span class="faint">{{ _('Not reviewed yet') }}</span>{% endif %}</td>
+      <td class="details">{{ r.notes if r and r.notes else '' }}</td>
+      <td class="cell-actions">{% if can('project.lead') and not p.kickoff_at %}<details class="row-menu"><summary class="btn">{{ _('Review') }}</summary>
+        <form method="post" action="{{ url_for('governance.kickoff_review', pid=p.id) }}" class="row-form"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="element" value="{{ k }}">
+          <select name="decision" data-shows="kd-{{ k }}" aria-label="{{ _('Decision') }}">{% for dk, dv in DECISIONS.items() %}<option value="{{ dk }}">{{ _(dv) }}</option>{% endfor %}</select>
+          <div data-group="kd-{{ k }}" data-value="with_cr"><select name="cr_id" aria-label="{{ _('Change request') }}">{% for c in crs %}<option value="{{ c.id }}">{{ c.code }} · {{ c.description|truncate(40) }}</option>{% endfor %}</select></div>
+          <input name="notes" placeholder="{{ _('Notes of the project manager') }}" aria-label="{{ _('Notes') }}">
+          <button class="btn btn-primary" type="submit">{{ _('Save') }}</button></form></details>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% if can('project.lead') and not p.kickoff_at %}
+  <form method="post" action="{{ url_for('governance.kickoff_start', pid=p.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit" {{ 'disabled' if reviews|length < ELEMENTS|length }}>{{ icon('check', 16) }} {{ _('Approve the plan and start execution') }}</button></form>
+  {% endif %}
+</section>
+{% endblock %}

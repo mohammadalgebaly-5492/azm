@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Project closeout') }}{% endblock %}
+{% macro idx(v) -%}{{ '%.2f'|format(v / 10000) if v is not none else '—' }}{%- endmacro %}
+{% block content %}
+{% set closed = co and co.status == 'approved' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Project closeout') }}</h1>
+  <p class="lead">{{ _('The final comparison of plan and actual, the lessons learned, and the archive. After the Director approves, the project data is read-only.') }}</p>
+</div></header>
+{% if closed %}<div class="alert ok" role="status">{{ icon('lock', 17) }}<span>{{ _('Closed by {name}. Closing report {code}.', name=users.get(co.approved_by, ''), code=p.code ~ '-CLS') }}</span></div>{% endif %}
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Project score') }}</span></div><b class="num">{{ r.score if r.score is not none else '—' }}</b><span>{{ _('From the time and cost indices and the accuracy of the reports') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Schedule performance index') }}</span></div><b class="num">{{ idx(r.m.spi) }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Cost performance index') }}</span></div><b class="num">{{ idx(r.m.cpi) }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Approved changes') }}</span></div><b class="num">{{ r.changes }}</b></div>
+</div>
+<section class="card">
+  <div class="card-head"><h2>{{ _('Final comparison') }}</h2></div>
+  <dl class="kv">
+    <dt>{{ _('Current contract value') }}</dt><dd class="num">{{ money(r.value) }}</dd>
+    <dt>{{ _('Budget at completion') }}</dt><dd class="num">{{ money(r.m.bac) }}</dd>
+    <dt>{{ _('Earned value') }}</dt><dd class="num">{{ money(r.m.ev) }}</dd>
+    <dt>{{ _('Actual cost') }}</dt><dd class="num">{{ money(r.m.ac) }}</dd>
+    <dt>{{ _('Margin achieved') }}</dt><dd class="num {{ 'warn-text' if r.margin < 0 }}">{{ money(r.margin) }}</dd>
+    <dt>{{ _('Planned finish') }}</dt><dd class="num">{{ r.m.finish or '—' }}</dd>
+    <dt>{{ _('Expected finish') }}</dt><dd class="num">{{ r.m.forecast or '—' }}</dd>
+    <dt>{{ _('Daily reports approved without return') }}</dt><dd class="num">{{ fmt_pct(r.accuracy) if r.accuracy is not none else '—' }} ({{ r.reports }})</dd>
+  </dl>
+</section>
+<div class="grid-2">
+  {% for role, title, perm, text in (('pm', _('Lessons learned: project manager'), 'project.lead', co.lessons_pm if co else ''), ('cc', _('Lessons learned: cost control engineer'), 'projects.manage', co.lessons_cc if co else '')) %}
+  <section class="card">
+    <div class="card-head"><h2>{{ title }}</h2></div>
+    {% if can(perm) and not closed %}
+    <form method="post" action="{{ url_for('governance.lessons', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="role" value="{{ role }}">
+      <div class="field"><textarea name="lessons" rows="6" aria-label="{{ title }}">{{ text or '' }}</textarea></div>
+      <div class="card-actions"><button class="btn" type="submit">{{ _('Save') }}</button></div></form>
+    {% else %}<p class="prose">{{ text or '—' }}</p>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% if can('changes.approve') and not closed %}
+<section class="card"><div class="card-head"><div><h2>{{ _('Close the project') }}</h2><p>{{ _('The data becomes read-only, and every document and record stays.') }}</p></div></div>
+  <form method="post" action="{{ url_for('governance.close', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-danger" type="submit">{{ icon('lock', 16) }} {{ _('Approve the closeout and archive') }}</button></form></section>
+{% endif %}
+{% endblock %}
