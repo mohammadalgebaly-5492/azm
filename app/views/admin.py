@@ -387,7 +387,8 @@ def project_edit(pid):
             return redirect(url_for("main.project", pid=pid))
     form = request.form if error else dict(p, contract_value=P.fmt_money(p["contract_value"]).replace(",", "")
                                            if p["contract_value"] is not None else "")
-    return render_template("admin/project_form.html", p=p, form=form, error=error)
+    from .. import contracts as C
+    return render_template("admin/project_form.html", p=p, form=form, error=error, contract=C.contract_of(db, pid))
 
 
 @bp.post("/projects/<int:pid>/members")

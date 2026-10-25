@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Main contract') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('contracts.page', pid=p.id) if c else url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ c.code if c else p.code }}</span></div>
+  <h1>{{ _('Edit the contract') if c else _('Record the main contract') }}</h1>
+  <p class="lead">{{ _('The main contract with the owner: the reference for every value, period and obligation in the project.') }}</p>
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+{% if p.baseline_approved_at %}<div class="alert warn" role="note">{{ icon('lock', 17) }}<span>{{ _('The budget is approved: the contract value, start and duration change only through approved change orders.') }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Basic details') }}</h2><p>{{ _('The contract number, type and value as signed.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="contract_no" class="req">{{ _('Contract number') }}</label><input id="contract_no" name="contract_no" dir="ltr" required value="{{ form.get('contract_no') or '' }}"></div>
+      <div class="field"><label for="signed_on" class="req">{{ _('Signing date') }}</label><input id="signed_on" name="signed_on" type="date" required {{ date_attrs|safe }} value="{{ form.get('signed_on') or '' }}"></div>
+      <div class="field"><label for="kind" class="req">{{ _('Contract type') }}</label>
+        <select id="kind" name="kind" required>{% for k, v in KINDS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('kind') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="value_ex_vat" class="req">{{ _('Contract value before VAT') }}</label>
+        <div class="affix"><input id="value_ex_vat" name="value_ex_vat" dir="ltr" inputmode="decimal" data-money required value="{{ form.get('value_ex_vat') or '' }}" placeholder="0.00"><span>{{ _('SAR') }}</span></div></div>
+      <div class="field"><label for="vat_pct" class="req">{{ _('VAT rate') }}</label>
+        <div class="affix"><input id="vat_pct" name="vat_pct" dir="ltr" inputmode="decimal" required value="{{ form.get('vat_pct') or '' }}"><span>%</span></div></div>
+      <div class="field wide"><label for="scope" class="req">{{ _('Brief description of the works') }}</label><textarea id="scope" name="scope" rows="3" required>{{ form.get('scope') or '' }}</textarea></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Duration') }}</h2><p>{{ _('The contractual handover date is calculated from the start and the duration.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="site_handover_on" class="req">{{ _('Site handover date') }}</label><input id="site_handover_on" name="site_handover_on" type="date" required {{ date_attrs|safe }} value="{{ form.get('site_handover_on') or '' }}"></div>
+      <div class="field"><label for="start_on" class="req">{{ _('Start date') }}</label><input id="start_on" name="start_on" type="date" required {{ date_attrs|safe }} value="{{ form.get('start_on') or '' }}"></div>
+      <div class="field"><label for="duration_days" class="req">{{ _('Duration in days') }}</label><input id="duration_days" name="duration_days" dir="ltr" inputmode="numeric" required value="{{ form.get('duration_days') or '' }}"></div>
+      <div class="field"><label for="warranty_months" class="req">{{ _('Warranty period in months') }}</label><input id="warranty_months" name="warranty_months" dir="ltr" inputmode="numeric" required value="{{ form.get('warranty_months') if form.get('warranty_months') is not none else '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Payments and retention') }}</h2><p>{{ _('The payment schedule linked to schedule activities is added with the timeline.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="advance_pct">{{ _('Advance payment') }}</label><div class="affix"><input id="advance_pct" name="advance_pct" dir="ltr" inputmode="decimal" value="{{ form.get('advance_pct') or '' }}"><span>%</span></div></div>
+      <div class="field"><label for="advance_recovery_pct">{{ _('Advance recovery from each certificate') }}</label><div class="affix"><input id="advance_recovery_pct" name="advance_recovery_pct" dir="ltr" inputmode="decimal" value="{{ form.get('advance_recovery_pct') or '' }}"><span>%</span></div></div>
+      <div class="field"><label for="retention_pct" class="req">{{ _('Retention from each certificate') }}</label><div class="affix"><input id="retention_pct" name="retention_pct" dir="ltr" inputmode="decimal" required value="{{ form.get('retention_pct') or '' }}"><span>%</span></div></div>
+      <div class="field"><label for="retention_cap_pct">{{ _('Retention cap of the contract value') }}</label><div class="affix"><input id="retention_cap_pct" name="retention_cap_pct" dir="ltr" inputmode="decimal" value="{{ form.get('retention_cap_pct') or '' }}"><span>%</span></div></div>
+      <div class="field"><label for="payment_days">{{ _('Payment period after certificate approval (days)') }}</label><input id="payment_days" name="payment_days" dir="ltr" inputmode="numeric" value="{{ form.get('payment_days') if form.get('payment_days') is not none else '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Delay penalties') }}</h2><p>{{ _('Optional. A daily percentage of the contract value, or a fixed daily amount.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="penalty_method">{{ _('Penalty method') }}</label>
+        <select id="penalty_method" name="penalty_method"><option value="">{{ _('No delay penalty') }}</option>{% for k, v in PENALTY_METHODS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('penalty_method') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="penalty_value">{{ _('Penalty value (percentage or SAR per day)') }}</label><input id="penalty_value" name="penalty_value" dir="ltr" inputmode="decimal" value="{{ form.get('penalty_value') or '' }}"></div>
+      <div class="field"><label for="penalty_cap_pct">{{ _('Penalty cap of the contract value') }}</label><div class="affix"><input id="penalty_cap_pct" name="penalty_cap_pct" dir="ltr" inputmode="decimal" value="{{ form.get('penalty_cap_pct') or '' }}"><span>%</span></div></div>
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('contracts.page', pid=p.id) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if c else _('Save the contract') }}</button>
+  </div>
+</form>
+{% endblock %}

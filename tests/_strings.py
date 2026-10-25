@@ -43,6 +43,9 @@ def table_strings():
     from app.registers import ADDRESS_LABELS, APPROVAL, CATALOGS, COST_UNITS, ENTITY_KINDS
     out |= {s for pair in CATALOGS.values() for s in pair} | {v[0] for v in ENTITY_KINDS.values()}
     out |= set(APPROVAL.values()) | set(ADDRESS_LABELS.values()) | set(COST_UNITS.values())
+    from app.contracts import GUARANTEES, INSURANCES, KINDS, PENALTY_METHODS, VO_STATUS
+    out |= set(GUARANTEES.values()) | set(INSURANCES.values()) | set(KINDS.values()) | set(PENALTY_METHODS.values())
+    out |= set(VO_STATUS.values())
     return out
 
 

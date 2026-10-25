@@ -448,6 +448,11 @@ html.loading .app::before { content: ""; position: fixed; top: 0; inset-inline: 
 .check:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--accent-soft); }
 .searchbar { display: flex; gap: 10px; flex-wrap: wrap; }
 .searchbar + .searchbar { margin-top: 10px; }
+.card-form { padding: 18px 22px; border-top: 1px solid var(--line); }
+.vo-decide { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; width: 260px; }
+.vo-decide input { flex: 1 1 100%; }
+.card-form details { margin-top: 12px; }
+.card-form details .checks { margin-top: 10px; }
 .inline-form { display: flex; gap: 8px; align-items: center; }
 .inline-form input { width: 280px; max-width: 100%; height: 36px; }
 .searchbar input { flex: 1 1 280px; }

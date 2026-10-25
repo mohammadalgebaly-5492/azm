@@ -35,12 +35,19 @@
   <section class="fsection">
     <div class="fsection-head"><h2>{{ _('Main contract') }}</h2><p>{{ _('Contract value and dates. The duration is calculated automatically.') }}</p></div>
     <div class="fsection-body">
+      {% if contract %}
+      <div class="field"><span class="label">{{ _('Main contract no.') }}</span><span class="code">{{ contract.contract_no }}</span></div>
+      <div class="field"><span class="label">{{ _('Contract value') }}</span><span><span class="num">{{ money(contract.value_ex_vat) }}</span> {{ _('SAR') }}</span></div>
+      <div class="field wide"><a class="btn" href="{{ url_for('contracts.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open the contract') }}</a>
+        <span class="hint">{{ _('The contract details are edited from the contract page.') }}</span></div>
+      {% else %}
       <div class="field"><label for="contract_no">{{ _('Main contract no.') }}</label><input id="contract_no" name="contract_no" dir="ltr" value="{{ form.get('contract_no') or '' }}"></div>
       <div class="field"><label for="contract_value">{{ _('Contract value') }}</label>
         <div class="affix"><input id="contract_value" name="contract_value" dir="ltr" inputmode="decimal" data-money value="{{ form.get('contract_value') or '' }}" placeholder="0.00"><span>{{ _('SAR') }}</span></div></div>
       <div class="field"><label for="start_date">{{ _('Start date') }}</label><input id="start_date" name="start_date" type="date" {{ date_attrs|safe }} value="{{ form.get('start_date') or '' }}"></div>
       <div class="field"><label for="end_date">{{ _('Contractual end date') }}</label><input id="end_date" name="end_date" type="date" data-after="start_date" {{ date_attrs|safe }} value="{{ form.get('end_date') or '' }}">
         <output class="readout" data-duration="start_date,end_date" data-days="{{ _('Duration: {n} days', n='{n}') }}"></output></div>
+      {% endif %}
     </div>
   </section>
   <div class="form-actions">

@@ -29,6 +29,13 @@
         {% if p.baseline_approved_at %}<br><span class="pill ok">{{ _('Baseline approved') }}</span>{% endif %}</div>
       <a class="btn btn-primary" href="{{ url_for('boq.page', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open BOQ') }}</a>
     </div>
+    <div class="boq-summary">
+      <div><b>{{ _('Main contract') }}</b><br>
+        {% if contract %}<span class="muted"><span class="code">{{ contract.code }}</span> · {{ _('Current value') }} <span class="num">{{ money(contract_summary.current) }}</span> {{ _('SAR') }} · {{ _('Handover') }} <span class="num">{{ contract_summary.current_end }}</span></span>
+          {% if contract_alerts %}<br><span class="pill warn">{{ _('{n} guarantees or policies expiring soon', n=contract_alerts|length) }}</span>{% endif %}
+        {% else %}<span class="muted">{{ _('The main contract is not recorded yet.') }}</span>{% endif %}</div>
+      <a class="btn" href="{{ url_for('contracts.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open the contract') }}</a>
+    </div>
   </section>
   <section class="card" id="team">
     <div class="card-head"><h2>{{ _('Project team') }}</h2><span class="count">{{ team|length }}</span></div>

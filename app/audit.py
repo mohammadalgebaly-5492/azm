@@ -58,6 +58,14 @@ ACTION_LABELS = {
     "catalog_item_added": "Lookup list entry added",
     "catalog_item_updated": "Lookup list entry updated",
     "project_parties_updated": "Project parties updated",
+    "contract_created": "Main contract recorded",
+    "contract_updated": "Main contract updated",
+    "guarantee_added": "Bank guarantee added",
+    "guarantee_released": "Bank guarantee released",
+    "insurance_added": "Insurance policy added",
+    "vo_created": "Change order recorded",
+    "vo_approved": "Change order approved",
+    "vo_rejected": "Change order rejected",
 }
 
 
@@ -83,6 +91,14 @@ FIELD_LABELS = {
     "classification": "Classification grade", "approval_status": "Approval status", "website": "Website",
     "city": "City", "label": "Address type", "details": "Address", "specialties": "Specialties", "active": "Active",
     "parent_code": "Equipment type", "cost_unit": "Cost unit", "representatives": "Representatives",
+    "number": "Number", "policy_no": "Policy number", "days": "Days", "signed_on": "Signing date",
+    "value_ex_vat": "Contract value before VAT", "vat_bp": "VAT rate", "scope": "Brief description of the works",
+    "site_handover_on": "Site handover date", "start_on": "Start date", "duration_days": "Duration in days",
+    "warranty_months": "Warranty period in months", "advance_bp": "Advance payment",
+    "advance_recovery_bp": "Advance recovery from each certificate", "retention_bp": "Retention from each certificate",
+    "retention_cap_bp": "Retention cap of the contract value", "payment_days": "Payment period after certificate approval (days)",
+    "penalty_method": "Penalty method", "penalty_value": "Penalty value (percentage or SAR per day)",
+    "penalty_cap_bp": "Penalty cap of the contract value",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",
@@ -112,8 +128,14 @@ def _value(key, v):
         return _(TYPES[v][0]) if v in TYPES else str(v)
     if key == "reason":
         return _(REASONS[v]) if v in REASONS else str(v)
+    from .contracts import GUARANTEES, INSURANCES, KINDS, PENALTY_METHODS, fmt_pct
     from .registers import ADDRESS_LABELS, APPROVAL, CATALOGS, COST_UNITS, ENTITY_KINDS
-    named = {"kind": {k: t[0] for k, t in ENTITY_KINDS.items()}, "approval_status": APPROVAL, "label": ADDRESS_LABELS,
+    if key.endswith("_bp") and isinstance(v, int):
+        return fmt_pct(v)
+    if key == "value_ex_vat":
+        return fmt_money(v)
+    named = {"kind": {**{k: t[0] for k, t in ENTITY_KINDS.items()}, **KINDS, **GUARANTEES, **INSURANCES},
+             "approval_status": APPROVAL, "label": ADDRESS_LABELS, "penalty_method": PENALTY_METHODS,
              "list": {k: t[0] for k, t in CATALOGS.items()}, "cost_unit": COST_UNITS}
     if key in named and v in named[key]:
         return _(named[key][v])

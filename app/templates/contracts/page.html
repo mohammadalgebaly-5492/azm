@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Main contract') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ c.code if c else p.code }}</span></div>
+    <h1>{{ _('Main contract') }}</h1>
+    {% if c %}<p class="meta">{{ _(KINDS[c.kind]) }} · <span class="code">{{ c.contract_no }}</span></p>{% endif %}
+  </div>
+  {% if can('projects.manage') %}<a class="btn {{ '' if c else 'btn-primary' }}" href="{{ url_for('contracts.edit', pid=p.id) }}">{{ icon('edit', 16) }} {{ _('Edit the contract') if c else _('Record the main contract') }}</a>{% endif %}
+</header>
+{% if not c %}
+<section class="card"><div class="empty">{{ icon('file', 28) }}<p>{{ _('The main contract is not recorded yet.') }}</p></div></section>
+{% else %}
+{% for x in expiring %}<div class="alert {{ 'bad' if x.days < 0 else 'warn' }}" role="note">{{ icon('alert', 17) }}<span>
+  {{ _(GUARANTEES[x.type]) if x.kind == 'guarantee' else _(INSURANCES[x.type]) }} <span class="code">{{ x.ref }}</span>:
+  {{ _('expired on {d}', d=x.expires_on) if x.days < 0 else _('expires in {n} days, on {d}', n=x.days, d=x.expires_on) }}</span></div>{% endfor %}
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Current contract value') }}</span></div><b class="num">{{ money(s.current) }}</b><span>{{ _('Before VAT · original + approved change orders') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Including VAT') }}</span></div><b class="num">{{ money(s.current_with_vat) }}</b><span>{{ _('VAT') }} {{ pct(c.vat_bp) }}: <span class="num">{{ money(s.vat_amount) }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Change orders') }}</span></div><b class="num">{{ money(s.vo_total) }}</b><span>{{ _('Original value') }}: <span class="num">{{ money(s.original) }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Current handover date') }}</span></div><b class="num">{{ s.current_end }}</b><span>{{ _('Contractual') }}: <span class="num">{{ s.contractual_end }}</span>{% if s.days_delta %} · <span class="num">{{ '%+d'|format(s.days_delta) }}</span> {{ _('days') }}{% endif %}</span></div>
+</div>
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Contract details') }}</h2></div>
+    <dl class="kv">
+      <dt>{{ _('Signing date') }}</dt><dd class="num">{{ c.signed_on|string|truncate(10, True, '') }}</dd>
+      <dt>{{ _('Site handover date') }}</dt><dd class="num">{{ c.site_handover_on|string|truncate(10, True, '') }}</dd>
+      <dt>{{ _('Start date') }}</dt><dd class="num">{{ c.start_on|string|truncate(10, True, '') }}</dd>
+      <dt>{{ _('Duration in days') }}</dt><dd class="num">{{ c.duration_days }}</dd>
+      <dt>{{ _('Warranty period in months') }}</dt><dd class="num">{{ c.warranty_months }}</dd>
+      <dt>{{ _('Brief description of the works') }}</dt><dd>{{ c.scope }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Payments and penalties') }}</h2></div>
+    <dl class="kv">
+      <dt>{{ _('Advance payment') }}</dt><dd>{{ pct(c.advance_bp) }}{% if s.advance %} · <span class="num">{{ money(s.advance) }}</span> {{ _('SAR') }}{% endif %}</dd>
+      <dt>{{ _('Advance recovery from each certificate') }}</dt><dd>{{ pct(c.advance_recovery_bp) }}</dd>
+      <dt>{{ _('Retention from each certificate') }}</dt><dd>{{ pct(c.retention_bp) }}{% if c.retention_cap_bp %} · {{ _('cap') }} {{ pct(c.retention_cap_bp) }}{% endif %}</dd>
+      <dt>{{ _('Payment period after certificate approval (days)') }}</dt><dd class="num">{{ c.payment_days if c.payment_days is not none else '—' }}</dd>
+      <dt>{{ _('Delay penalty') }}</dt><dd>{% if c.penalty_method == 'daily_pct' %}{{ pct(c.penalty_value) }} {{ _('per day') }}{% elif c.penalty_method == 'daily_amount' %}<span class="num">{{ money(c.penalty_value) }}</span> {{ _('SAR per day') }}{% else %}—{% endif %}{% if c.penalty_cap_bp %} · {{ _('cap') }} {{ pct(c.penalty_cap_bp) }}{% endif %}</dd>
+    </dl>
+  </section>
+</div>
+
+<section class="card flush" id="guarantees">
+  <div class="card-head"><div><h2>{{ _('Bank guarantees') }}</h2><p>{{ _('An alert appears 30 days before any guarantee expires.') }}</p></div><span class="count">{{ guarantees|length }}</span></div>
+  {% if guarantees %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Type') }}</th><th>{{ _('Bank') }}</th><th>{{ _('Number') }}</th><th class="num">{{ _('Amount') }}</th><th>{{ _('Issued') }}</th><th>{{ _('Expires') }}</th><th>{{ _('Status') }}</th>{% if can('projects.manage') %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for x in guarantees %}<tr>
+      <td>{{ _(GUARANTEES[x.kind]) }}</td><td>{{ x.bank }}</td><td class="code">{{ x.number }}</td><td class="num">{{ money(x.amount) }}</td>
+      <td class="num">{{ x.issued_on|string|truncate(10, True, '') }}</td><td class="num">{{ x.expires_on|string|truncate(10, True, '') }}</td>
+      <td>{% if x.released_on %}<span class="pill">{{ _('Released') }}</span>{% else %}<span class="pill ok">{{ _('Active') }}</span>{% endif %}</td>
+      {% if can('projects.manage') %}<td class="cell-actions">{% if not x.released_on %}<form method="post" action="{{ url_for('contracts.guarantee_release', pid=p.id, gid=x.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost" type="submit">{{ _('Mark released') }}</button></form>{% endif %}</td>{% endif %}
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('shield', 28) }}<p>{{ _('No bank guarantees yet.') }}</p></div>{% endif %}
+  {% if can('projects.manage') %}
+  <form method="post" action="{{ url_for('contracts.guarantee_add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar">
+      <select name="kind" aria-label="{{ _('Type') }}">{% for k, v in GUARANTEES.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+      <input name="bank" required placeholder="{{ _('Bank') }}" aria-label="{{ _('Bank') }}">
+      <input name="number" required dir="ltr" placeholder="{{ _('Number') }}" aria-label="{{ _('Number') }}">
+    </div>
+    <div class="searchbar">
+      <input name="amount" required dir="ltr" inputmode="decimal" data-money placeholder="{{ _('Amount') }}" aria-label="{{ _('Amount') }}">
+      <input name="issued_on" type="date" required {{ date_attrs|safe }} aria-label="{{ _('Issued') }}">
+      <input name="expires_on" type="date" required {{ date_attrs|safe }} aria-label="{{ _('Expires') }}">
+      <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add guarantee') }}</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card flush" id="insurances">
+  <div class="card-head"><div><h2>{{ _('Insurance') }}</h2><p>{{ _('An alert appears 30 days before any policy expires.') }}</p></div><span class="count">{{ insurances|length }}</span></div>
+  {% if insurances %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Type') }}</th><th>{{ _('Insurance company') }}</th><th>{{ _('Policy number') }}</th><th class="num">{{ _('Cover amount') }}</th><th>{{ _('Expires') }}</th></tr></thead>
+    <tbody>{% for x in insurances %}<tr><td>{{ _(INSURANCES[x.kind]) }}</td><td>{{ x.insurer }}</td><td class="code">{{ x.policy_no }}</td><td class="num">{{ money(x.cover_amount) }}</td><td class="num">{{ x.expires_on|string|truncate(10, True, '') }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('shield', 28) }}<p>{{ _('No insurance policies yet.') }}</p></div>{% endif %}
+  {% if can('projects.manage') %}
+  <form method="post" action="{{ url_for('contracts.insurance_add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar">
+      <select name="kind" aria-label="{{ _('Type') }}">{% for k, v in INSURANCES.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select>
+      <input name="insurer" required placeholder="{{ _('Insurance company') }}" aria-label="{{ _('Insurance company') }}">
+      <input name="policy_no" required dir="ltr" placeholder="{{ _('Policy number') }}" aria-label="{{ _('Policy number') }}">
+    </div>
+    <div class="searchbar">
+      <input name="cover_amount" required dir="ltr" inputmode="decimal" data-money placeholder="{{ _('Cover amount') }}" aria-label="{{ _('Cover amount') }}">
+      <input name="expires_on" type="date" required {{ date_attrs|safe }} aria-label="{{ _('Expires') }}">
+      <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add policy') }}</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card flush" id="variations">
+  <div class="card-head"><div><h2>{{ _('Change orders') }}</h2><p>{{ _('Every increase or decrease in the value or duration is a separate change order. The original value never changes.') }}</p></div><span class="count">{{ vos|length }}</span></div>
+  {% if vos %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Description') }}</th><th class="num">{{ _('Effect on value') }}</th><th class="num">{{ _('Effect on duration') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>{% for v in vos %}<tr>
+      <td class="code">{{ v.code }}<span class="sub">{{ v.issued_on|string|truncate(10, True, '') }}</span></td>
+      <td>{{ v.description }}{% if vo_items[v.id] %}<span class="sub">{% for it in vo_items[v.id] %}<span class="code">{{ it.code }}</span>{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}{% if v.decision_note %}<span class="sub">{{ v.decision_note }}</span>{% endif %}</td>
+      <td class="num">{{ money(v.value_delta) }}</td><td class="num">{{ '%+d'|format(v.days_delta) }}</td>
+      <td><span class="pill {{ 'ok' if v.status == 'approved' else ('bad' if v.status == 'rejected' else 'warn') }}">{{ _(VO_STATUS[v.status]) }}</span>{% if v.decided_name %}<span class="sub">{{ v.decided_name }}</span>{% endif %}</td>
+      <td class="cell-actions">{% if v.status == 'study' and can('changes.approve') %}
+        <form method="post" action="{{ url_for('contracts.vo_decide', pid=p.id, vid=v.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <input name="note" placeholder="{{ _('Note (required to reject)') }}" aria-label="{{ _('Note') }}">
+          <button class="btn" type="submit" name="decision" value="approved">{{ icon('check', 16) }} {{ _('Approve') }}</button>
+          <button class="btn btn-danger" type="submit" name="decision" value="rejected">{{ _('Reject') }}</button></form>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('log', 28) }}<p>{{ _('No change orders yet.') }}</p></div>{% endif %}
+  {% if can('projects.manage') %}
+  <form method="post" action="{{ url_for('contracts.vo_add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar">
+      <input name="description" required placeholder="{{ _('Description of the change and its reason') }}" aria-label="{{ _('Description') }}">
+      <input name="issued_on" type="date" required {{ date_attrs|safe }} aria-label="{{ _('Date') }}">
+    </div>
+    <div class="searchbar">
+      <input name="value_delta" required dir="ltr" inputmode="decimal" placeholder="{{ _('Effect on value, e.g. 25000 or -5000') }}" aria-label="{{ _('Effect on value') }}">
+      <input name="days_delta" required dir="ltr" inputmode="numeric" placeholder="{{ _('Effect on duration in days, e.g. 15 or 0') }}" aria-label="{{ _('Effect on duration') }}">
+      <button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Record change order') }}</button>
+    </div>
+    {% if boq %}<details class="hint"><summary>{{ _('Affected BOQ items (optional)') }}</summary><div class="checks">{% for b in boq %}<label class="check"><input type="checkbox" name="items" value="{{ b.id }}"><span><span class="code">{{ b.code }}</span> {{ b.description }}</span></label>{% endfor %}</div></details>{% endif %}
+  </form>
+  {% endif %}
+</section>
+<div class="alert" role="note">{{ icon('file', 17) }}<span>{{ _('Attaching the signed contract and guarantee copies needs file storage, which will be added with the documents.') }}</span></div>
+{% endif %}
+{% endblock %}

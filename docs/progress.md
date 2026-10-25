@@ -14,6 +14,14 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Log
 
+- **2026-10-25.** Round 2, the main contract (constitution 3.2), at Muhammad's insistence («زي ما كتبنا المشروع في الدستور ارفعو على المنصة بالكامل»):
+  - Migration `012_contracts`: `contracts`, `contract_guarantees`, `contract_insurances`, `variation_orders` and their items.
+  - New permission `changes.approve`, granted to the Director.
+  - Contract page: computed current value and handover date, VAT, expiry alerts 30 days ahead, change orders with approve/reject (rejection needs a reason; the preparer can't approve).
+  - Contract fields sync to the project and are locked after budget approval.
+  - 66 tests pass on SQLite and Postgres.
+  - The sales deck no longer says «ضمن خارطة الطريق»; the last slide is now «مراحل التسليم».
+  - Live example script: scratchpad `tools/demo_full.py` (adds only).
 - **2026-10-25.** Building the constitution started («عايزك ترفع كل الي في الدستور على المنصة وتحط كل المميزات»). Done in round 1, without needing the programmer:
   - Migration `011_registers` (both folders): `catalog_items` seeded with the constitution's codes (units, document types, professions, specialties, job titles, five equipment types, 17 equipment names); `entities` (ENT-OWN/CNS/SUB-0001) with `entity_addresses`, `entity_people` (…-R01) and `entity_specialties`; `projects.owner_entity_id`/`consultant_entity_id`; `project_representatives`.
   - New permission `registers.manage`, granted to Cost Control by default.

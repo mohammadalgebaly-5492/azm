@@ -47,6 +47,8 @@ PERMISSIONS = {
     "projects.manage": ("Edit projects and teams", "Edit project and contract details, assign and remove team members."),
     "boq.manage": ("Manage BOQ and baseline",
                    "Define WBS sections, items and rates, import from Excel, approve the baseline."),
+    "changes.approve": ("Approve change orders",
+                        "Approve or reject change orders on the main contract, with a written reason when rejecting."),
     "users.manage": ("Manage accounts",
                      "Create accounts, change roles and assigned projects, reset passwords, disable accounts."),
     "admin.invites": ("Manage sign-up links", "Create and revoke sign-up links, and turn sign-up on or off."),
@@ -57,7 +59,7 @@ PERMISSIONS = {
                          "Owners, consultants and subcontractors with their addresses and people, and the lookup lists."),
 }
 PERMISSION_GROUPS = (
-    ("Projects", ("projects.view_all", "projects.create", "projects.manage", "boq.manage")),
+    ("Projects", ("projects.view_all", "projects.create", "projects.manage", "boq.manage", "changes.approve")),
     ("Analytics", ("analytics.view",)),
     ("Registers", ("registers.manage",)),
     ("Accounts", ("users.manage", "admin.invites")),

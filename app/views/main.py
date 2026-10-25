@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, flash, g, make_response, redirect, render_template, request, url_for
 
-from .. import avatars, projects as P, registers as R
+from .. import avatars, contracts as C, projects as P, registers as R
 from ..auth import AuthError, login_required
 from ..db import get_db, utcnow
 from ..i18n import _
@@ -51,9 +51,12 @@ def project(pid):
     parties = {kind: R.entity(db, p[f"{kind}_entity_id"]) if p[f"{kind}_entity_id"] else None
                for kind in ("owner", "consultant")}
     reps = R.representatives(db, pid)
+    contract = C.contract_of(db, pid)
     return render_template("project.html", p=p, team=team, candidates=candidates, activity=activity,
                            boq_count=boq_count, boq_total=boq_total, parties=parties, reps=reps,
-                           parties_complete=R.parties_complete(db, pid), MIN_REPS=R.MIN_REPRESENTATIVES)
+                           parties_complete=R.parties_complete(db, pid), MIN_REPS=R.MIN_REPRESENTATIVES,
+                           contract=contract, contract_summary=C.summary(db, contract) if contract else None,
+                           contract_alerts=C.expiring(db, contract['id']) if contract else [])
 
 
 @bp.get("/analytics")
