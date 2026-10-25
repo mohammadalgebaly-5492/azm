@@ -328,7 +328,11 @@ def evaluate(db, a: dict) -> dict:
         warnings.append(_("This equipment is in maintenance now."))
     if days < needed:
         warnings.append(_("The period has {d} working days, but the productivity rate needs {n}.", d=days, n=needed))
-    if item is not None and unit_cost > item["unit_rate"]:
+    from .pricing import unit_cost_of_type
+    line = unit_cost_of_type(db, item["id"], a["resource_kind"]) if item is not None else None
+    if line is not None and unit_cost > line:
+        warnings.append(_("The cost per unit is higher than its line in the item price analysis: the item will exceed its cost."))
+    elif line is None and item is not None and unit_cost > item["unit_rate"]:
         warnings.append(_("The cost per unit is higher than the item's contract rate."))
     act_id = dict(a).get("activity_id")
     act = db.execute("SELECT * FROM activities WHERE id = ?", (act_id,)).fetchone() if act_id else None

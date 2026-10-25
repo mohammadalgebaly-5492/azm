@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ it.code }} · {{ _('Price analysis') }}{% endblock %}
+{% block content %}
+{% set edit = can('boq.manage') and not locked %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('pricing.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Price analysis') }}</a><span class="code">{{ it.code }}</span></div>
+  <h1>{{ it.description }}</h1>
+  <p class="lead keep">{{ _('For one unit of the item') }} ({{ it.unit }}) · {{ _('Contract rate') }} <span class="num">{{ money(it.unit_rate) }}</span> {{ _('SAR') }}</p>
+</div></header>
+<div class="stats">
+  <div class="stat"><div class="stat-top"><span>{{ _('Direct cost per unit') }}</span></div><b class="num">{{ money(r.direct) }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Proposed price') }}</span></div><b class="num">{{ money(r.proposed) }}</b><span>{{ _('Overheads') }} {{ fmt_pct(r.overhead_bp) }} · {{ _('Profit') }} {{ fmt_pct(r.profit_bp) }}</span></div>
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Item margin') }}</span></div><b class="num">{{ money(r.margin) }}</b><span>{{ fmt_pct(r.margin_bp) if r.margin_bp is not none else '' }}</span></div>
+</div>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Analysis lines') }}</h2><p>{{ _('Materials, labour, equipment and subcontractors needed for one unit of the item.') }}</p></div></div>
+  {% if r.lines %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Cost type') }}</th><th>{{ _('Description') }}</th><th>{{ _('Unit') }}</th><th class="num">{{ _('Quantity per unit of the item') }}</th><th class="num">{{ _('Unit price') }}</th><th class="num">{{ _('Total') }}</th>{% if edit %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for x in r.lines %}<tr><td>{{ _(COST_TYPES[x.cost_type]) }}</td><td>{{ x.description }}</td><td>{{ x.unit }}</td><td class="num">{{ fmt_qty(x.qty_per_unit_milli) }}</td><td class="num">{{ money(x.unit_price) }}</td><td class="num">{{ money(line_total(x)) }}</td>
+      {% if edit %}<td class="cell-actions"><form method="post" action="{{ url_for('pricing.line_delete', pid=p.id, iid=it.id, lid=x.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost btn-danger" type="submit">{{ _('Delete') }}</button></form></td>{% endif %}</tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('No analysis lines yet.') }}</p></div>{% endif %}
+  {% if edit %}
+  <form method="post" action="{{ url_for('pricing.line_add', pid=p.id, iid=it.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="pl_type" class="req">{{ _('Cost type') }}</label><select id="pl_type" name="cost_type" required>{% for k, v in COST_TYPES.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="pl_desc" class="req">{{ _('Description') }}</label><input id="pl_desc" name="description" required></div>
+      <div class="field"><label for="pl_unit" class="req">{{ _('Unit') }}</label><input id="pl_unit" name="unit" required></div>
+      <div class="field"><label for="pl_qty" class="req">{{ _('Quantity per unit of the item') }}</label><input id="pl_qty" name="qty" dir="ltr" inputmode="decimal" required></div>
+      <div class="field"><label for="pl_price" class="req">{{ _('Unit price') }}</label><div class="affix"><input id="pl_price" name="unit_price" dir="ltr" inputmode="decimal" data-money required><span>{{ _('SAR') }}</span></div></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add line') }}</button></div>
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('pricing.rates', pid=p.id, iid=it.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="searchbar">
+      <div class="affix"><input name="overhead_pct" dir="ltr" inputmode="decimal" value="{{ fmt_pct(r.overhead_bp)|replace('%', '') }}" aria-label="{{ _('Overheads') }}" placeholder="{{ _('Overheads') }}"><span>%</span></div>
+      <div class="affix"><input name="profit_pct" dir="ltr" inputmode="decimal" value="{{ fmt_pct(r.profit_bp)|replace('%', '') }}" aria-label="{{ _('Profit') }}" placeholder="{{ _('Profit') }}"><span>%</span></div>
+      <button class="btn" type="submit">{{ _('Save the overhead and profit rates') }}</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

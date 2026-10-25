@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Price analysis') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Price analysis') }}</h1>
+  <p class="lead">{{ _('What each item will cost per unit, the proposed price, and its margin against the contract rate.') }}</p>
+</div></header>
+<div class="stats">
+  <div class="stat"><div class="stat-top"><span>{{ _('Items analysed') }}</span></div><b class="num">{{ n_done }}<span class="of"> / {{ rows|length }}</span></b></div>
+</div>
+{% if locked %}<div class="alert info" role="note">{{ icon('lock', 17) }}<span>{{ _('The budget baseline is approved, so the price analysis is locked with it.') }}</span></div>{% endif %}
+<section class="card flush">
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Item') }}</th><th class="num">{{ _('Direct cost per unit') }}</th><th class="num">{{ _('Cost with overheads') }}</th><th class="num">{{ _('Proposed price') }}</th><th class="num">{{ _('Contract rate') }}</th><th class="num">{{ _('Item margin') }}</th></tr></thead>
+    <tbody>{% for b, r in rows %}<tr>
+      <td><a class="row-link" href="{{ url_for('pricing.item', pid=p.id, iid=b.id) }}"><span class="code">{{ b.code }}</span></a><span class="sub">{{ b.description }}</span></td>
+      {% if r.has %}<td class="num">{{ money(r.direct) }}</td><td class="num">{{ money(r.cost) }}</td><td class="num">{{ money(r.proposed) }}</td>
+      <td class="num">{{ money(b.unit_rate) }}</td><td class="num {{ 'warn-text' if r.margin < 0 }}">{{ money(r.margin) }}<span class="sub">{{ fmt_pct(r.margin_bp) if r.margin_bp is not none else '' }}</span></td>
+      {% else %}<td colspan="3" class="faint">{{ _('Not analysed yet') }}</td><td class="num">{{ money(b.unit_rate) }}</td><td></td>{% endif %}
+    </tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

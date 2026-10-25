@@ -1,0 +1,21 @@
+-- المناقصات: تحليل سعر البند (الدستور، البند 3.3): سطور التكلفة لوحدة واحدة من البند، ونسبتا المصاريف غير المباشرة والربح.
+CREATE TABLE price_lines (
+    id                  INTEGER PRIMARY KEY,
+    boq_item_id         INTEGER NOT NULL REFERENCES boq_items(id) ON DELETE CASCADE,
+    cost_type           TEXT NOT NULL CHECK (cost_type IN ('material','labour','equipment','subcontract')),
+    description         TEXT NOT NULL,
+    unit                TEXT NOT NULL,
+    qty_per_unit_milli  BIGINT NOT NULL CHECK (qty_per_unit_milli > 0),
+    unit_price          BIGINT NOT NULL CHECK (unit_price >= 0),
+    created_at          TEXT NOT NULL,
+    created_by          INTEGER NOT NULL REFERENCES users(id)
+);
+CREATE INDEX price_lines_item ON price_lines(boq_item_id);
+
+CREATE TABLE item_pricing (
+    boq_item_id   INTEGER PRIMARY KEY REFERENCES boq_items(id) ON DELETE CASCADE,
+    overhead_bp   INTEGER NOT NULL DEFAULT 0 CHECK (overhead_bp BETWEEN 0 AND 10000),
+    profit_bp     INTEGER NOT NULL DEFAULT 0 CHECK (profit_bp BETWEEN 0 AND 10000),
+    updated_at    TEXT NOT NULL,
+    updated_by    INTEGER NOT NULL REFERENCES users(id)
+);

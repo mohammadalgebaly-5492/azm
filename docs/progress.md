@@ -10,6 +10,7 @@ The project's memory between chats. Claude reads this at the start of **every** 
 - **Also built:** certificates, invoices, goods receipts and payments (4.7); owner certificates and receivables (4.8).
 - **Also built:** change requests and the «مهامي» page (4.9, governance principle 6).
 - **Also built:** kickoff gate (4.1), delays and their cost (4.5), early warning and recovery plans (4.6), closeout and archive (4.10).
+- **Also built:** item price analysis (3.3).
 - **Next, in order:** schedule import from Excel (3.4); the project engineer's authority levels and performance indicators (4.4); weekly and monthly reports (4.3). Waiting on the programmer: file storage and email.
 - **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
 - **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
@@ -17,6 +18,8 @@ The project's memory between chats. Claude reads this at the start of **every** 
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 11, item price analysis (3.3): migration `022_price_analysis` (`price_lines`, `item_pricing`); screens «تحليل سعر البند» (all items with cost and margin; item page with lines and rates). 109 tests pass on SQLite and Postgres.
 
 - **2026-10-25.** Round 10, governance: migration `021_governance` (`kickoff_reviews`, `delays`, `recovery_plans`, `closeouts`, `projects.kickoff_at/by`), permission `project.lead` (PM). The project page now shows the colour-status alert. 108 tests pass on SQLite and Postgres.
 

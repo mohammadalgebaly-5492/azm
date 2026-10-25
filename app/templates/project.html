@@ -50,6 +50,10 @@
       <a class="btn" href="{{ url_for('procurement.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open procurement') }}</a>
     </div>
     <div class="boq-summary">
+      <div><b>{{ _('Price analysis') }}</b><br><span class="muted">{{ _('What each item will cost per unit, the proposed price, and its margin against the contract rate.') }}</span></div>
+      <a class="btn" href="{{ url_for('pricing.page', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open the price analysis') }}</a>
+    </div>
+    <div class="boq-summary">
       <div><b>{{ _('Project governance') }}</b><br><span class="muted">{{ _('Execution kickoff, early warning with recovery plans and delays, and closeout.') }}</span></div>
       <div class="actions"><a class="btn" href="{{ url_for('governance.kickoff', pid=p.id) }}">{{ _('Execution kickoff') }}</a><a class="btn" href="{{ url_for('governance.control', pid=p.id) }}">{{ _('Early warning and recovery') }}</a><a class="btn" href="{{ url_for('governance.closeout', pid=p.id) }}">{{ _('Project closeout') }}</a></div>
     </div>

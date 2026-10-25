@@ -67,6 +67,8 @@ def table_strings():
     from app.governance import DECISIONS, ELEMENTS, OPTIONS, PLAN_STATUS, RESPONSIBLE
     out |= set(DECISIONS.values()) | set(ELEMENTS.values()) | set(OPTIONS.values()) | set(PLAN_STATUS.values())
     out |= set(RESPONSIBLE.values())
+    from app.pricing import COST_TYPES
+    out |= set(COST_TYPES.values())
     return out
 
 

@@ -103,6 +103,8 @@ ACTION_LABELS = {
     "delay_recorded": "Delay recorded", "recovery_added": "Recovery plan raised", "recovery_reviewed": "Recovery plan reviewed",
     "recovery_approved": "Recovery plan approved", "recovery_returned": "Recovery plan returned",
     "lessons_saved": "Lessons learned saved", "project_closed": "Project closed and archived",
+    "price_line_added": "Price analysis line added", "price_line_removed": "Price analysis line removed",
+    "pricing_rates_set": "Overhead and profit rates set",
 }
 
 
@@ -143,7 +145,8 @@ FIELD_LABELS = {
     "title": "Document title", "issuer": "Issued by", "issuer_ref": "Document number at the issuer",
     "issued_on": "Issue date", "summary": "Document summary", "weight_bp": "Weight of the item progress",
     "seq": "Order", "party": "Executed by", "planned_start": "Planned start", "planned_finish": "Planned finish",
-    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on", "order": "Order", "element": "Plan element", "decision": "Decision",
+    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on", "order": "Order", "element": "Plan element", "decision": "Decision", "overhead_bp": "Overheads",
+    "profit_bp": "Profit",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",
