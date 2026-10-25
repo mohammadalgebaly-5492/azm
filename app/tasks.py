@@ -8,6 +8,9 @@ from .i18n import _
 from .rbac import can, can_view_project
 
 LATE_DAYS = 3
+_SIGNED = ("SELECT COALESCE(c.code, x.code) AS code, s.uploaded_at, s.cc_at FROM signed_copies s "
+           "LEFT JOIN commitments c ON s.doc_kind = 'commitment' AND c.id = s.doc_id "
+           "LEFT JOIN payables x ON s.doc_kind = 'payable' AND x.id = s.doc_id WHERE s.project_id = ? ")
 
 
 def _age(v):
@@ -81,6 +84,12 @@ def collect(db, user) -> list[dict]:
             for x in db.execute("SELECT code, created_at FROM payables WHERE project_id = ? AND status = 'review' AND created_by != ?",
                                 (pid, me)):
                 add(p, _("Approve a certificate or invoice"), x["code"], url_for("payables.page", pid=pid), x["created_at"])
+        if can(user, "payables.approve"):
+            for s in db.execute(_SIGNED + "AND s.status = 'review' AND s.uploaded_by != ?", (pid, me)):
+                add(p, _("Accept a signed copy"), s["code"], url_for("payables.page", pid=pid), s["uploaded_at"])
+        if can(user, "changes.approve"):
+            for s in db.execute(_SIGNED + "AND s.status = 'cc_ok' AND ? NOT IN (s.uploaded_by, s.cc_by)", (pid, me)):
+                add(p, _("Accept a signed copy above 10,000 SAR"), s["code"], url_for("payables.page", pid=pid), s["cc_at"])
         if can(user, "payables.pay"):
             for x in db.execute("SELECT code, COALESCE(dir_at, cc_at) AS since FROM payables WHERE project_id = ? "
                                 "AND status = 'approved' AND ? NOT IN (created_by, cc_by) AND (dir_by IS NULL OR dir_by != ?)",

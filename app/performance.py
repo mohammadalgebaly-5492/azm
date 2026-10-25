@@ -1,5 +1,7 @@
 """متابعة التقدم والتكلفة بالقيمة المكتسبة (الدستور، البند 4.3): القيمة المخططة والمكتسبة والتكلفة الفعلية، ومؤشرا أداء
 الزمن والتكلفة، والتكلفة المتوقعة عند الإنجاز، وحالة البند والقسم والمشروع بالألوان (الأسوأ بين الزمن والتكلفة)."""
+from datetime import timedelta
+
 from . import daily, payables, schedule as T
 
 FULL = 10000
@@ -40,14 +42,20 @@ def _measure(bac, pv, ev, ac):
             "progress": _ratio(ev, bac) or 0}
 
 
+def actual_cost(db, pid, until=None) -> dict[int, int]:
+    """التكلفة الفعلية لكل بند: الموارد من التقارير اليومية المعتمدة، والمستخلصات والفواتير المعتمدة."""
+    ac = daily.actual_cost(db, pid, until)
+    for iid, v in payables.cost_by_item(db, pid, until).items():
+        ac[iid] = ac.get(iid, 0) + v
+    return ac
+
+
 def indicators(db, pid, now=None) -> dict:
     now = now or T.today()
     rows = T.compute(db, pid, now)
     under, items = T._subtree(db, pid)
-    prog = T.item_progress(db, pid)
-    ac = daily.actual_cost(db, pid)
-    for iid, v in payables.cost_by_item(db, pid).items():  # المستخلصات والفواتير المعتمدة
-        ac[iid] = ac.get(iid, 0) + v
+    prog = T.item_progress(db, pid, now)
+    ac = actual_cost(db, pid, now)
     direct = {r["a"]["boq_item_id"] for r in rows if r["a"]["boq_item_id"]}
     pv = {i["id"]: 0 for i in items}
     for r, v in _pv_rows(rows, now):
@@ -90,3 +98,18 @@ def most_deviating(ind, n=5):
         if idx and min(idx) < 9500:
             scored.append((min(idx), iid))
     return [iid for _s, iid in sorted(scored)[:n]]
+
+
+def cost_curve(db, pid, rows, now=None) -> list[dict]:
+    """التكلفة المخططة مقابل الفعلية على الزمن (البند 3.4)، تراكميًا لكل فترة، والفعلية حتى اليوم فقط."""
+    now = now or T.today()
+    if not rows:
+        return []
+    start = min(r["ps"] for r in rows)
+    end = max(max(r["pf"] for r in rows), max(r["ff"] for r in rows))
+    out, last = [], start - timedelta(days=1)
+    for t in T.periods(start, end):
+        out.append({"date": t, "planned": T.planned_value(rows, t),
+                    "actual": sum(actual_cost(db, pid, min(t, now)).values()) if last < now else None})
+        last = t
+    return out

@@ -12,7 +12,7 @@
     <h1>{{ _('Project performance') }}</h1>
     <p class="lead">{{ _('Earned value from the approved daily reports. The colour is the worse of time and cost, for each item, section and the whole project.') }}</p>
   </div>
-  <div class="actions"><a class="btn" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('log', 16) }} {{ _('Daily site reports') }}</a></div>
+  <div class="actions"><a class="btn" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('log', 16) }} {{ _('Daily site reports') }}</a><a class="btn" href="{{ url_for('daily.periodic', pid=p.id) }}">{{ icon('calendar', 16) }} {{ _('Weekly and monthly reports') }}</a></div>
 </header>
 {% if waiting %}<div class="alert warn" role="status">{{ icon('alert', 17) }}<span>{{ _('{n} reports wait for review and are not counted yet.', n=waiting) }}</span></div>{% endif %}
 <div class="stats">
@@ -29,7 +29,7 @@
     <dt>{{ _('Actual cost') }}</dt><dd class="num">{{ money(m.ac) }}</dd>
     <dt>{{ _('Expected cost at completion') }}</dt><dd class="num">{{ money(m.eac) }}</dd>
   </dl>
-  <p class="hint keep">{{ _('The actual cost now comes from the hours of people, crews and equipment. Subcontractor certificates and supplier invoices are added with procurement.') }}</p>
+  <p class="hint keep">{{ _('The actual cost comes from the hours of people, crews and equipment in the approved daily reports, and from the approved certificates and invoices.') }}</p>
 </section>
 <section class="card flush">
   <div class="card-head"><div><h2>{{ _('By WBS section') }}</h2><p>{{ _('Green up to 5% off, yellow 5% to 10%, red 10% to 30%, critical beyond 30%.') }}</p></div></div>

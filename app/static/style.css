@@ -523,6 +523,8 @@ tr.g-group td { background: var(--surface-2); font-weight: 600; font-size: 13px;
 .curve .tick, .flow .tick { position: absolute; bottom: -22px; left: 0; font-size: 11px; color: var(--faint); white-space: nowrap; }
 .curve .pt:last-child .tick, .flow .wk:last-child .tick { left: auto; right: 0; }
 .tdot.s-plan { background: var(--c-series); } .tdot.s-fact { background: var(--c-person); }
+.curve .s-cost { stroke: var(--c-crew); stroke-width: 2.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.tdot.s-cost { background: var(--c-crew); }
 /* التدفق النقدي: عمودان لكل فترة */
 .flow { direction: ltr; display: flex; align-items: stretch; gap: 3px; height: 180px; padding-top: 10px; margin: 4px 0 30px;
   border-bottom: 1px solid var(--line); }

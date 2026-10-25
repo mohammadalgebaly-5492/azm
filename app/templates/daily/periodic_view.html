@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_curves.html" import progress_curve, cost_curve with context %}
+{% block title %}{{ _(KINDS[r.kind]) }} · {{ p.code }}{% endblock %}
+{% macro status(key) -%}
+{% if key %}<span class="pill {{ {'green': 'ok', 'yellow': 'warn', 'red': 'bad', 'critical': 'crit'}[key] }}">{{ _(RAG[key]) }}</span>{% else %}<span class="faint">—</span>{% endif %}
+{%- endmacro %}
+{% macro idx(v) -%}{{ '%.2f'|format(v / 10000) if v is not none else '—' }}{%- endmacro %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('daily.periodic', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Weekly and monthly reports') }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _(KINDS[r.kind]) }}: {{ p.name }}</h1>
+  <p class="lead keep"><bdi class="num" dir="ltr">{{ r.start }} → {{ r.end }}</bdi>{% if r.current %} · {{ _('Up to today') }}{% endif %}. {{ _('From the approved data only.') }}</p>
+</div></header>
+{% if r.period.review %}<div class="alert warn" role="status">{{ icon('alert', 17) }}<span>{{ _('{n} reports wait for review and are not counted yet.', n=r.period.review) }}</span></div>{% endif %}
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Project status') }}</span></div><b>{{ status(m.status) if m.status else _('Not started') }}</b><span>{{ _('Progress') }}: <span class="num">{{ fmt_pct(m.progress) }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Schedule performance index') }}</span></div><b class="num">{{ idx(m.spi) }}</b><span>{{ _('Earned ÷ planned value') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Cost performance index') }}</span></div><b class="num">{{ idx(m.cpi) }}</b><span>{{ _('Earned value ÷ actual cost') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Expected finish') }}</span></div><b class="num {{ 'warn-text' if m.delay > 0 }}">{{ m.forecast or '—' }}</b><span>{% if m.delay > 0 %}{{ _('{n} days late', n=m.delay) }}{% elif m.finish %}{{ _('On time') }}{% endif %}</span></div>
+</div>
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('In this period') }}</h2></div></div>
+    <dl class="kv">
+      <dt>{{ _('Planned value') }}</dt><dd class="num">{{ money(r.period.pv) }}</dd>
+      <dt>{{ _('Earned value') }}</dt><dd class="num">{{ money(r.period.ev) }}</dd>
+      <dt>{{ _('Actual cost') }}</dt><dd class="num">{{ money(r.period.ac) }}</dd>
+      <dt>{{ _('Finished scope steps') }}</dt><dd class="num">{{ r.period.steps }}</dd>
+      <dt>{{ _('Approved daily reports') }}</dt><dd class="num">{{ r.period.approved }}</dd>
+      <dt>{{ _('Returned daily reports') }}</dt><dd class="num">{{ r.period.returned }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('To the end of the period') }}</h2></div></div>
+    <dl class="kv">
+      <dt>{{ _('Budget at completion') }}</dt><dd class="num">{{ money(m.bac) }}</dd>
+      <dt>{{ _('Planned value to date') }}</dt><dd class="num">{{ money(m.pv) }}</dd>
+      <dt>{{ _('Earned value') }}</dt><dd class="num">{{ money(m.ev) }}</dd>
+      <dt>{{ _('Actual cost') }}</dt><dd class="num">{{ money(m.ac) }}</dd>
+      <dt>{{ _('Expected cost at completion') }}</dt><dd class="num">{{ money(m.eac) }}</dd>
+    </dl>
+  </section>
+</div>
+{% if r.curve %}<section class="card">
+  <div class="card-head"><div><h2>{{ _('Progress curve') }}</h2></div>
+    <div class="typelegend"><span><span class="tdot s-plan"></span>{{ _('Planned') }}</span><span><span class="tdot s-fact"></span>{{ _('Actual') }}</span></div></div>
+  {{ progress_curve(r.curve) }}
+</section>{% endif %}
+{% if r.cost %}<section class="card">
+  <div class="card-head"><div><h2>{{ _('Cost curve') }}</h2></div>
+    <div class="typelegend"><span><span class="tdot s-plan"></span>{{ _('Planned cost') }}</span><span><span class="tdot s-cost"></span>{{ _('Actual cost') }}</span></div></div>
+  {{ cost_curve(r.cost) }}
+</section>{% endif %}
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Most deviating items') }}</h2><p>{{ _('Items whose time or cost index is below 0.95.') }}</p></div></div>
+  {% if r.worst %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Item') }}</th><th class="num">{{ _('Progress') }}</th><th class="num">{{ _('Time index') }}</th><th class="num">{{ _('Cost index') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for b in r.worst %}{% set x = r.ind.by_item[b.id] %}<tr><td><span class="code">{{ b.code }}</span><span class="sub">{{ b.description }}</span></td>
+      <td class="num">{{ fmt_pct(x.progress) }}</td><td class="num">{{ idx(x.spi) }}</td><td class="num">{{ idx(x.cpi) }}</td><td>{{ status(x.status) }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('check', 28) }}<p>{{ _('No item is off track.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

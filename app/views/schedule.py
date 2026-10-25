@@ -60,11 +60,25 @@ def page(pid):
     names = {r[0]: r[1] for r in db.execute("SELECT id, full_name FROM users").fetchall()}
     curve = T.s_curve(db, pid, rows, now)
     flow = T.cash_flow(db, pid, rows, ms)
+    from ..performance import cost_curve
+    crs = db.execute("SELECT id, code FROM change_requests WHERE project_id = ? AND status = 'approved' ORDER BY id DESC",
+                     (pid,)).fetchall()
     return render_template(
         "schedule/page.html", p=p, groups=sorted(groups.items()), rows=rows, timeline=timeline, bars=bars,
         checks=T.checks(db, pid, rows), st=st, names=names, total=T.overall(db, pid, rows, now), curve=curve, flow=flow,
         flow_top=max([f["cost"] for f in flow] + [f["inflow"] for f in flow] + [1]), sections=sections, items=items,
-        STATUS=T.STATUS, fmt_pct=fmt_pct, now=now, all_acts=[r["a"] for r in rows])
+        STATUS=T.STATUS, fmt_pct=fmt_pct, now=now, all_acts=[r["a"] for r in rows], costs=cost_curve(db, pid, rows, now),
+        baselines=T.baselines(db, pid), crs=crs)
+
+
+@bp.get("/projects/<int:pid>/schedule/baselines/<int:rev>")
+@login_required
+def baseline(pid, rev):
+    db, p = _project(pid)
+    cmp = T.compare(db, pid, rev)
+    if cmp is None:
+        abort(404)
+    return render_template("schedule/baseline.html", p=p, c=cmp)
 
 
 @bp.get("/projects/<int:pid>/schedule/<int:aid>")
@@ -180,7 +194,8 @@ def approve(pid):
 @permission_required("changes.approve")
 def reopen(pid):
     db, _p = _project(pid)
-    return _run(lambda: T.reopen(db, pid, request.form.get("reason"), g.user["id"]), _("Schedule reopened for changes."),
+    return _run(lambda: T.reopen(db, pid, request.form.get("reason"), g.user["id"], request.form.get("cr_id")),
+                _("Schedule reopened for re-planning. The approved baseline stays saved."),
                 url_for("schedule.page", pid=pid))
 
 

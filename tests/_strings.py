@@ -71,6 +71,9 @@ def table_strings():
     out |= set(COST_TYPES.values())
     from app.authority import LEVELS
     out |= set(LEVELS.values())
+    from app.periodic import KINDS as REPORT_KINDS
+    from app.signed import STATUS as SIGNED_STATUS
+    out |= set(REPORT_KINDS.values()) | set(SIGNED_STATUS.values())
     return out
 
 

@@ -54,28 +54,44 @@ def _days(a, b):
         return 0
 
 
-def scorecards(db) -> list[dict]:
-    """مؤشرات كل من يرفع التقارير اليومية: الالتزام بالمواعيد، ودقة البيانات، وأداء الزمن والتكلفة لمشاريعه، وسرعة الرفع."""
+_REPORTS = "SELECT report_date, created_at, status, times_returned, project_id, created_by FROM daily_reports "
+
+
+def _card(db, rows, cache) -> dict:
+    """الالتزام بالمواعيد، ودقة البيانات، ومتوسط مؤشري الزمن والتكلفة لمشاريع التقارير، ومتوسط تأخر الرفع."""
     from .performance import indicators
-    cache, out = {}, []
+    on_time = sum(1 for r in rows if _days(r["created_at"], r["report_date"]) <= 1)
+    approved = [r for r in rows if r["status"] == "approved"]
+    clean = sum(1 for r in approved if not r["times_returned"])
+    spi, cpi = [], []
+    for pid in {r["project_id"] for r in rows}:
+        if pid not in cache:
+            cache[pid] = indicators(db, pid)["project"]
+        if cache[pid]["spi"] is not None:
+            spi.append(cache[pid]["spi"])
+        if cache[pid]["cpi"] is not None:
+            cpi.append(cache[pid]["cpi"])
+    return {"reports": len(rows), "on_time": on_time * 10000 // len(rows) if rows else None,
+            "accuracy": clean * 10000 // len(approved) if approved else None,
+            "spi": sum(spi) // len(spi) if spi else None, "cpi": sum(cpi) // len(cpi) if cpi else None,
+            "delay": sum(max(0, _days(r["created_at"], r["report_date"])) for r in rows) / len(rows) if rows else None}
+
+
+def scorecards(db, cache=None) -> list[dict]:
+    """مؤشرات كل من يرفع التقارير اليومية: الالتزام بالمواعيد، ودقة البيانات، وأداء الزمن والتكلفة لمشاريعه، وسرعة الرفع."""
+    cache, out = {} if cache is None else cache, []
     for u in db.execute("SELECT DISTINCT u.id, u.full_name, u.code FROM daily_reports r JOIN users u ON u.id = r.created_by "
                         "ORDER BY u.full_name").fetchall():
-        rows = db.execute("SELECT report_date, created_at, status, times_returned, project_id FROM daily_reports "
-                          "WHERE created_by = ?", (u["id"],)).fetchall()
-        on_time = sum(1 for r in rows if _days(r["created_at"], r["report_date"]) <= 1)
-        approved = [r for r in rows if r["status"] == "approved"]
-        clean = sum(1 for r in approved if not r["times_returned"])
-        spi, cpi = [], []
-        for pid in {r["project_id"] for r in rows}:
-            if pid not in cache:
-                cache[pid] = indicators(db, pid)["project"]
-            if cache[pid]["spi"] is not None:
-                spi.append(cache[pid]["spi"])
-            if cache[pid]["cpi"] is not None:
-                cpi.append(cache[pid]["cpi"])
-        out.append({"user": u, "level": level_of(db, u["id"]), "reports": len(rows),
-                    "on_time": on_time * 10000 // len(rows) if rows else None,
-                    "accuracy": clean * 10000 // len(approved) if approved else None,
-                    "spi": sum(spi) // len(spi) if spi else None, "cpi": sum(cpi) // len(cpi) if cpi else None,
-                    "delay": sum(max(0, _days(r["created_at"], r["report_date"])) for r in rows) / len(rows) if rows else None})
+        rows = db.execute(_REPORTS + "WHERE created_by = ?", (u["id"],)).fetchall()
+        out.append({"user": u, "level": level_of(db, u["id"]), **_card(db, rows, cache)})
+    return out
+
+
+def team_cards(db, cache=None) -> list[dict]:
+    """مؤشرات فريق كل مشروع (البند 4.4): نفس المؤشرات لكل من يرفع تقاريره اليومية معًا."""
+    cache, out = {} if cache is None else cache, []
+    for p in db.execute("SELECT DISTINCT p.id, p.code, p.name FROM daily_reports r JOIN projects p ON p.id = r.project_id "
+                        "ORDER BY p.code").fetchall():
+        rows = db.execute(_REPORTS + "WHERE project_id = ?", (p["id"],)).fetchall()
+        out.append({"project": p, "members": len({r["created_by"] for r in rows}), **_card(db, rows, cache)})
     return out

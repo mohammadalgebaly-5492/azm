@@ -27,7 +27,7 @@
 <section class="card flush">
   <div class="card-head"><div><h2>{{ _('Issued orders and subcontracts') }}</h2><p>{{ _('Each one is a commitment on the budget of its item.') }}</p></div><span class="count">{{ orders|length }}</span></div>
   {% if orders %}<div class="table-wrap"><table>
-    <thead><tr><th>{{ _('Order') }}</th><th>{{ _('Supplier or subcontractor') }}</th><th>{{ _('Item') }}</th><th class="num">{{ _('Quantity') }}</th><th class="num">{{ _('Total') }}</th></tr></thead>
+    <thead><tr><th>{{ _('Order or subcontract') }}</th><th>{{ _('Supplier or subcontractor') }}</th><th>{{ _('Item') }}</th><th class="num">{{ _('Quantity') }}</th><th class="num">{{ _('Total') }}</th></tr></thead>
     <tbody>{% for o in orders %}<tr><td class="code">{{ o.code }}<span class="sub">{{ _(KINDS[o.kind]) }}</span></td><td>{{ o.entity_name }}</td><td><span class="code">{{ o.item_code }}</span></td><td class="num">{{ fmt_qty(o.qty_milli) }}</td><td class="num">{{ money(o.total) }}</td></tr>{% endfor %}</tbody></table></div>
   {% else %}<div class="empty"><p>{{ _('No orders issued yet.') }}</p></div>{% endif %}
 </section>

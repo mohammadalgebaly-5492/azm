@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ c.rev.code }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('schedule.page', pid=p.id) }}#baselines">{{ icon('back', 15) }} {{ _('Schedule') }}</a><span class="code">{{ p.code }}</span></div>
+  <h1><span class="code">{{ c.rev.code }}</span></h1>
+  <p class="lead">{{ _('This revision against the original baseline {code}.', code=c.base.code) }} {{ c.rev.reason }}</p>
+</div></header>
+<div class="stats">
+  <div class="stat"><div class="stat-top"><span>{{ _('Planned finish') }}</span></div><b class="num">{{ c.rev.finish|string|truncate(10, True, '') }}</b><span>{{ _('Original') }} <span class="num">{{ c.base.finish|string|truncate(10, True, '') }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Change in the finish date') }}</span></div><b class="num {{ 'warn-text' if c.finish_shift > 0 }}">{{ '%+d'|format(c.finish_shift) if c.finish_shift else 0 }}</b><span>{{ _('Days') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Budget') }}</span></div><b class="num">{{ money(c.rev.budget) }}</b><span>{{ _('Original') }} <span class="num">{{ money(c.base.budget) }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Change in the budget') }}</span></div><b class="num">{{ money(c.budget_change) }}</b><span>{{ _('SAR') }}</span></div>
+</div>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Activities') }}</h2><p>{{ _('The planned dates in this revision and in the original, and the shift of the finish in days.') }}</p></div><span class="count">{{ c.activities|length }}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Activity') }}</th><th>{{ _('Original') }}</th><th>{{ _('This revision') }}</th><th class="num">{{ _('Shift in days') }}</th></tr></thead>
+    <tbody>{% for a in c.activities %}<tr>
+      <td><span class="code">{{ a.code }}</span><span class="sub">{{ a.name }}</span></td>
+      <td class="num">{% if a.old %}<bdi dir="ltr">{{ a.old.ps }} → {{ a.old.pf }}</bdi>{% else %}<span class="pill">{{ _('New') }}</span>{% endif %}</td>
+      <td class="num"><bdi dir="ltr">{{ a.ps }} → {{ a.pf }}</bdi></td>
+      <td class="num">{% if a.shift is not none %}<bdi dir="ltr" class="{{ 'warn-text' if a.shift > 0 }}">{{ '%+d'|format(a.shift) if a.shift else 0 }}</bdi>{% else %}—{% endif %}</td>
+    </tr>{% endfor %}
+    {% for a in c.removed %}<tr><td><span class="code">{{ a.code }}</span><span class="sub">{{ a.name }}</span></td><td class="num"><bdi dir="ltr">{{ a.ps }} → {{ a.pf }}</bdi></td><td><span class="pill bad">{{ _('Removed') }}</span></td><td class="num">—</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

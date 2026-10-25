@@ -51,7 +51,7 @@
 </section>
 
 <section class="card flush" id="delays">
-  <div class="card-head"><div><h2>{{ _('Delays and who is responsible') }}</h2><p>{{ _('The company: a loss on the project. The owner, the consultant or an outside event: an extension of time and a claim.') }} {{ _('Cost of each day of delay now') }}: <b class="num">{{ money(cost.total) }}</b> {{ _('SAR') }} ({{ _('penalty') }} <span class="num">{{ money(cost.penalty) }}</span>)</p></div><span class="count">{{ delays|length }}</span></div>
+  <div class="card-head"><div><h2>{{ _('Delays and who is responsible') }}</h2><p>{{ _('The company: a loss on the project. The owner, the consultant or an outside event: an extension of time and a claim.') }} {{ _('Cost of each day of delay now') }}: <b class="num">{{ money(cost.total) }}</b> {{ _('SAR') }} ({{ _('penalty') }} <span class="num">{{ money(cost.penalty) }}</span> · {{ _('daily indirect cost') }} <span class="num">{{ money(cost.overhead) }}</span>)</p></div><span class="count">{{ delays|length }}</span></div>
   {% if delays %}<div class="table-wrap"><table>
     <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Activity') }}</th><th class="num">{{ _('Days') }}</th><th>{{ _('Cause') }}</th><th>{{ _('Responsible') }}</th><th class="num">{{ _('Cost of the delay') }}</th></tr></thead>
     <tbody>{% for d in delays %}<tr><td class="code">{{ d.code }}</td><td>{% if d.act_code %}<span class="code">{{ d.act_code }}</span><span class="sub">{{ d.act_name }}</span>{% else %}—{% endif %}</td>
@@ -66,6 +66,12 @@
       <div class="field"><label for="d_who" class="req">{{ _('Responsible') }}</label><select id="d_who" name="responsible" required>{% for k, v in RESPONSIBLE.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
       <div class="field wide"><label for="d_cause" class="req">{{ _('Cause') }}</label><input id="d_cause" name="cause" required></div>
       <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Record the delay') }}</button></div>
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('governance.overhead', pid=p.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="d_oh">{{ _('Daily indirect cost of the project') }}</label><div class="affix"><input id="d_oh" name="daily_overhead" dir="ltr" inputmode="decimal" data-money value="{{ '%.2f'|format(cost.overhead / 100) }}"><span>{{ _('SAR') }}</span></div></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ _('Save') }}</button><span class="hint">{{ _('Site management, supervision and fixed rentals for each day. It is added to the cost of each day of delay.') }}</span></div>
     </div>
   </form>
   {% endif %}

@@ -1,6 +1,18 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 {% block title %}{{ _('Certificates and invoices') }}{% endblock %}
+{% macro signed_cell(kind, doc) %}{% set s = signed.get((kind, doc.id)) %}
+      <td>{% if s %}<a class="code" href="{{ url_for('payables.signed_file', pid=p.id, sid=s.id) }}">{{ icon('file', 14) }} S{{ '%02d'|format(s.rev) }}</a>
+        <span class="pill {{ 'ok' if s.status == 'accepted' else ('bad' if s.status == 'returned' else 'warn') }}">{{ _(SIGNED[s.status]) }}</span>{% if s.status == 'returned' %}<span class="sub">{{ s.return_reason }}</span>{% endif %}
+        {% set may = (s.status == 'review' and can('payables.approve')) or (s.status == 'cc_ok' and can('changes.approve')) %}
+        {% if may and g.user.id not in (s.uploaded_by, s.cc_by) %}<div class="actions">
+          <form method="post" action="{{ url_for('payables.signed_decide', pid=p.id, sid=s.id, action='accept') }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Accept') }}</button></form>
+          <details class="row-menu"><summary class="btn btn-ghost">{{ _('Return') }}</summary><form method="post" action="{{ url_for('payables.signed_decide', pid=p.id, sid=s.id, action='return') }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for returning') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Return') }}</button></form></details></div>{% endif %}
+      {% else %}<span class="sub">{{ _('No signed copy yet') }}</span>{% endif %}
+      {% if (not s or s.status == 'returned') and can('payables.raise') %}{% if storage %}<details class="row-menu"><summary class="btn btn-ghost">{{ icon('plus', 16) }} {{ _('Upload the signed copy') }}</summary>
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('payables.signed_upload', pid=p.id, kind=kind, doc_id=doc.id) }}" class="row-form"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="file" name="file" accept="application/pdf" required aria-label="{{ _('Signed copy (PDF)') }}"><button class="btn btn-primary" type="submit">{{ _('Upload') }}</button></form></details>
+      {% else %}<span class="sub">{{ _('Uploading waits for file storage, which the programmer will add.') }}</span>{% endif %}{% endif %}</td>
+{%- endmacro %}
 {% block content %}
 {% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
 <header class="page-head"><div>
@@ -10,13 +22,13 @@
 </div></header>
 
 <section class="card flush" id="orders">
-  <div class="card-head"><div><h2>{{ _('Orders and subcontracts') }}</h2><p>{{ _('What was ordered, received, billed and paid for each one.') }}</p></div></div>
+  <div class="card-head"><div><h2>{{ _('Orders and subcontracts') }}</h2><p>{{ _('What was ordered, received, billed and paid for each one, with its signed copy: the engineer uploads it as a PDF, cost control accepts it, and the Director too above 10,000 SAR.') }}</p></div></div>
   {% if orders %}<div class="table-wrap"><table>
-    <thead><tr><th>{{ _('Order') }}</th><th>{{ _('Supplier or subcontractor') }}</th><th class="num">{{ _('Ordered') }}</th><th class="num">{{ _('Received') }}</th><th class="num">{{ _('Billed') }}</th><th class="num">{{ _('Total') }}</th><th class="num">{{ _('Paid') }}</th></tr></thead>
+    <thead><tr><th>{{ _('Order or subcontract') }}</th><th>{{ _('Supplier or subcontractor') }}</th><th class="num">{{ _('Ordered') }}</th><th class="num">{{ _('Received') }}</th><th class="num">{{ _('Billed') }}</th><th class="num">{{ _('Total') }}</th><th class="num">{{ _('Paid') }}</th><th>{{ _('Signed copy') }}</th></tr></thead>
     <tbody>{% for o in orders %}<tr>
       <td class="code">{{ o.c.code }}<span class="sub"><span class="code">{{ o.c.item_code }}</span></span></td><td>{{ o.c.entity_name }}</td>
       <td class="num">{{ fmt_qty(o.c.qty_milli) }}</td><td class="num">{{ fmt_qty(o.received) if o.c.kind == 'material' else '—' }}</td>
-      <td class="num">{{ fmt_qty(o.billed_qty) }}<span class="sub">{{ money(o.billed) }}</span></td><td class="num">{{ money(o.c.total) }}</td><td class="num">{{ money(o.paid) }}</td>
+      <td class="num">{{ fmt_qty(o.billed_qty) }}<span class="sub">{{ money(o.billed) }}</span></td><td class="num">{{ money(o.c.total) }}</td><td class="num">{{ money(o.paid) }}</td>{{ signed_cell('commitment', o.c) }}
     </tr>{% endfor %}</tbody></table></div>
   {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('No orders issued yet.') }}</p></div>{% endif %}
 </section>
@@ -28,7 +40,7 @@
     <form method="post" action="{{ url_for('payables.receipt', pid=p.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf }}">
       <div class="form-grid">
-        <div class="field wide"><label for="r_order" class="req">{{ _('Order') }}</label><select id="r_order" name="commitment_id" required>{% for o in orders if o.c.kind == 'material' %}<option value="{{ o.c.id }}">{{ o.c.code }} · {{ o.c.entity_name }}</option>{% endfor %}</select></div>
+        <div class="field wide"><label for="r_order" class="req">{{ _('Purchase order') }}</label><select id="r_order" name="commitment_id" required>{% for o in orders if o.c.kind == 'material' %}<option value="{{ o.c.id }}">{{ o.c.code }} · {{ o.c.entity_name }}</option>{% endfor %}</select></div>
         <div class="field"><label for="r_on" class="req">{{ _('Receipt date') }}</label><input id="r_on" name="received_on" type="date" required {{ date_attrs|safe }}></div>
         <div class="field"><label for="r_qty" class="req">{{ _('Quantity') }}</label><input id="r_qty" name="qty" dir="ltr" inputmode="decimal" required></div>
         <div class="field wide"><label for="r_notes">{{ _('Notes') }}</label><input id="r_notes" name="notes"></div>
@@ -50,7 +62,7 @@
         <div class="field"><label for="x_adv">{{ _('Advance recovery') }}</label><div class="affix"><input id="x_adv" name="advance" dir="ltr" inputmode="decimal" data-money><span>{{ _('SAR') }}</span></div></div>
         <div class="field"><label for="x_ded">{{ _('Deductions') }}</label><div class="affix"><input id="x_ded" name="deductions" dir="ltr" inputmode="decimal" data-money><span>{{ _('SAR') }}</span></div></div>
         <div class="field"><label for="x_note">{{ _('Reason for the deductions') }}</label><input id="x_note" name="deduction_note"></div>
-        <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Raise') }}</button><span class="hint">{{ _('The signed certificate and the tax invoice need file storage, which the programmer will add.') }}</span></div>
+        <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Raise') }}</button><span class="hint">{{ _('After raising it, upload its signed copy (PDF) from its row below.') }}</span></div>
       </div>
     </form>
   </section>
@@ -60,7 +72,7 @@
 <section class="card flush" id="payables">
   <div class="card-head"><div><h2>{{ _('Certificates and invoices') }}</h2><p>{{ _('Up to 10,000 SAR the cost control engineer approves alone; above it the Director approves too. Accounting pays after approval.') }}</p></div><span class="count">{{ rows|length }}</span></div>
   {% if rows %}<div class="table-wrap"><table>
-    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Order') }}</th><th class="num">{{ _('Value of works') }}</th><th class="num">{{ _('Deductions') }}</th><th class="num">{{ _('Net due') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Order or subcontract') }}</th><th class="num">{{ _('Value of works') }}</th><th class="num">{{ _('Deductions') }}</th><th class="num">{{ _('Net due') }}</th><th>{{ _('Status') }}</th><th>{{ _('Signed copy') }}</th><th></th></tr></thead>
     <tbody>{% for x in rows %}<tr>
       <td class="code">{{ x.code }}<span class="sub">{{ _(KINDS[x.kind]) }}</span></td>
       <td><span class="code">{{ x.order_code }}</span><span class="sub">{{ x.entity_name }}</span></td>
@@ -68,6 +80,7 @@
       <td class="num">{{ money(x.retention + x.advance + x.deductions) }}{% if x.deduction_note %}<span class="sub">{{ x.deduction_note }}</span>{% endif %}</td>
       <td class="num"><b>{{ money(x.net) }}</b></td>
       <td><span class="pill {{ 'ok' if x.status in ('approved', 'paid') else ('bad' if x.status == 'returned' else 'warn') }}">{{ _(STATUS[x.status]) }}</span>{% if x.return_reason %}<span class="sub">{{ x.return_reason }}</span>{% endif %}{% if x.paid_ref %}<span class="sub code">{{ x.paid_ref }}</span>{% endif %}</td>
+      {{ signed_cell('payable', x) }}
       <td class="cell-actions">
         {% set can_review = (x.status == 'review' and can('payables.approve')) or (x.status == 'cc_approved' and can('changes.approve')) %}
         {% if can_review and g.user.id not in (x.created_by, x.cc_by) %}
@@ -84,7 +97,7 @@
 </section>
 {% if receipts %}
 <section class="card flush"><div class="card-head"><h2>{{ _('Goods receipts') }}</h2></div>
-  <div class="table-wrap"><table><thead><tr><th>{{ _('Code') }}</th><th>{{ _('Order') }}</th><th>{{ _('Date') }}</th><th class="num">{{ _('Quantity') }}</th></tr></thead>
+  <div class="table-wrap"><table><thead><tr><th>{{ _('Code') }}</th><th>{{ _('Purchase order') }}</th><th>{{ _('Date') }}</th><th class="num">{{ _('Quantity') }}</th></tr></thead>
     <tbody>{% for r in receipts %}<tr><td class="code">{{ r.code }}</td><td class="code">{{ r.order_code }}</td><td class="num">{{ r.received_on|string|truncate(10, True, '') }}</td><td class="num">{{ fmt_qty(r.qty_milli) }}</td></tr>{% endfor %}</tbody></table></div>
 </section>
 {% endif %}

@@ -1,7 +1,7 @@
 """شاشات مستخلصات مقاولي الباطن وفواتير الموردين ومحاضر الاستلام، ومستخلصات الشركة للمالك."""
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
 
-from .. import billing as B, payables as X
+from .. import billing as B, files, payables as X, signed as S
 from ..auth import AuthError, login_required, permission_required
 from ..boq import fmt_qty
 from ..contracts import fmt_pct
@@ -36,7 +36,8 @@ def page(pid):
     receipts = db.execute("SELECT r.*, c.code AS order_code FROM goods_receipts r JOIN commitments c ON c.id = r.commitment_id "
                           "WHERE r.project_id = ? ORDER BY r.id DESC", (pid,)).fetchall()
     return render_template("payables/page.html", p=p, orders=X.orders(db, pid), rows=X.payables(db, pid), receipts=receipts,
-                           KINDS=X.KINDS, STATUS=X.STATUS, fmt_qty=fmt_qty, fmt_pct=fmt_pct,
+                           KINDS=X.KINDS, STATUS=X.STATUS, fmt_qty=fmt_qty, fmt_pct=fmt_pct, signed=S.latest(db, pid),
+                           SIGNED=S.STATUS, storage=files.enabled(),
                            users={r[0]: r[1] for r in db.execute("SELECT id, full_name FROM users").fetchall()})
 
 
@@ -75,6 +76,43 @@ def act(pid, xid, action):
         return _run(lambda: X.return_payable(db, pid, xid, request.form.get("reason"), g.user["id"], director),
                     _("Returned with the reason."), back)
     return _run(lambda: X.pay(db, pid, xid, request.form, g.user["id"]), _("Payment recorded."), back)
+
+
+@bp.post("/projects/<int:pid>/signed/<kind>/<int:doc_id>")
+@permission_required("payables.raise")
+def signed_upload(pid, kind, doc_id):
+    db, _p = _project(pid)
+    f = request.files.get("file")
+    anchor = "#orders" if kind == "commitment" else "#payables"
+    return _run(lambda: S.upload(db, pid, kind, doc_id, f.stream if f else None, f.filename if f else None, g.user["id"]),
+                _("The signed copy of {code} is uploaded. It waits for the cost control engineer."),
+                url_for("payables.page", pid=pid) + anchor)
+
+
+@bp.post("/projects/<int:pid>/signed/<int:sid>/<action>")
+@login_required
+def signed_decide(pid, sid, action):
+    db, _p = _project(pid)
+    s = db.execute("SELECT status, doc_kind FROM signed_copies WHERE id = ? AND project_id = ?", (sid, pid)).fetchone()
+    if s is None or action not in ("accept", "return"):
+        abort(404)
+    director = s["status"] == "cc_ok"
+    if not can(g.user, "changes.approve" if director else "payables.approve"):
+        abort(403)
+    return _run(lambda: S.decide(db, pid, sid, action == "accept", request.form.get("reason"), g.user["id"], director),
+                _("Saved."), url_for("payables.page", pid=pid) + ("#orders" if s["doc_kind"] == "commitment" else "#payables"))
+
+
+@bp.get("/projects/<int:pid>/signed/<int:sid>")
+@login_required
+def signed_file(pid, sid):
+    db, _p = _project(pid)
+    try:
+        data, name = S.content(db, pid, sid)
+    except AuthError as e:
+        flash(str(e), "bad")
+        return redirect(url_for("payables.page", pid=pid))
+    return Response(data, mimetype="application/pdf", headers={"Content-Disposition": f'inline; filename="{name}"'})
 
 
 @bp.get("/projects/<int:pid>/billing")

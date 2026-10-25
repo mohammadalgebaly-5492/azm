@@ -23,6 +23,16 @@
     </tr>{% endfor %}</tbody></table></div>
   {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No daily reports yet, so no indicators.') }}</p></div>{% endif %}
 </section>
+{% if teams %}<section class="card flush" id="teams">
+  <div class="card-head"><div><h2>{{ _('Project teams') }}</h2><p>{{ _('The same indicators for everyone who raises the daily reports of each project.') }}</p></div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Project') }}</th><th class="num">{{ _('Engineers') }}</th><th class="num">{{ _('Reports') }}</th><th class="num">{{ _('Reports on time') }}</th><th class="num">{{ _('Data accuracy') }}</th><th class="num">{{ _('Time index') }}</th><th class="num">{{ _('Cost index') }}</th><th class="num">{{ _('Average submission delay in days') }}</th></tr></thead>
+    <tbody>{% for c in teams %}<tr>
+      <td><a href="{{ url_for('daily.performance', pid=c.project.id) }}">{{ c.project.name }}</a><span class="sub code">{{ c.project.code }}</span></td><td class="num">{{ c.members }}</td><td class="num">{{ c.reports }}</td>
+      <td class="num">{{ fmt_pct(c.on_time) if c.on_time is not none else '—' }}</td><td class="num">{{ fmt_pct(c.accuracy) if c.accuracy is not none else '—' }}</td>
+      <td class="num">{{ idx(c.spi) }}</td><td class="num">{{ idx(c.cpi) }}</td><td class="num">{{ '%.1f'|format(c.delay) if c.delay is not none else '—' }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+</section>{% endif %}
 <section class="card flush">
   <div class="card-head"><div><h2>{{ _('Authority changes') }}</h2><p>{{ _('Full: raises requests to cost control directly. Restricted: requests and reports go through the project manager first. Suspended: prepares only, and raises nothing except through the project manager.') }}</p></div></div>
   {% if changes %}<div class="table-wrap"><table><thead><tr><th>{{ _('Engineer') }}</th><th>{{ _('From') }}</th><th>{{ _('To') }}</th><th>{{ _('Reason') }}</th><th>{{ _('Changed by') }}</th></tr></thead>

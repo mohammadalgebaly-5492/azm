@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% from "_curves.html" import progress_curve, cost_curve with context %}
 {% block title %}{{ _('Project schedule') }}{% endblock %}
 {% block content %}
 {% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
@@ -27,9 +28,25 @@
     {% if not approved and not st.schedule_reviewed_at and can('projects.manage') %}<form method="post" action="{{ url_for('schedule.review', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Mark as reviewed') }}</button></form>{% endif %}
     {% if not approved and st.schedule_reviewed_at and can('changes.approve') and st.schedule_reviewed_by != g.user.id %}<form method="post" action="{{ url_for('schedule.approve', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('lock', 16) }} {{ _('Approve as the time baseline') }}</button></form>{% endif %}
     {% if approved and can('changes.approve') %}<details class="row-menu"><summary class="btn">{{ _('Reopen for changes') }}</summary>
-      <form method="post" action="{{ url_for('schedule.reopen', pid=p.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for reopening') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Reopen') }}</button></form></details>{% endif %}
+      <form method="post" action="{{ url_for('schedule.reopen', pid=p.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for re-planning') }}" aria-label="{{ _('Reason') }}">
+        {% if crs %}<select name="cr_id" aria-label="{{ _('Approved change request') }}"><option value="">{{ _('Without a change request') }}</option>{% for c in crs %}<option value="{{ c.id }}">{{ c.code }}</option>{% endfor %}</select>{% endif %}
+        <button class="btn btn-danger" type="submit">{{ _('Reopen') }}</button></form></details>{% endif %}
   </div>
 </section>
+
+{% if baselines or st.replan_reason %}
+<section class="card flush" id="baselines">
+  <div class="card-head"><div><h2>{{ _('Baseline revisions') }}</h2><p>{{ _('Each approval of the schedule saves a revision. The original (R00) stays saved for comparison.') }}</p></div><span class="count">{{ baselines|length }}</span></div>
+  {% if st.replan_reason %}<div class="alert warn" role="status">{{ icon('alert', 17) }}<span>{{ _('Re-planning in progress: {r}. On the next approval the platform saves a new revision.', r=st.replan_reason) }}</span></div>{% endif %}
+  {% if baselines %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Revision') }}</th><th>{{ _('Planned finish') }}</th><th class="num">{{ _('Budget') }}</th><th>{{ _('Reason') }}</th><th>{{ _('Approved by') }}</th><th></th></tr></thead>
+    <tbody>{% for b in baselines %}<tr>
+      <td class="code">{{ b.code }}{% if b.cr_code %}<span class="sub code">{{ b.cr_code }}</span>{% endif %}</td><td class="num">{{ b.finish|string|truncate(10, True, '') }}</td><td class="num">{{ money(b.budget) }}</td>
+      <td class="details">{{ b.reason or _('The original baseline') }}</td><td>{{ names.get(b.approved_by, '') }}<span class="sub num">{{ b.approved_at|string|truncate(10, True, '') }}</span></td>
+      <td class="cell-actions">{% if b.rev %}<a class="btn btn-ghost" href="{{ url_for('schedule.baseline', pid=p.id, rev=b.rev) }}">{{ _('Compare with the original') }}</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>{% endif %}
+</section>
+{% endif %}
 
 <section class="card flush" id="activities">
   <div class="card-head"><div><h2>{{ _('Activities') }}</h2><p>{{ _('Grouped by WBS section. In each row the upper bar is the plan and the lower bar is the actual and expected.') }}</p></div>
@@ -85,22 +102,15 @@
 <section class="card" id="curve">
   <div class="card-head"><div><h2>{{ _('Progress curve') }}</h2><p>{{ _('The planned value of the works to date against the earned value of the finished steps, as a share of the BOQ total.') }}</p></div>
     <div class="typelegend"><span><span class="tdot s-plan"></span>{{ _('Planned') }}</span><span><span class="tdot s-fact"></span>{{ _('Actual') }}</span></div></div>
-  <div class="curve" role="img" aria-label="{{ _('Progress curve') }}">
-    <span class="y y100 num">100%</span><span class="y y50 num">50%</span><span class="y y0 num">0%</span>
-    {% set step = (curve|length + 7) // 8 %}
-    {% for c in curve %}{% set prev = curve[loop.index0 - 1] if not loop.first else {'planned': 0, 'earned': 0} %}
-    <div class="pt" tabindex="0" data-tip="{{ c.date }} · {{ _('Planned') }} {{ fmt_pct(c.planned) }}{% if c.earned is not none %} · {{ _('Actual') }} {{ fmt_pct(c.earned) }}{% endif %}">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <line class="grid" x1="0" x2="100" y1="50" y2="50"/>
-        <line class="s-plan" x1="0" x2="100" y1="{{ 100 - prev.planned / 100 }}" y2="{{ 100 - c.planned / 100 }}"/>
-        {% if c.earned is not none %}<line class="s-fact" x1="0" x2="100" y1="{{ 100 - (prev.earned or 0) / 100 }}" y2="{{ 100 - c.earned / 100 }}"/>{% endif %}
-      </svg>
-      {% if loop.index0 % step == 0 %}<span class="tick num">{{ c.date.strftime('%Y-%m-%d') }}</span>{% endif %}
-    </div>{% endfor %}
-  </div>
-  <details class="hint"><summary>{{ _('Show as a table') }}</summary><div class="table-wrap"><table>
-    <thead><tr><th>{{ _('Period end') }}</th><th class="num">{{ _('Planned') }}</th><th class="num">{{ _('Actual') }}</th></tr></thead>
-    <tbody>{% for c in curve %}<tr><td class="num">{{ c.date }}</td><td class="num">{{ fmt_pct(c.planned) }}</td><td class="num">{{ fmt_pct(c.earned) if c.earned is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+  {{ progress_curve(curve) }}
+</section>
+{% endif %}
+
+{% if costs %}
+<section class="card" id="costcurve">
+  <div class="card-head"><div><h2>{{ _('Cost curve') }}</h2><p>{{ _('The planned cost of the works to date against the actual cost: the resources of the approved daily reports, and the approved certificates and invoices.') }}</p></div>
+    <div class="typelegend"><span><span class="tdot s-plan"></span>{{ _('Planned cost') }}</span><span><span class="tdot s-cost"></span>{{ _('Actual cost') }}</span></div></div>
+  {{ cost_curve(costs) }}
 </section>
 {% endif %}
 

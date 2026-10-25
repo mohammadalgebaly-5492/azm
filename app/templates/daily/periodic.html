@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Weekly and monthly reports') }}{% endblock %}
+{% macro list(rows) %}
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Period') }}</th><th></th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a href="{{ url_for('daily.periodic_view', pid=p.id, kind=r.kind, end=r.end.isoformat()) }}"><bdi class="num" dir="ltr">{{ r.start }} → {{ r.end }}</bdi></a></td>
+      <td>{% if r.current %}<span class="pill warn">{{ _('Up to today') }}</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('calendar', 28) }}<p>{{ _('Reports appear when the schedule starts.') }}</p></div>{% endif %}
+{%- endmacro %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Weekly and monthly reports') }}</h1>
+  <p class="lead">{{ _('The platform prepares them by itself from the approved data up to the end of each period. The week runs from Sunday to Saturday.') }}</p>
+</div></header>
+<div class="grid-2">
+  <section class="card flush"><div class="card-head"><div><h2>{{ _('Weekly report') }}</h2></div><span class="count">{{ weeks|length }}</span></div>{{ list(weeks) }}</section>
+  <section class="card flush"><div class="card-head"><div><h2>{{ _('Monthly report') }}</h2></div><span class="count">{{ months|length }}</span></div>{{ list(months) }}</section>
+</div>
+{% endblock %}

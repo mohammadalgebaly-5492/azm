@@ -66,7 +66,8 @@ def start_execution(db, pid, actor_id) -> str:
 # ---------- 4.5 التأخير ومسؤوليته وتكلفته ----------
 
 def delay_cost_per_day(db, pid, activity_id=None) -> dict:
-    """لكل يوم تأخير: غرامة التأخير المحتملة من العقد، وتكلفة الموارد المخصصة المتوقفة على النشاط."""
+    """لكل يوم تأخير: غرامة التأخير المحتملة من العقد، وتكلفة الموارد المخصصة المتوقفة على النشاط، والمصاريف غير المباشرة
+    اليومية للمشروع."""
     c = contract_of(db, pid)
     penalty = 0
     if c and c["penalty_method"] == "daily_pct" and c["penalty_value"]:
@@ -80,7 +81,18 @@ def delay_cost_per_day(db, pid, activity_id=None) -> dict:
                             "AND resource_kind != 'subcontractor'", (activity_id,)).fetchall():
             col = {"person": "person_id", "crew": "crew_id", "equipment": "equipment_id"}[a["resource_kind"]]
             idle += daily_cost_of(db, a["resource_kind"], _resource(db, a["resource_kind"], a[col])) * a["allocation_bp"] // 10000
-    return {"penalty": penalty, "idle": idle, "total": penalty + idle}
+    overhead = db.execute("SELECT daily_overhead FROM projects WHERE id = ?", (pid,)).fetchone()[0] or 0
+    return {"penalty": penalty, "idle": idle, "overhead": overhead, "total": penalty + idle + overhead}
+
+
+def set_overhead(db, pid, raw, actor_id):
+    """المصاريف غير المباشرة اليومية للمشروع (البند 4.5)، يحددها مهندس تحكم تكلفة وتدخل في تكلفة يوم التأخير."""
+    value = parse_money(raw)
+    if value is None or value < 0:
+        raise AuthError(_("Enter the daily indirect cost in SAR."))
+    with tx(db):
+        db.execute("UPDATE projects SET daily_overhead = ? WHERE id = ?", (value, pid))
+        audit.log(db, actor_id, "overhead_set", "project", pid, pid, amount=value)
 
 
 def record_delay(db, pid, form, actor_id) -> str:

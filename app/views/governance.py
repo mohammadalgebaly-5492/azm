@@ -102,6 +102,14 @@ def plan_decide(pid, plan_id, action):
                 _("Saved."), url_for("governance.control", pid=pid) + "#plans")
 
 
+@bp.post("/projects/<int:pid>/control/overhead")
+@permission_required("projects.manage")
+def overhead(pid):
+    db, _p = _project(pid)
+    return _run(lambda: G.set_overhead(db, pid, request.form.get("daily_overhead"), g.user["id"]), _("Saved."),
+                url_for("governance.control", pid=pid) + "#delays")
+
+
 @bp.post("/projects/<int:pid>/control/delays")
 @permission_required("projects.manage")
 def delay_add(pid):

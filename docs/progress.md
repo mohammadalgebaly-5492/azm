@@ -12,14 +12,17 @@ The project's memory between chats. Claude reads this at the start of **every** 
 - **Also built:** kickoff gate (4.1), delays and their cost (4.5), early warning and recovery plans (4.6), closeout and archive (4.10).
 - **Also built:** item price analysis (3.3).
 - **Also built:** schedule import from Excel/CSV (3.4), engineer authority levels and scorecards (4.4).
-- **Left:** automatic weekly and monthly reports (4.3); team indicators (4.4); re-planning as a saved baseline revision (4.5); the planned vs actual cost curve (3.4).
-- **Waits on the programmer:** file storage (attachments, photos, profile files, quote and certificate files) and the email provider (alert and reminder emails).
-- **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
-- **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
+- **Also built (round 14):** weekly and monthly reports (4.3), project team indicators (4.4), re-planning with saved baseline revisions and the daily indirect cost (4.5), the planned vs actual cost curve (3.4), and signed paper copies (PDF) with their acceptance.
+- **Left:** the «Full» engineer approving his team's reports (4.4); subcontractor retention terms taken from the subcontract.
+- **Waits on the programmer:** turn on file storage on the live site (Supabase private bucket + `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` in Vercel; the code is ready, uploads show «ينتظر مكان حفظ الملفات» until then), the email provider, and running the live example once: `python scripts/demo_full.py mohammad <director-username>` (Muhammad said yes on 2026-10-25: «أيوه، ضيفه»). Never create demo accounts with known passwords on the live site.
+- **Trial accounts:** every account on the trial copy uses the password `Azm12345trial` (trial copy only).
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 14 (Muhammad: «قولي انت محتاج ايه» then yes to all three): migration `024_replanning_signed` (`baselines`, `signed_copies`, `projects.daily_overhead/replan_reason/replan_cr_id`); modules `periodic.py`, `files.py`, `signed.py`; screens «التقارير الأسبوعية والشهرية», baseline revisions and comparison, cost curve, project teams, daily indirect cost, signed copy column on «المستخلصات والفواتير». Vendor decision: «جهز خانة هيرفع فيها المهندس ملف pdf ورقي عشان يعتمده الجهات الاخرى زي مهندس التكلفة والتحكم والدايركتور». Live example approved («أيوه، ضيفه»); script moved to `scripts/demo_full.py` for the programmer. Also fixed the «Order» column label (it showed «الترتيب»). 116 tests pass on SQLite and Postgres.
+- **2026-10-25.** Incident: a local sign-in check imported `wsgi.py` with `DATABASE_URL` removed, so `.env.local` pointed it at the live database for one failed sign-in attempt (user `demo`); nothing else changed. Rule: run local scripts with `DATABASE_URL=` (empty) and assert the database is not Postgres.
 
 - **2026-10-25.** Rounds 12 and 13: schedule import from Excel/CSV (P6, MS Project or Excel exports; all or nothing; predecessors by ID or row), and engineer authority levels with scorecards (migration `023_authority`: `engineer_levels`, `authority_changes`, `daily_reports.needs_pm/pm_checked_*/times_returned`). 111 tests pass on SQLite and Postgres.
 

@@ -1,7 +1,9 @@
 """شاشات التقرير اليومي للموقع ومراجعته، وشاشة أداء المشروع بالقيمة المكتسبة وحالته بالألوان."""
+from datetime import date
+
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from .. import daily as Y, performance as P, registers as R, schedule as T
+from .. import daily as Y, performance as P, periodic as PR, registers as R, schedule as T
 from ..auth import AuthError, login_required, permission_required
 from ..boq import fmt_qty
 from ..contracts import fmt_pct
@@ -151,7 +153,9 @@ def engineers():
         except AuthError as e:
             flash(str(e), "bad")
         return redirect(url_for("daily.engineers"))
-    return render_template("daily/engineers.html", cards=A.scorecards(db), LEVELS=A.LEVELS, changes=A.recent_changes(db, 90),
+    cache = {}
+    return render_template("daily/engineers.html", cards=A.scorecards(db, cache), teams=A.team_cards(db, cache), LEVELS=A.LEVELS,
+                           changes=A.recent_changes(db, 90),
                            fmt_pct=fmt_pct, names={r[0]: r[1] for r in db.execute("SELECT id, full_name FROM users").fetchall()})
 
 
@@ -166,3 +170,24 @@ def performance(pid):
                            items=items, RAG=P.RAG, top=[n for n in ind["wbs"] if n["parent_id"] is None],
                            waiting=db.execute("SELECT COUNT(*) FROM daily_reports WHERE project_id = ? AND status = 'review'",
                                               (pid,)).fetchone()[0], fmt_pct=fmt_pct)
+
+
+@bp.get("/projects/<int:pid>/status-reports")
+@login_required
+def periodic(pid):
+    db, p = _project(pid)
+    return render_template("daily/periodic.html", p=p, weeks=PR.periods(db, pid, "weekly"), months=PR.periods(db, pid, "monthly"))
+
+
+@bp.get("/projects/<int:pid>/status-reports/<kind>/<end>")
+@login_required
+def periodic_view(pid, kind, end):
+    db, p = _project(pid)
+    try:
+        on = date.fromisoformat(end)
+    except ValueError:
+        abort(404)
+    r = PR.build(db, pid, kind, on)
+    if r is None:
+        abort(404)
+    return render_template("daily/periodic_view.html", p=p, r=r, m=r["m"], RAG=P.RAG, KINDS=PR.KINDS, fmt_pct=fmt_pct)

@@ -201,8 +201,14 @@ def pay(db, pid, xid, form, actor_id):
         audit.log(db, actor_id, "payable_paid", "project", pid, pid, code=x["code"], amount=x["net"])
 
 
-def cost_by_item(db, pid) -> dict[int, int]:
-    """التكلفة الفعلية من المستخلصات والفواتير المعتمدة (قيمة الأعمال قبل الاستقطاعات)."""
-    return {r[0]: r[1] for r in db.execute(
-        "SELECT c.boq_item_id, CAST(SUM(x.gross) AS BIGINT) FROM payables x JOIN commitments c ON c.id = x.commitment_id "
-        "WHERE x.project_id = ? AND x.status IN ('approved','paid') GROUP BY c.boq_item_id", (pid,)).fetchall()}
+def cost_by_item(db, pid, until=None) -> dict[int, int]:
+    """التكلفة الفعلية من المستخلصات والفواتير المعتمدة (قيمة الأعمال قبل الاستقطاعات)، حتى تاريخ إن طُلب:
+    تاريخ نهاية فترة المستخلص، أو تاريخ رفع الفاتورة."""
+    out = {}
+    for r in db.execute("SELECT c.boq_item_id, x.gross, x.period_to, x.created_at FROM payables x "
+                        "JOIN commitments c ON c.id = x.commitment_id WHERE x.project_id = ? AND x.status IN ('approved','paid')",
+                        (pid,)).fetchall():
+        if until and str(r["period_to"] or r["created_at"])[:10] > str(until)[:10]:
+            continue
+        out[r[0]] = out.get(r[0], 0) + r[1]
+    return out

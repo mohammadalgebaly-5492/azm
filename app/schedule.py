@@ -1,5 +1,6 @@
 """الجدول الزمني للمتابعة (الدستور، البند 3.4): الأنشطة وعلاقاتها، والمخطط مقابل الفعلي والمتوقع، والإنجاز من خطوات النطاق،
 والمراجعة والاعتماد كخط أساس للزمن. وجدول الدفعات التعاقدية المربوط بالأنشطة (البند 3.2)."""
+import json
 from datetime import date, timedelta
 
 from . import audit
@@ -38,8 +39,8 @@ def links(db, pid) -> dict[int, list[int]]:
 
 
 def state(db, pid):
-    return db.execute("SELECT schedule_reviewed_at, schedule_reviewed_by, schedule_approved_at, schedule_approved_by "
-                      "FROM projects WHERE id = ?", (pid,)).fetchone()
+    return db.execute("SELECT schedule_reviewed_at, schedule_reviewed_by, schedule_approved_at, schedule_approved_by, "
+                      "replan_reason FROM projects WHERE id = ?", (pid,)).fetchone()
 
 
 def _ensure_open(db, pid):
@@ -447,22 +448,78 @@ def approve(db, pid, actor_id):
         raise AuthError(_("The cost control engineer reviews the schedule before the Director approves it."))
     if st["schedule_reviewed_by"] == actor_id:
         raise AuthError(_("Whoever reviews the schedule can't approve it."))
+    p = db.execute("SELECT replan_reason, replan_cr_id FROM projects WHERE id = ?", (pid,)).fetchone()
+    now = utcnow()
     with tx(db):
-        db.execute("UPDATE projects SET schedule_approved_at = ?, schedule_approved_by = ? WHERE id = ?", (utcnow(), actor_id, pid))
-        audit.log(db, actor_id, "schedule_approved", "project", pid, pid)
+        db.execute("UPDATE projects SET schedule_approved_at = ?, schedule_approved_by = ?, replan_reason = NULL, "
+                   "replan_cr_id = NULL WHERE id = ?", (now, actor_id, pid))
+        code = _save_baseline(db, pid, p["replan_reason"], p["replan_cr_id"], now, actor_id)
+        audit.log(db, actor_id, "schedule_approved", "project", pid, pid, code=code)
 
 
-def reopen(db, pid, reason, actor_id):
-    """فتح الجدول المعتمد للتعديل: بسبب مكتوب، ومن المدير التنفيذي فقط (مبدأ الحوكمة)."""
-    if not state(db, pid)["schedule_approved_at"]:
+def reopen(db, pid, reason, actor_id, cr_raw=None):
+    """إعادة التخطيط (البند 4.5): فتح الجدول المعتمد للتعديل بسبب مكتوب، ومن المدير التنفيذي فقط، مع طلب التغيير المعتمد
+    الذي سببه إن وُجد. ويبقى خط الأساس المعتمد محفوظًا، وعند الاعتماد التالي تُحفظ مراجعة جديدة منه."""
+    st = state(db, pid)
+    if not st["schedule_approved_at"]:
         raise AuthError(_("The schedule is not approved."))
     reason = (reason or "").strip()
     if len(reason) < 5:
         raise AuthError(_("Write the reason for reopening."))
+    cr = None
+    if str(cr_raw or "").isdigit():
+        cr = db.execute("SELECT id FROM change_requests WHERE id = ? AND project_id = ? AND status = 'approved'",
+                        (int(cr_raw), pid)).fetchone()
+        if cr is None:
+            raise AuthError(_("Choose an approved change request of this project."))
     with tx(db):
+        if not db.execute("SELECT 1 FROM baselines WHERE project_id = ?", (pid,)).fetchone():  # اعتُمد قبل حفظ المراجعات
+            _save_baseline(db, pid, None, None, st["schedule_approved_at"], st["schedule_approved_by"])
         db.execute("UPDATE projects SET schedule_approved_at = NULL, schedule_approved_by = NULL, schedule_reviewed_at = NULL, "
-                   "schedule_reviewed_by = NULL WHERE id = ?", (pid,))
+                   "schedule_reviewed_by = NULL, replan_reason = ?, replan_cr_id = ? WHERE id = ?",
+                   (reason, cr["id"] if cr else None, pid))
         audit.log(db, actor_id, "schedule_reopened", "project", pid, pid, reason=reason)
+
+
+# ---------- مراجعات خط الأساس (BL-R00 الأصل، ثم R01، R02) ----------
+
+def _save_baseline(db, pid, reason, cr_id, at, actor_id) -> str:
+    from .changes import adjustments
+    acts = [{"id": a["id"], "code": a["code"], "name": a["name"], "ps": str(a["planned_start"])[:10],
+             "pf": str(a["planned_finish"])[:10]} for a in activities(db, pid)]
+    items = [{"id": b["id"], "code": b["code"], "budget": b["amount"] + adjustments(db, b["id"])}
+             for b in db.execute("SELECT id, code, amount FROM boq_items WHERE project_id = ? ORDER BY code", (pid,))]
+    rev = db.execute("SELECT COALESCE(MAX(rev) + 1, 0) FROM baselines WHERE project_id = ?", (pid,)).fetchone()[0]
+    code = "{}-BL-R{:02d}".format(db.execute("SELECT code FROM projects WHERE id = ?", (pid,)).fetchone()[0], rev)
+    db.execute("INSERT INTO baselines(project_id, rev, code, reason, cr_id, finish, budget, data, approved_at, approved_by) "
+               "VALUES (?,?,?,?,?,?,?,?,?,?)",
+               (pid, rev, code, reason, cr_id, max((a["pf"] for a in acts), default=None), sum(i["budget"] for i in items),
+                json.dumps({"activities": acts, "items": items}, ensure_ascii=False), at, actor_id))
+    return code
+
+
+def baselines(db, pid):
+    return db.execute("SELECT b.*, c.code AS cr_code FROM baselines b LEFT JOIN change_requests c ON c.id = b.cr_id "
+                      "WHERE b.project_id = ? ORDER BY b.rev DESC", (pid,)).fetchall()
+
+
+def compare(db, pid, rev) -> dict | None:
+    """مقارنة مراجعة بالأصل (R00): إزاحة بداية ونهاية كل نشاط بالأيام، وتغير تاريخ الإنجاز والميزانية."""
+    rows = {b["rev"]: b for b in db.execute("SELECT * FROM baselines WHERE project_id = ? AND rev IN (0, ?)", (pid, rev))}
+    if rev not in rows or 0 not in rows:
+        return None
+    base, cur = json.loads(rows[0]["data"]), json.loads(rows[rev]["data"])
+    old = {a["id"]: a for a in base["activities"]}
+    acts = []
+    for a in cur["activities"]:
+        o = old.pop(a["id"], None)
+        acts.append({"code": a["code"], "name": a["name"], "ps": a["ps"], "pf": a["pf"], "old": o,
+                     "shift": (_d(a["pf"]) - _d(o["pf"])).days if o else None})
+    gone = sorted(old.values(), key=lambda a: a["code"])
+    b0, b1 = rows[0], rows[rev]
+    return {"base": b0, "rev": b1, "activities": acts, "removed": gone,
+            "finish_shift": (_d(b1["finish"]) - _d(b0["finish"])).days if b0["finish"] and b1["finish"] else 0,
+            "budget_change": b1["budget"] - b0["budget"]}
 
 
 # ---------- الرسوم: منحنى التقدم والتدفق النقدي ----------

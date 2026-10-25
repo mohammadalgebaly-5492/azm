@@ -1,0 +1,44 @@
+{# منحنيات مشتركة: التقدم المخطط مقابل الفعلي (نسبة من إجمالي المقايسة)، والتكلفة المخططة مقابل الفعلية (تراكمي). #}
+{% macro progress_curve(curve) %}
+  <div class="curve" role="img" aria-label="{{ _('Progress curve') }}">
+    <span class="y y100 num">100%</span><span class="y y50 num">50%</span><span class="y y0 num">0%</span>
+    {% set step = (curve|length + 7) // 8 %}
+    {% for c in curve %}{% set prev = curve[loop.index0 - 1] if not loop.first else {'planned': 0, 'earned': 0} %}
+    <div class="pt" tabindex="0" data-tip="{{ c.date }} · {{ _('Planned') }} {{ fmt_pct(c.planned) }}{% if c.earned is not none %} · {{ _('Actual') }} {{ fmt_pct(c.earned) }}{% endif %}">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <line class="grid" x1="0" x2="100" y1="50" y2="50"/>
+        <line class="s-plan" x1="0" x2="100" y1="{{ 100 - prev.planned / 100 }}" y2="{{ 100 - c.planned / 100 }}"/>
+        {% if c.earned is not none %}<line class="s-fact" x1="0" x2="100" y1="{{ 100 - (prev.earned or 0) / 100 }}" y2="{{ 100 - c.earned / 100 }}"/>{% endif %}
+      </svg>
+      {% if loop.index0 % step == 0 %}<span class="tick num">{{ c.date.strftime('%Y-%m-%d') }}</span>{% endif %}
+    </div>{% endfor %}
+  </div>
+  <details class="hint"><summary>{{ _('Show as a table') }}</summary><div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Period end') }}</th><th class="num">{{ _('Planned') }}</th><th class="num">{{ _('Actual') }}</th></tr></thead>
+    <tbody>{% for c in curve %}<tr><td class="num">{{ c.date }}</td><td class="num">{{ fmt_pct(c.planned) }}</td><td class="num">{{ fmt_pct(c.earned) if c.earned is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+{%- endmacro %}
+
+{% macro short(v) -%}
+{%- set sar = v / 100 -%}{{ '%.1fM'|format(sar / 1000000) if sar >= 1000000 else ('%.0fK'|format(sar / 1000) if sar >= 1000 else '%.0f'|format(sar)) }}
+{%- endmacro %}
+
+{% macro cost_curve(points) %}
+  {% set acts = points|rejectattr('actual', 'none')|map(attribute='actual')|list %}
+  {% set top = ([points[-1].planned] + acts + [1])|max %}
+  <div class="curve" role="img" aria-label="{{ _('Cost curve') }}">
+    <span class="y y100 num">{{ short(top) }}</span><span class="y y50 num">{{ short(top // 2) }}</span><span class="y y0 num">0</span>
+    {% set step = (points|length + 7) // 8 %}
+    {% for c in points %}{% set prev = points[loop.index0 - 1] if not loop.first else {'planned': 0, 'actual': 0} %}
+    <div class="pt" tabindex="0" data-tip="{{ c.date }} · {{ _('Planned cost') }} {{ money(c.planned) }}{% if c.actual is not none %} · {{ _('Actual cost') }} {{ money(c.actual) }}{% endif %}">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <line class="grid" x1="0" x2="100" y1="50" y2="50"/>
+        <line class="s-plan" x1="0" x2="100" y1="{{ 100 - prev.planned * 100 / top }}" y2="{{ 100 - c.planned * 100 / top }}"/>
+        {% if c.actual is not none %}<line class="s-cost" x1="0" x2="100" y1="{{ 100 - (prev.actual or 0) * 100 / top }}" y2="{{ 100 - c.actual * 100 / top }}"/>{% endif %}
+      </svg>
+      {% if loop.index0 % step == 0 %}<span class="tick num">{{ c.date.strftime('%Y-%m-%d') }}</span>{% endif %}
+    </div>{% endfor %}
+  </div>
+  <details class="hint"><summary>{{ _('Show as a table') }}</summary><div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Period end') }}</th><th class="num">{{ _('Planned cost') }}</th><th class="num">{{ _('Actual cost') }}</th></tr></thead>
+    <tbody>{% for c in points %}<tr><td class="num">{{ c.date }}</td><td class="num">{{ money(c.planned) }}</td><td class="num">{{ money(c.actual) if c.actual is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+{%- endmacro %}
