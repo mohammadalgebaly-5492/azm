@@ -52,6 +52,8 @@ def table_strings():
     from app.documents import ISSUERS, REV_STATUS
     from app.scope import METHODS, PARTIES
     out |= set(ISSUERS.values()) | set(REV_STATUS.values()) | set(METHODS.values()) | set(PARTIES.values())
+    from app.schedule import STATUS as ACT_STATUS
+    out |= set(ACT_STATUS.values())
     return out
 
 

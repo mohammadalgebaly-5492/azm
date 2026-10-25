@@ -57,12 +57,14 @@ PERMISSIONS = {
     "admin.settings": ("Edit platform settings", "Change the platform and company names and the session limits."),
     "documents.manage": ("Record documents and scope of work",
                          "Register project documents and their revisions, and write each item's scope and execution steps."),
+    "schedule.manage": ("Prepare the schedule and record progress",
+                        "Add and edit schedule activities before approval, record actual dates and finished scope steps."),
     "registers.manage": ("Manage shared registers",
                          "Owners, consultants and subcontractors with their addresses and people, and the lookup lists."),
 }
 PERMISSION_GROUPS = (
     ("Projects", ("projects.view_all", "projects.create", "projects.manage", "boq.manage", "documents.manage",
-                  "changes.approve")),
+                  "schedule.manage", "changes.approve")),
     ("Analytics", ("analytics.view",)),
     ("Registers", ("registers.manage",)),
     ("Accounts", ("users.manage", "admin.invites")),

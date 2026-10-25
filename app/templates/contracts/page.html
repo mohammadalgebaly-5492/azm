@@ -47,6 +47,39 @@
   </section>
 </div>
 
+<section class="card flush" id="payments">
+  {% set ms_total = ms|sum(attribute='m.share_bp') %}
+  <div class="card-head"><div><h2>{{ _('Contract payment schedule') }}</h2><p>{{ _('Each payment follows its activity in the schedule: if the activity is late, the payment is late too.') }}</p></div>
+    <span class="pill {{ 'ok' if ms_total == 10000 else 'warn' }}">{{ pct(ms_total) }}</span></div>
+  {% if ms %}<div class="table-wrap"><table>
+    <thead><tr><th class="num">#</th><th>{{ _('Payment') }}</th><th>{{ _('Linked activity') }}</th><th class="num">{{ _('Share') }}</th><th class="num">{{ _('Value') }}</th><th>{{ _('Planned due date') }}</th><th>{{ _('Expected due date') }}</th><th>{{ _('Status') }}</th>{% if can('projects.manage') and not schedule_locked %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for x in ms %}<tr>
+      <td class="num">{{ x.m.seq }}</td>
+      <td>{{ x.m.description }}<span class="sub code">{{ x.m.code }}</span></td>
+      <td>{% if x.act %}<a class="code" href="{{ url_for('schedule.activity', pid=p.id, aid=x.act.id) }}">{{ x.act.code }}</a><span class="sub">{{ x.act.name }} · {{ _('at {pct} progress', pct=pct(x.m.required_progress_bp)) }}</span>{% endif %}</td>
+      <td class="num">{{ pct(x.m.share_bp) }}</td><td class="num">{{ money(x.value) }}</td>
+      <td class="num">{{ x.planned or '—' }}</td>
+      <td class="num {{ 'warn-text' if x.delay > 0 }}">{{ x.expected or '—' }}{% if x.delay > 0 %}<span class="sub">+{{ x.delay }} {{ _('days') }}</span>{% endif %}</td>
+      <td>{% if x.due %}<span class="pill ok">{{ _('Due') }}</span>{% else %}<span class="faint">{{ _('Not due yet') }}</span>{% endif %}</td>
+      {% if can('projects.manage') and not schedule_locked %}<td class="cell-actions"><form method="post" action="{{ url_for('schedule.payment_delete', pid=p.id, mid=x.m.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost btn-danger" type="submit">{{ _('Delete') }}</button></form></td>{% endif %}
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('calendar', 28) }}<p>{{ _('No payments yet. Add the schedule activities first, then link each payment to its activity.') }}</p></div>{% endif %}
+  {% if can('projects.manage') and not schedule_locked and acts %}
+  <form method="post" action="{{ url_for('schedule.payment_add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field wide"><label for="pay_desc" class="req">{{ _('Payment description') }}</label><input id="pay_desc" name="description" required></div>
+      <div class="field"><label for="pay_act" class="req">{{ _('Linked activity') }}</label>
+        <select id="pay_act" name="activity_id" required>{% for a in acts %}<option value="{{ a.id }}">{{ a.code }} · {{ a.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="pay_share" class="req">{{ _('Share of the contract value') }}</label><div class="affix"><input id="pay_share" name="share_pct" dir="ltr" inputmode="decimal" required><span>%</span></div></div>
+      <div class="field"><label for="pay_need" class="req">{{ _('Progress required for the payment') }}</label><div class="affix"><input id="pay_need" name="required_pct" dir="ltr" inputmode="decimal" value="100" required><span>%</span></div></div>
+      <div class="field wide"><label for="pay_notes">{{ _('Notes') }}</label><input id="pay_notes" name="notes"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add payment') }}</button></div>
+    </div>
+  </form>
+  {% elif schedule_locked %}<p class="hint card-form">{{ _('The schedule is approved, so the payment schedule is locked with it.') }}</p>{% endif %}
+</section>
+
 <section class="card flush" id="guarantees">
   <div class="card-head"><div><h2>{{ _('Bank guarantees') }}</h2><p>{{ _('An alert appears 30 days before any guarantee expires.') }}</p></div><span class="count">{{ guarantees|length }}</span></div>
   {% if guarantees %}<div class="table-wrap"><table>

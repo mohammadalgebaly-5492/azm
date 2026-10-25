@@ -148,7 +148,9 @@ def project(pid):
         subs=[e for e in R.entities(db, "subcontractor", active_only=True) if e["approval_status"] == "approved"],
         items=db.execute("SELECT id, code, description, unit FROM boq_items WHERE project_id = ? ORDER BY code", (pid,)).fetchall(),
         title_list=R.catalog(db, "job_title", True), RESOURCE_KINDS=S.RESOURCE_KINDS, ALLOCATION_STATUS=S.ALLOCATION_STATUS,
-        locked=is_locked(db, pid), step_groups=_step_groups(db, pid), PARTIES=W.PARTIES, planned_total=sum(evals[a["id"]]["cost"] for a in allocs if a["status"] in S.LIVE), **_names(db))
+        locked=is_locked(db, pid), step_groups=_step_groups(db, pid),
+        activities=db.execute("SELECT id, code, name, planned_start, planned_finish FROM activities WHERE project_id = ? "
+                              "ORDER BY code", (pid,)).fetchall(), PARTIES=W.PARTIES, planned_total=sum(evals[a["id"]]["cost"] for a in allocs if a["status"] in S.LIVE), **_names(db))
 
 
 def _step_groups(db, pid):

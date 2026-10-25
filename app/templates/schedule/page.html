@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Project schedule') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+{% set approved = st.schedule_approved_at %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Project schedule') }}</h1>
+  <p class="lead">{{ _('The items, time and cost, planned and actual. Progress comes from the finished scope steps.') }}</p>
+</div></header>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Actual progress') }}</span></div><b class="num">{{ fmt_pct(total.earned_bp) }}</b><span>{{ _('Planned to date') }}: <span class="num">{{ fmt_pct(total.planned_bp) }}</span></span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Planned finish') }}</span></div><b class="num">{{ total.finish or '—' }}</b><span>{{ _('Start') }}: <span class="num">{{ total.start or '—' }}</span></span></div>
+  {% set delay = (total.forecast - total.finish).days if total.finish else 0 %}
+  <div class="stat"><div class="stat-top"><span>{{ _('Expected finish') }}</span></div><b class="num {{ 'warn-text' if delay > 0 }}">{{ total.forecast or '—' }}</b><span>{% if delay > 0 %}{{ _('{n} days late', n=delay) }}{% elif total.finish %}{{ _('On time') }}{% endif %}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Activities') }}</span></div><b class="num">{{ rows|length }}</b><span>{{ _('Finished') }}: <span class="num">{{ rows|selectattr('status', 'eq', 'finished')|list|length }}</span></span></div>
+</div>
+
+<section class="card">
+  <div class="card-head"><div><h2>{{ _('Time baseline approval') }}</h2>
+    <p class="keep">{% if approved %}{{ _('Approved by {name}. The planned dates are locked; the actual dates and progress are updated during execution.', name=names.get(st.schedule_approved_by, '')) }}{% elif st.schedule_reviewed_at %}{{ _('Reviewed by {name}. It waits for the Director\'s approval.', name=names.get(st.schedule_reviewed_by, '')) }}{% else %}{{ _('Prepared by the project engineer, reviewed by the cost control engineer and approved by the Director.') }}{% endif %}</p></div>
+    {% if approved %}<span class="pill ok">{{ _('Approved') }}</span>{% elif st.schedule_reviewed_at %}<span class="pill warn">{{ _('Waiting for approval') }}</span>{% else %}<span class="pill">{{ _('Draft') }}</span>{% endif %}</div>
+  <ul class="checklist">{% for ok_, text, blocking in checks %}<li class="{{ 'ok' if ok_ else ('bad' if blocking else 'warn') }}">{{ icon('check' if ok_ else 'alert', 16) }} <span>{{ text }}{% if not ok_ and not blocking %} <span class="faint">({{ _('warning only') }})</span>{% endif %}</span></li>{% endfor %}</ul>
+  <div class="actions card-actions">
+    {% if not approved and not st.schedule_reviewed_at and can('projects.manage') %}<form method="post" action="{{ url_for('schedule.review', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Mark as reviewed') }}</button></form>{% endif %}
+    {% if not approved and st.schedule_reviewed_at and can('changes.approve') and st.schedule_reviewed_by != g.user.id %}<form method="post" action="{{ url_for('schedule.approve', pid=p.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('lock', 16) }} {{ _('Approve as the time baseline') }}</button></form>{% endif %}
+    {% if approved and can('changes.approve') %}<details class="row-menu"><summary class="btn">{{ _('Reopen for changes') }}</summary>
+      <form method="post" action="{{ url_for('schedule.reopen', pid=p.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for reopening') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Reopen') }}</button></form></details>{% endif %}
+  </div>
+</section>
+
+<section class="card flush" id="activities">
+  <div class="card-head"><div><h2>{{ _('Activities') }}</h2><p>{{ _('Grouped by WBS section. In each row the upper bar is the plan and the lower bar is the actual and expected.') }}</p></div>
+    <div class="typelegend"><span><span class="tdot g-plan"></span>{{ _('Planned') }}</span><span><span class="tdot g-fact"></span>{{ _('Actual and expected') }}</span><span><span class="tdot g-late"></span>{{ _('Late') }}</span></div></div>
+  {% if rows %}<div class="table-wrap"><table class="gantt">
+    <thead><tr><th>{{ _('Activity') }}</th><th>{{ _('Planned') }}</th><th class="num">{{ _('Days') }}</th><th class="num">{{ _('Progress') }}</th><th class="num">{{ _('Variance') }}</th>
+      {% set mstep = (timeline.months|length + 7) // 8 %}
+      <th class="g-cell"><svg class="g-axis" aria-hidden="true">{% for x, d in timeline.months %}<line x1="{{ x }}%" x2="{{ x }}%" y1="0" y2="100%"/>{% if loop.index0 % mstep == 0 %}<text x="{{ x }}%" dx="3" y="13">{{ d.strftime('%m/%y') }}</text>{% endif %}{% endfor %}</svg></th></tr></thead>
+    <tbody>{% for (wcode, wname), group in groups %}
+      <tr class="g-group"><td colspan="6"><span class="code">{{ wcode }}</span> {{ wname }}</td></tr>
+      {% for r in group %}{% set b = bars[r.a.id] %}<tr>
+        <td><a class="row-link" href="{{ url_for('schedule.activity', pid=p.id, aid=r.a.id) }}">{{ r.a.name }}</a><span class="sub"><span class="code">{{ r.a.code }}</span>{% if r.a.item_code %} · <span class="code">{{ r.a.item_code }}</span>{% endif %}</span></td>
+        <td class="num tight">{{ r.ps }}<span class="sub">{{ r.pf }}</span></td>
+        <td class="num">{{ r.dur }}</td>
+        <td class="num">{{ fmt_pct(r.progress) }}<span class="sub">{{ _(STATUS[r.status]) }}</span></td>
+        <td class="num {{ 'warn-text' if r.variance > 0 }}">{{ '%+d'|format(r.variance) if r.variance else '0' }}</td>
+        <td class="g-cell" data-tip="{{ r.a.code }} · {{ _('Planned') }} {{ r.ps }} → {{ r.pf }} · {{ _('Expected') }} {{ r.fs }} → {{ r.ff }}"><svg class="g-bar" aria-hidden="true">
+          {% for x, d in timeline.months %}<line class="g-grid" x1="{{ x }}%" x2="{{ x }}%" y1="0" y2="100%"/>{% endfor %}
+          <rect class="g-plan" x="{{ b.plan[0] }}%" width="{{ b.plan[1] }}%" y="5" height="9" rx="2"/>
+          <rect class="{{ 'g-late' if r.variance > 0 else 'g-fact' }}{{ ' g-forecast' if not r.a.actual_finish }}" x="{{ b.fact[0] }}%" width="{{ b.fact[1] }}%" y="17" height="9" rx="2"/>
+          {% if timeline.today is not none %}<line class="g-today" x1="{{ timeline.today }}%" x2="{{ timeline.today }}%" y1="0" y2="100%"/>{% endif %}
+        </svg></td>
+      </tr>{% endfor %}
+    {% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('calendar', 28) }}<p>{{ _('No activities yet. Add the activities of each item or section.') }}</p></div>{% endif %}
+  {% if can('schedule.manage') and not approved %}
+  <form method="post" action="{{ url_for('schedule.add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field wide"><label for="act_name" class="req">{{ _('Activity name') }}</label><input id="act_name" name="name" required></div>
+      <div class="field wide"><label for="act_link" class="req">{{ _('Item or WBS section') }}</label>
+        <select id="act_link" name="link" required>
+          {% if items %}<optgroup label="{{ _('BOQ items') }}">{% for b in items %}<option value="item-{{ b.id }}">{{ b.code }} · {{ b.description }}</option>{% endfor %}</optgroup>{% endif %}
+          {% if sections %}<optgroup label="{{ _('WBS sections') }}">{% for s in sections %}<option value="wbs-{{ s.id }}">{{ s.code }} · {{ s.name }}</option>{% endfor %}</optgroup>{% endif %}
+        </select></div>
+      <div class="field"><label for="act_ps" class="req">{{ _('Planned start') }}</label><input id="act_ps" name="planned_start" type="date" required {{ date_attrs|safe }}></div>
+      <div class="field"><label for="act_pf" class="req">{{ _('Planned finish') }}</label><input id="act_pf" name="planned_finish" type="date" required {{ date_attrs|safe }}></div>
+      {% if all_acts %}<div class="field wide"><span class="label">{{ _('Predecessor activities') }}</span>
+        <div class="checks">{% for x in all_acts %}<label class="check"><input type="checkbox" name="predecessors" value="{{ x.id }}"><span>{{ x.name }}<span class="sub code">{{ x.code }}</span></span></label>{% endfor %}</div></div>{% endif %}
+      <div class="field wide"><label for="act_notes">{{ _('Notes') }}</label><input id="act_notes" name="notes"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add activity') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+{% if curve %}
+<section class="card" id="curve">
+  <div class="card-head"><div><h2>{{ _('Progress curve') }}</h2><p>{{ _('The planned value of the works to date against the earned value of the finished steps, as a share of the BOQ total.') }}</p></div>
+    <div class="typelegend"><span><span class="tdot s-plan"></span>{{ _('Planned') }}</span><span><span class="tdot s-fact"></span>{{ _('Actual') }}</span></div></div>
+  <div class="curve" role="img" aria-label="{{ _('Progress curve') }}">
+    <span class="y y100 num">100%</span><span class="y y50 num">50%</span><span class="y y0 num">0%</span>
+    {% set step = (curve|length + 7) // 8 %}
+    {% for c in curve %}{% set prev = curve[loop.index0 - 1] if not loop.first else {'planned': 0, 'earned': 0} %}
+    <div class="pt" tabindex="0" data-tip="{{ c.date }} · {{ _('Planned') }} {{ fmt_pct(c.planned) }}{% if c.earned is not none %} · {{ _('Actual') }} {{ fmt_pct(c.earned) }}{% endif %}">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <line class="grid" x1="0" x2="100" y1="50" y2="50"/>
+        <line class="s-plan" x1="0" x2="100" y1="{{ 100 - prev.planned / 100 }}" y2="{{ 100 - c.planned / 100 }}"/>
+        {% if c.earned is not none %}<line class="s-fact" x1="0" x2="100" y1="{{ 100 - (prev.earned or 0) / 100 }}" y2="{{ 100 - c.earned / 100 }}"/>{% endif %}
+      </svg>
+      {% if loop.index0 % step == 0 %}<span class="tick num">{{ c.date.strftime('%Y-%m-%d') }}</span>{% endif %}
+    </div>{% endfor %}
+  </div>
+  <details class="hint"><summary>{{ _('Show as a table') }}</summary><div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Period end') }}</th><th class="num">{{ _('Planned') }}</th><th class="num">{{ _('Actual') }}</th></tr></thead>
+    <tbody>{% for c in curve %}<tr><td class="num">{{ c.date }}</td><td class="num">{{ fmt_pct(c.planned) }}</td><td class="num">{{ fmt_pct(c.earned) if c.earned is not none else '—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+</section>
+{% endif %}
+
+{% if flow %}
+<section class="card" id="cashflow">
+  <div class="card-head"><div><h2>{{ _('Cash flow') }}</h2><p>{{ _('Expected payments from the owner in each period, against the planned cost of the works.') }}</p></div>
+    <div class="typelegend"><span><span class="tdot f-in"></span>{{ _('Expected payments') }}</span><span><span class="tdot f-out"></span>{{ _('Planned cost') }}</span></div></div>
+  {% set step = (flow|length + 7) // 8 %}
+  <div class="flow" role="img" aria-label="{{ _('Cash flow') }}">
+    {% for f in flow %}<div class="wk" tabindex="0" data-tip="{{ f.date }} · {{ _('Expected payments') }} {{ money(f.inflow) }} · {{ _('Planned cost') }} {{ money(f.cost) }}">
+      <svg aria-hidden="true">{% set hi = f.inflow * 100.0 / flow_top %}{% set hc = f.cost * 100.0 / flow_top %}
+        {% if f.inflow %}<rect class="f-in" x="8%" width="40%" y="{{ '%.2f'|format(100 - hi) }}%" height="{{ '%.2f'|format(hi) }}%" rx="2"/>{% endif %}
+        {% if f.cost %}<rect class="f-out" x="52%" width="40%" y="{{ '%.2f'|format(100 - hc) }}%" height="{{ '%.2f'|format(hc) }}%" rx="2"/>{% endif %}
+      </svg>
+      {% if loop.index0 % step == 0 %}<span class="tick num">{{ f.date.strftime('%Y-%m') }}</span>{% endif %}
+    </div>{% endfor %}
+  </div>
+  <details class="hint"><summary>{{ _('Show as a table') }}</summary><div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Period end') }}</th><th class="num">{{ _('Expected payments') }}</th><th class="num">{{ _('Planned cost') }}</th></tr></thead>
+    <tbody>{% for f in flow %}<tr><td class="num">{{ f.date }}</td><td class="num">{{ money(f.inflow) }}</td><td class="num">{{ money(f.cost) }}</td></tr>{% endfor %}</tbody></table></div></details>
+</section>
+{% endif %}
+{% endblock %}

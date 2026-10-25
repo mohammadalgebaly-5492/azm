@@ -1,7 +1,7 @@
 """شاشات العقد الرئيسي: البيانات، والضمانات، والتأمينات، وأوامر التغيير."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from .. import contracts as C
+from .. import contracts as C, schedule as T
 from ..auth import AuthError, login_required, permission_required
 from ..db import get_db
 from ..i18n import _
@@ -33,7 +33,9 @@ def page(pid):
         vos = C.variation_orders(db, c["id"])
         ctx = {"s": C.summary(db, c), "guarantees": C.guarantees(db, c["id"]), "insurances": C.insurances(db, c["id"]),
                "vos": vos, "vo_items": {v["id"]: C.vo_items(db, v["id"]) for v in vos},
-               "expiring": C.expiring(db, c["id"]),
+               "expiring": C.expiring(db, c["id"]), "ms": T.milestones(db, pid),
+               "acts": db.execute("SELECT id, code, name FROM activities WHERE project_id = ? ORDER BY code", (pid,)).fetchall(),
+               "schedule_locked": bool(T.state(db, pid)["schedule_approved_at"]),
                "boq": db.execute("SELECT id, code, description FROM boq_items WHERE project_id = ? ORDER BY code",
                                  (pid,)).fetchall()}
     return render_template("contracts/page.html", p=p, c=c, **ctx, **_lists())

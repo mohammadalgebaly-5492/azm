@@ -92,6 +92,8 @@ p { margin: 0; }
 .num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
 .code { font-size: 12.5px; color: var(--muted); direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 a.code { color: var(--accent); }
+/* الكود سطرًا مستقلًا تحت النص: يبقى من اليسار لليمين ويُحاذى مع بداية الخلية في العربية */
+[dir="rtl"] .sub.code { text-align: right; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -488,6 +490,42 @@ html.loading .app::before { content: ""; position: fixed; top: 0; inset-inline: 
 .seg.k-person, .tdot.k-person { fill: var(--c-person); background: var(--c-person); }
 .seg.k-crew, .tdot.k-crew { fill: var(--c-crew); background: var(--c-crew); }
 .seg.k-equipment, .tdot.k-equipment { fill: var(--c-equipment); background: var(--c-equipment); }
+.card-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 14px; }
+/* الجدول الزمني: لكل نشاط شريط المخطط فوق شريط الفعلي والمتوقع، والوقت من اليسار لليمين */
+table.gantt .g-cell { width: 52%; min-width: 420px; padding-block: 4px; direction: ltr; }
+table.gantt tr.g-group td { background: var(--surface-2); font-weight: 600; font-size: 13px; }
+.g-axis { display: block; width: 100%; height: 18px; overflow: visible; }
+.g-axis line { stroke: var(--line); }
+.g-axis text { fill: var(--muted); font-size: 11px; font-weight: 400; }
+.g-bar { display: block; width: 100%; height: 31px; }
+.g-bar .g-grid { stroke: var(--line); stroke-width: 1px; }
+.g-plan { fill: var(--c-series); background: var(--c-series); }
+.g-fact { fill: var(--c-person); background: var(--c-person); }
+.g-late { fill: var(--warn); background: var(--warn); }
+.g-forecast { fill-opacity: .55; }
+.g-today { stroke: var(--accent); stroke-width: 1.5px; stroke-dasharray: 3 3; }
+/* منحنى التقدم: لكل فترة عمود يرسم جزء الخط من الفترة السابقة إليها */
+.curve { position: relative; direction: ltr; display: flex; height: 200px; margin: 18px 0 30px 38px;
+  border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); }
+.curve .pt { position: relative; flex: 1 1 0; min-width: 0; }
+.curve .pt:hover, .curve .pt:focus-visible { background: var(--surface-2); }
+.curve svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.curve .grid { stroke: var(--line); vector-effect: non-scaling-stroke; }
+.curve .s-plan { stroke: var(--c-series); stroke-width: 2px; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.curve .s-fact { stroke: var(--c-person); stroke-width: 2.5px; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.curve .y { position: absolute; left: -38px; font-size: 11px; color: var(--faint); transform: translateY(-50%); }
+.curve .y100 { top: 0; } .curve .y50 { top: 50%; } .curve .y0 { top: 100%; }
+.curve .tick, .flow .tick { position: absolute; bottom: -22px; left: 0; font-size: 11px; color: var(--faint); white-space: nowrap; }
+.curve .pt:last-child .tick, .flow .wk:last-child .tick { left: auto; right: 0; }
+.tdot.s-plan { background: var(--c-series); } .tdot.s-fact { background: var(--c-person); }
+/* التدفق النقدي: عمودان لكل فترة */
+.flow { direction: ltr; display: flex; align-items: stretch; gap: 3px; height: 180px; padding-top: 10px; margin: 4px 0 30px;
+  border-bottom: 1px solid var(--line); }
+.flow .wk { position: relative; flex: 1 1 0; min-width: 0; display: flex; border-radius: 6px; }
+.flow .wk:hover, .flow .wk:focus-visible { background: var(--surface-2); }
+.flow svg { flex: 1; display: block; width: 100%; height: 100%; }
+.f-in { fill: var(--c-supply); background: var(--c-supply); }
+.f-out { fill: var(--c-exec); background: var(--c-exec); }
 .card-form details { margin-top: 12px; }
 .card-form details .checks { margin-top: 10px; }
 .inline-form { display: flex; gap: 8px; align-items: center; }

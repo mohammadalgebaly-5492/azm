@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ a.code }} · {{ a.name }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+{% set approved = st.schedule_approved_at %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('schedule.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Project schedule') }}</a><span class="code">{{ a.code }}</span></div>
+  <h1>{{ a.name }}</h1>
+  <p class="lead keep">{% if a.item_code %}<span class="code">{{ a.item_code }}</span> {{ a.item_desc }}{% else %}<span class="code">{{ a.wbs_code }}</span> {{ a.wbs_name }}{% endif %}</p>
+</div></header>
+
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Progress') }}</span></div><b class="num">{{ fmt_pct(r.progress) }}</b><span>{{ _(STATUS[r.status]) }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Planned duration') }}</span></div><b class="num">{{ r.dur }} {{ _('days') }}</b><span class="num">{{ r.ps }} → {{ r.pf }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Variance') }}</span></div><b class="num {{ 'warn-text' if r.variance > 0 }}">{{ '%+d'|format(r.variance) if r.variance else '0' }} {{ _('days') }}</b><span class="num">{{ r.fs }} → {{ r.ff }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Planned cost') }}</span></div><b class="num">{{ money(r.cost) }}</b><span>{{ _('SAR') }}</span></div>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('Actual dates') }}</h2><p>{{ _('Updated during execution without touching the plan.') }}</p></div></div>
+    {% if can('schedule.manage') %}
+    <form method="post" action="{{ url_for('schedule.actual', pid=p.id, aid=a.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div class="field"><label for="as">{{ _('Actual start') }}</label><input id="as" name="actual_start" type="date" {{ date_attrs|safe }} value="{{ a.actual_start|string|truncate(10, True, '') if a.actual_start else '' }}"></div>
+        <div class="field"><label for="af">{{ _('Actual finish') }}</label><input id="af" name="actual_finish" type="date" {{ date_attrs|safe }} value="{{ a.actual_finish|string|truncate(10, True, '') if a.actual_finish else '' }}"></div>
+        <div class="form-foot"><button class="btn" type="submit">{{ _('Save the actual dates') }}</button></div>
+      </div>
+    </form>
+    {% else %}
+    <dl class="kv"><dt>{{ _('Actual start') }}</dt><dd class="num">{{ a.actual_start|string|truncate(10, True, '') if a.actual_start else '—' }}</dd>
+      <dt>{{ _('Actual finish') }}</dt><dd class="num">{{ a.actual_finish|string|truncate(10, True, '') if a.actual_finish else '—' }}</dd></dl>
+    {% endif %}
+  </section>
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('Relations') }}</h2><p>{{ _('An activity starts after all its predecessors finish.') }}</p></div></div>
+    <dl class="kv">
+      <dt>{{ _('Predecessor activities') }}</dt><dd>{% for x in preds %}<a class="code" href="{{ url_for('schedule.activity', pid=p.id, aid=x.id) }}">{{ x.code }}</a> {{ x.name }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</dd>
+      <dt>{{ _('Following activities') }}</dt><dd>{% for x in successors %}<a class="code" href="{{ url_for('schedule.activity', pid=p.id, aid=x.id) }}">{{ x.code }}</a> {{ x.name }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</dd>
+      <dt>{{ _('Contract payment') }}</dt><dd>{% for m in ms %}<a href="{{ url_for('contracts.page', pid=p.id) }}#payments">{{ m.m.description }}</a> · <span class="num">{{ money(m.value) }}</span>{% if m.due %} <span class="pill ok">{{ _('Due') }}</span>{% endif %}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</dd>
+    </dl>
+    {% if r.preds_late %}<p class="hint warn-text">{{ _('This activity is planned to start before a predecessor finishes.') }}</p>{% endif %}
+  </section>
+</div>
+
+<section class="card flush" id="steps">
+  <div class="card-head"><div><h2>{{ _('Progress by scope steps') }}</h2><p>{{ _('The progress is the total weight of the finished steps of the item.') }}</p></div></div>
+  {% if steps %}<div class="table-wrap"><table>
+    <thead><tr><th class="num">{{ _('Order') }}</th><th>{{ _('Step') }}</th><th class="num">{{ _('Weight') }}</th><th>{{ _('Finished on') }}</th>{% if can('schedule.manage') %}<th></th>{% endif %}</tr></thead>
+    <tbody>{% for s in steps %}<tr>
+      <td class="num">{{ s.seq }}</td><td>{{ s.name }}<span class="sub code">{{ s.code }}</span></td><td class="num">{{ fmt_pct(s.weight_bp) }}</td>
+      <td>{% if s.finished_on %}<span class="pill ok">{{ s.finished_on|string|truncate(10, True, '') }}</span>{% else %}<span class="faint">{{ _('Not finished') }}</span>{% endif %}</td>
+      {% if can('schedule.manage') %}<td class="cell-actions">
+        {% if s.finished_on %}<form method="post" action="{{ url_for('schedule.step', pid=p.id, aid=a.id, sid=s.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="finished_on" value=""><button class="btn btn-ghost" type="submit">{{ _('Undo') }}</button></form>
+        {% else %}<details class="row-menu"><summary class="btn">{{ icon('check', 16) }} {{ _('Mark finished') }}</summary>
+          <form method="post" action="{{ url_for('schedule.step', pid=p.id, aid=a.id, sid=s.id) }}" class="org-end"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="date" name="finished_on" required {{ date_attrs|safe }} aria-label="{{ _('Finished on') }}"><button class="btn btn-primary" type="submit">{{ _('Confirm') }}</button></form></details>{% endif %}
+      </td>{% endif %}
+    </tr>{% endfor %}</tbody></table></div>
+  {% elif a.boq_item_id %}<div class="empty">{{ icon('table', 28) }}<p>{{ _('The item has no scope steps yet.') }} <a href="{{ url_for('scope.item', pid=p.id, iid=a.boq_item_id) }}">{{ _('Open the scope') }}</a></p></div>
+  {% else %}<div class="empty">{{ icon('table', 28) }}<p>{{ _('A section activity takes its progress from the items under it that have no activity of their own.') }}</p></div>{% endif %}
+</section>
+
+{% if can('schedule.manage') and not approved %}
+<section class="card" id="edit">
+  <div class="card-head"><div><h2>{{ _('Edit the plan') }}</h2><p>{{ _('Allowed until the schedule is approved as a baseline. Any change sends the schedule back for review.') }}</p></div></div>
+  <form method="post" action="{{ url_for('schedule.edit', pid=p.id, aid=a.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field wide"><label for="e_name" class="req">{{ _('Activity name') }}</label><input id="e_name" name="name" required value="{{ a.name }}"></div>
+      <div class="field wide"><label for="e_link" class="req">{{ _('Item or WBS section') }}</label>
+        <select id="e_link" name="link" required>
+          {% if items %}<optgroup label="{{ _('BOQ items') }}">{% for b in items %}<option value="item-{{ b.id }}" {{ 'selected' if link == 'item-' ~ b.id }}>{{ b.code }} · {{ b.description }}</option>{% endfor %}</optgroup>{% endif %}
+          <optgroup label="{{ _('WBS sections') }}">{% for s in sections %}<option value="wbs-{{ s.id }}" {{ 'selected' if link == 'wbs-' ~ s.id }}>{{ s.code }} · {{ s.name }}</option>{% endfor %}</optgroup>
+        </select></div>
+      <div class="field"><label for="e_ps" class="req">{{ _('Planned start') }}</label><input id="e_ps" name="planned_start" type="date" required {{ date_attrs|safe }} value="{{ r.ps }}"></div>
+      <div class="field"><label for="e_pf" class="req">{{ _('Planned finish') }}</label><input id="e_pf" name="planned_finish" type="date" required {{ date_attrs|safe }} value="{{ r.pf }}"></div>
+      {% if others %}<div class="field wide"><span class="label">{{ _('Predecessor activities') }}</span>
+        <div class="checks">{% for x in others %}<label class="check"><input type="checkbox" name="predecessors" value="{{ x.id }}" {{ 'checked' if x.id in r.preds }}><span>{{ x.name }}<span class="sub code">{{ x.code }}</span></span></label>{% endfor %}</div></div>{% endif %}
+      <div class="field wide"><label for="e_notes">{{ _('Notes') }}</label><input id="e_notes" name="notes" value="{{ a.notes or '' }}"></div>
+      <div class="form-foot"><button class="btn btn-primary" type="submit">{{ _('Save changes') }}</button></div>
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('schedule.delete', pid=p.id, aid=a.id) }}" class="card-form"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost btn-danger" type="submit">{{ _('Delete the activity') }}</button></form>
+</section>
+{% endif %}
+{% endblock %}

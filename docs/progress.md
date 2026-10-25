@@ -5,14 +5,21 @@ The project's memory between chats. Claude reads this at the start of **every** 
 ## Now
 
 - **Current task:** building the whole constitution on the platform and publishing it step by step («زي ما كتبنا المشروع في الدستور ارفعو على المنصة بالكامل»). Muhammad asked Claude to keep going overnight without breaking the live site («مش عايز اصحى الاقي المنصة الاون لاين مش شغاله»), so each step is published only after all tests pass on SQLite and Postgres.
-- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), resources: people, crews, equipment, organization chart and allocation (3.6), project documents with revisions and approvals (3.1), and the scope of work with execution steps (3.7).
-- **Next, in order:** the schedule with Gantt, planned vs actual and import, plus the contract payment schedule (3.4, 3.2); the daily report, EVM and RAG status (4.3); then part 2: procurement, payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
+- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), resources: people, crews, equipment, organization chart and allocation (3.6), project documents with revisions and approvals (3.1), the scope of work with execution steps (3.7), and the schedule with Gantt, progress curve, cash flow and the contract payment schedule (3.4, 3.2).
+- **Next, in order:** schedule import from Excel / Primavera / MS Project (3.4); the daily report, EVM and RAG status (4.3); then part 2: procurement, payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
 - **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
 - **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 5, the schedule (3.4) and the contract payment schedule (3.2):
+  - Migration `015_schedule` (both folders): `activities`, `activity_links`, schedule review and approval columns on `projects`, `scope_steps.finished_on`, `allocations.activity_id`, `payment_milestones`. New permission `schedule.manage`, granted to Cost Control and PM.
+  - Screens: project page → «الجدول الزمني للمشروع» (stats, approval with checks, activities grouped by section with a Gantt bar for plan and for actual/expected, progress curve, cash flow, each with a table view); activity page (actual dates, relations, progress by scope steps, edit before approval); contract page → «جدول الدفعات التعاقدية».
+  - Rules: no predecessor loops; the plan is locked after the Director's approval and reopens only with a written reason; actual dates never in the future; expected dates follow actual starts and late predecessors; payments add up to at most 100% and their expected date follows their activity; allocations on an item with activities must name one, with a warning outside its period.
+  - 87 tests pass on SQLite and Postgres.
+  - Demo on the trial copy only: 21 activities from 2026-11-01 to 2027-10-31 with predecessors, 7 payments adding up to 100%, schedule reviewed and approved; the earlier demo allocations were linked to their activities.
 
 - **2026-10-25.** Round 4, project documents (3.1) and scope of work (3.7):
   - Migration `014_documents_scope` (both folders): `documents`, `document_revisions`, `item_scopes`, `item_scope_docs`, `scope_steps`, and `allocations.step_id`. New permission `documents.manage`, granted to Cost Control and PM (the constitution has the project engineer prepare both).

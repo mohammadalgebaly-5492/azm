@@ -78,6 +78,12 @@ ACTION_LABELS = {
     "scope_saved": "Item scope saved", "scope_reviewed": "Item scope reviewed and locked",
     "scope_reopened": "Item scope reopened", "step_added": "Execution step added", "step_updated": "Execution step updated",
     "step_deleted": "Execution step deleted",
+    "activity_added": "Schedule activity added", "activity_updated": "Schedule activity updated",
+    "activity_deleted": "Schedule activity deleted", "activity_progress": "Activity actual dates recorded",
+    "step_finished": "Scope step finished", "step_reopened": "Scope step marked not finished",
+    "schedule_reviewed": "Schedule reviewed", "schedule_approved": "Schedule approved as the time baseline",
+    "schedule_reopened": "Schedule reopened for changes", "payment_added": "Contract payment added",
+    "payment_removed": "Contract payment removed",
 }
 
 
@@ -117,7 +123,8 @@ FIELD_LABELS = {
     "ownership": "Ownership", "lessor": "Lessor (if rented)",
     "title": "Document title", "issuer": "Issued by", "issuer_ref": "Document number at the issuer",
     "issued_on": "Issue date", "summary": "Document summary", "weight_bp": "Weight of the item progress",
-    "seq": "Order", "party": "Executed by",
+    "seq": "Order", "party": "Executed by", "planned_start": "Planned start", "planned_finish": "Planned finish",
+    "actual_start": "Actual start", "actual_finish": "Actual finish", "finished_on": "Finished on",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",
