@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ crew.name if crew else _('New crew') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('resources.crews') }}">{{ icon('back', 15) }} {{ _('Crews') }}</a>{% if crew %}<span class="code">{{ crew.code }}</span>{% endif %}</div>
+  <h1>{{ crew.name if crew else _('New crew') }}</h1>
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Crew') }}</h2><p>{{ _('Leave the daily cost empty to use the total of the members.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="name" class="req">{{ _('Crew name') }}</label><input id="name" name="name" required value="{{ form.get('name') or '' }}"></div>
+      <div class="field"><label for="specialty_code" class="req">{{ _('Specialty') }}</label>
+        <select id="specialty_code" name="specialty_code" required>{% for x in spec_list %}<option value="{{ x.code }}" {{ 'selected' if form.get('specialty_code') == x.code }}>{{ label(x) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="leader_id" class="req">{{ _('Crew leader') }}</label>
+        <select id="leader_id" name="leader_id" required>{% for x in all_people %}<option value="{{ x.id }}" {{ 'selected' if form.get('leader_id')|string == x.id|string }}>{{ x.full_name }} · {{ x.code }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="daily_cost">{{ _('Daily cost of the crew') }}</label><div class="affix"><input id="daily_cost" name="daily_cost" dir="ltr" inputmode="decimal" data-money value="{{ form.get('daily_cost') or '' }}"><span>{{ _('SAR') }}</span></div></div>
+      {% if crew %}<div class="field"><label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if form.get('active') }}><span>{{ _('Active: can be allocated to projects') }}</span></label></div>{% endif %}
+      <div class="field wide"><span class="label">{{ _('Crew members') }}</span>
+        {% if all_people %}<div class="checks">{% for x in all_people %}<label class="check"><input type="checkbox" name="members" value="{{ x.id }}" {{ 'checked' if x.id in members }}><span>{{ x.full_name }}<span class="sub">{{ professions.get(x.profession_code, '') }} · <span class="num">{{ money(x.daily_cost) }}</span></span></span></label>{% endfor %}</div>
+        {% else %}<span class="hint">{{ _('Register people first.') }} <a href="{{ url_for('resources.person_form') }}">{{ _('New person') }}</a></span>{% endif %}</div>
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('resources.crews') }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if crew else _('Create crew') }}</button>
+  </div>
+</form>
+{% endblock %}

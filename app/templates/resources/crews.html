@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Crews') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Crews') }}</h1><p class="lead">{{ _('Company work crews by specialty. A crew without a fixed daily cost uses the total of its members.') }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('resources.crew_form') }}">{{ icon('plus', 16) }} {{ _('New crew') }}</a>
+</header>
+<section class="card flush">
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Name') }}</th><th>{{ _('Specialty') }}</th><th>{{ _('Crew leader') }}</th><th class="num">{{ _('Members') }}</th><th class="num">{{ _('Daily cost') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a class="row-link" href="{{ url_for('resources.crew_form', crew_id=r.id) }}">{{ r.name }}</a><span class="sub"><span class="code">{{ r.code }}</span></span></td>
+      <td>{{ specialties.get(r.specialty_code, r.specialty_code) }}</td><td>{{ r.leader_name }}</td><td class="num">{{ r.n_members }}</td>
+      <td class="num">{{ money(costs[r.id]) }}</td>
+      <td>{% if r.active %}<span class="pill ok">{{ _('Active') }}</span>{% else %}<span class="pill bad">{{ _('Stopped') }}</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No crews yet.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

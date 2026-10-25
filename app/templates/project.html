@@ -36,6 +36,10 @@
         {% else %}<span class="muted">{{ _('The main contract is not recorded yet.') }}</span>{% endif %}</div>
       <a class="btn" href="{{ url_for('contracts.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open the contract') }}</a>
     </div>
+    <div class="boq-summary">
+      <div><b>{{ _('Project resources') }}</b><br><span class="muted">{{ _('Organization chart, and the people, crews, equipment and subcontractors allocated to each item.') }}</span></div>
+      <a class="btn" href="{{ url_for('resources.project', pid=p.id) }}">{{ icon('users', 16) }} {{ _('Open resources') }}</a>
+    </div>
   </section>
   <section class="card" id="team">
     <div class="card-head"><h2>{{ _('Project team') }}</h2><span class="count">{{ team|length }}</span></div>

@@ -426,7 +426,10 @@ ENHANCERS.push((root) => {
 ENHANCERS.push((root) => {
   root.querySelectorAll("select[data-shows]").forEach((sel) => {
     const groups = root.querySelectorAll(`[data-group="${sel.dataset.shows}"]`);
-    const sync = () => groups.forEach((g) => { g.hidden = g.dataset.value !== sel.value; });
+    const sync = () => groups.forEach((g) => {
+      g.hidden = g.dataset.value !== sel.value;
+      g.querySelectorAll("input, select, textarea").forEach((f) => { f.disabled = g.hidden; });
+    });
     sel.addEventListener("change", sync);
     sync();
   });

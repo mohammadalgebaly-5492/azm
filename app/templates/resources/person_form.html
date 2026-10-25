@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ person.full_name if person else _('New person') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('resources.people') }}">{{ icon('back', 15) }} {{ _('Personnel') }}</a>{% if person %}<span class="code">{{ person.code }}</span>{% endif %}</div>
+  <h1>{{ person.full_name if person else _('New person') }}</h1>
+  {% if not person %}<p class="lead">{{ _('The code is generated from the profession and never changes.') }}</p>{% endif %}
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Personal details') }}</h2><p>{{ _('As registered in the company records.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="full_name" class="req">{{ _('Full name') }}</label><input id="full_name" name="full_name" required value="{{ form.get('full_name') or '' }}"></div>
+      <div class="field"><label for="profession_code" class="req">{{ _('Profession') }}</label>
+        <select id="profession_code" name="profession_code" required {{ 'disabled' if person }}>{% for x in prof_list %}<option value="{{ x.code }}" {{ 'selected' if form.get('profession_code') == x.code }}>{{ label(x) }}</option>{% endfor %}</select>
+        {% if person %}<input type="hidden" name="profession_code" value="{{ person.profession_code }}">{% endif %}</div>
+      <div class="field"><label for="job_title_code" class="req">{{ _('Job title') }}</label>
+        <select id="job_title_code" name="job_title_code" required>{% for x in title_list %}<option value="{{ x.code }}" {{ 'selected' if form.get('job_title_code') == x.code }}>{{ label(x) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="id_no" class="req">{{ _('ID or residence number') }}</label><input id="id_no" name="id_no" dir="ltr" required value="{{ form.get('id_no') or '' }}"></div>
+      <div class="field"><label for="nationality">{{ _('Nationality') }}</label><input id="nationality" name="nationality" value="{{ form.get('nationality') or '' }}"></div>
+      <div class="field"><label for="phone" class="req">{{ _('Phone') }}</label><input id="phone" name="phone" dir="ltr" inputmode="tel" required value="{{ form.get('phone') or '' }}"></div>
+      <div class="field"><label for="email">{{ _('Email') }}</label><input id="email" name="email" type="email" dir="ltr" value="{{ form.get('email') or '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Cost and status') }}</h2><p>{{ _('The daily cost is used to calculate planned and actual resource cost.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="daily_cost" class="req">{{ _('Daily cost') }}</label><div class="affix"><input id="daily_cost" name="daily_cost" dir="ltr" inputmode="decimal" data-money required value="{{ form.get('daily_cost') or '' }}"><span>{{ _('SAR') }}</span></div></div>
+      <div class="field"><label for="status" class="req">{{ _('Status') }}</label>
+        <select id="status" name="status">{% for k, v in PERSON_STATUS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('status') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field wide"><label for="user_id">{{ _('Account on the platform') }}</label>
+        <select id="user_id" name="user_id"><option value="">{{ _('No account') }}</option>{% for u in accounts %}<option value="{{ u.id }}" {{ 'selected' if form.get('user_id')|string == u.id|string }}>{{ u.full_name }} · {{ u.code }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+  <div class="alert" role="note">{{ icon('file', 17) }}<span>{{ _('Attaching the ID, certificates and contract needs file storage, which will be added with the documents.') }}</span></div>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('resources.people') }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if person else _('Add person') }}</button>
+  </div>
+</form>
+{% endblock %}

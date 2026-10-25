@@ -57,6 +57,7 @@
   --highlight: inset 0 1px 0 rgba(255, 255, 255, .06);
   --field: #2c3c58;
   --c-supply: #2394d6; --c-exec: #cf7f22; --c-both: #2cc483; --c-series: #7f93b5;
+  --c-person: var(--c-supply); --c-crew: var(--c-exec); --c-equipment: #1fae72;
   --c-track: var(--sunken);
   color-scheme: dark;
 }
@@ -343,6 +344,7 @@ td a.row-link:hover { color: var(--accent); }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px 20px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field.wide { grid-column: 1 / -1; }
+.form-grid > [hidden] { display: none; }
 label, .label { font-size: 13px; font-weight: 500; color: var(--ink-2); }
 .req::after { content: " *"; color: var(--bad); }
 input, select, textarea { font: inherit; font-size: 14px; color: var(--ink); background: var(--field); border: 1px solid transparent;
@@ -451,6 +453,38 @@ html.loading .app::before { content: ""; position: fixed; top: 0; inset-inline: 
 .card-form { padding: 18px 22px; border-top: 1px solid var(--line); }
 .vo-decide { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; width: 260px; }
 .vo-decide input { flex: 1 1 100%; }
+.warn-text { color: var(--warn); }
+/* الهيكل التنظيمي للمشروع: شجرة متداخلة */
+.org, .org ul { list-style: none; margin: 0; padding: 0; }
+.org ul { padding-inline-start: 28px; border-inline-start: 1px dashed var(--line-2); margin-inline-start: 18px; }
+.org li { padding-block: 6px; }
+.org-card { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 14px; border: 1px solid var(--line);
+  border-radius: var(--r); background: var(--surface-2); }
+.org-card b { font-weight: 600; }
+.org-card span { color: var(--muted); font-size: 13px; }
+.org-end { display: inline-flex; gap: 6px; align-items: center; }
+.org-end input { width: 150px; }
+/* إجراء الصف (إنهاء/إلغاء) مطويًا حتى يُطلب */
+.row-menu { display: inline-block; }
+.row-menu > summary { list-style: none; cursor: pointer; }
+.row-menu > summary::-webkit-details-marker { display: none; }
+.row-menu[open] > summary { background: var(--surface-2); }
+.row-menu > form { margin-top: 8px; }
+.org-card .row-menu[open] { flex-basis: 100%; }
+/* احتياج الموارد الأسبوعي: أعمدة مكدسة، وقت من اليسار لليمين كما في بقية الرسوم */
+.demand { direction: ltr; display: flex; align-items: stretch; gap: 3px; height: 180px; padding-top: 22px; margin: 4px 0 30px;
+  border-bottom: 1px solid var(--line); }
+.demand .wk { position: relative; flex: 1 1 0; min-width: 0; display: flex; border-radius: 6px; }
+.demand .wk:hover, .demand .wk:focus-visible { background: var(--surface-2); }
+.demand .wk:focus-visible { box-shadow: var(--ring); }
+.demand svg { flex: 1; display: block; width: 100%; height: 100%; }
+.demand .seg { stroke: var(--surface); stroke-width: 1.5px; }
+.demand .cap { position: absolute; top: -18px; inset-inline: -20px; text-align: center; font-size: 11.5px; font-weight: 500; color: var(--ink-2); }
+.demand .tick { position: absolute; bottom: -22px; left: 0; font-size: 11px; color: var(--faint); white-space: nowrap; }
+.demand .wk:last-child .tick { left: auto; right: 0; }
+.seg.k-person, .tdot.k-person { fill: var(--c-person); background: var(--c-person); }
+.seg.k-crew, .tdot.k-crew { fill: var(--c-crew); background: var(--c-crew); }
+.seg.k-equipment, .tdot.k-equipment { fill: var(--c-equipment); background: var(--c-equipment); }
 .card-form details { margin-top: 12px; }
 .card-form details .checks { margin-top: 10px; }
 .inline-form { display: flex; gap: 8px; align-items: center; }

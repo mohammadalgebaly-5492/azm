@@ -66,6 +66,12 @@ ACTION_LABELS = {
     "vo_created": "Change order recorded",
     "vo_approved": "Change order approved",
     "vo_rejected": "Change order rejected",
+    "person_created": "Person registered", "person_updated": "Person updated",
+    "crew_created": "Crew created", "crew_updated": "Crew updated",
+    "equipment_created": "Equipment registered", "equipment_updated": "Equipment updated",
+    "position_added": "Position added to the organization chart", "position_ended": "Position ended",
+    "allocation_added": "Resource allocation recorded", "allocation_approved": "Resource allocation approved",
+    "allocation_cancelled": "Resource allocation cancelled",
 }
 
 
@@ -99,6 +105,10 @@ FIELD_LABELS = {
     "retention_cap_bp": "Retention cap of the contract value", "payment_days": "Payment period after certificate approval (days)",
     "penalty_method": "Penalty method", "penalty_value": "Penalty value (percentage or SAR per day)",
     "penalty_cap_bp": "Penalty cap of the contract value",
+    "profession_code": "Profession", "job_title_code": "Job title", "id_no": "ID or residence number",
+    "nationality": "Nationality", "daily_cost": "Daily cost", "user_id": "Account on the platform",
+    "catalog_code": "Equipment name", "make_model": "Manufacturer and model", "plate_serial": "Plate or serial no.",
+    "ownership": "Ownership", "lessor": "Lessor (if rented)",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",
@@ -119,7 +129,9 @@ def _value(key, v):
     if key == "role":
         return role_label(v)
     if key == "status":
-        return _(STATUS_LABELS[v]) if v in STATUS_LABELS else str(v)
+        from .resources import EQUIPMENT_STATUS, PERSON_STATUS
+        labels = {**PERSON_STATUS, **EQUIPMENT_STATUS, **STATUS_LABELS}
+        return _(labels[v]) if v in labels else str(v)
     if key in ("amount", "total", "contract_value", "unit_rate"):
         return fmt_money(v)
     if key == "qty_milli":
@@ -132,8 +144,11 @@ def _value(key, v):
     from .registers import ADDRESS_LABELS, APPROVAL, CATALOGS, COST_UNITS, ENTITY_KINDS
     if key.endswith("_bp") and isinstance(v, int):
         return fmt_pct(v)
-    if key == "value_ex_vat":
+    if key in ("value_ex_vat", "daily_cost"):
         return fmt_money(v)
+    from .resources import OWNERSHIP
+    if key == "ownership" and v in OWNERSHIP:
+        return _(OWNERSHIP[v])
     named = {"kind": {**{k: t[0] for k, t in ENTITY_KINDS.items()}, **KINDS, **GUARANTEES, **INSURANCES},
              "approval_status": APPROVAL, "label": ADDRESS_LABELS, "penalty_method": PENALTY_METHODS,
              "list": {k: t[0] for k, t in CATALOGS.items()}, "cost_unit": COST_UNITS}

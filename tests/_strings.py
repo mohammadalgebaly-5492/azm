@@ -46,6 +46,9 @@ def table_strings():
     from app.contracts import GUARANTEES, INSURANCES, KINDS, PENALTY_METHODS, VO_STATUS
     out |= set(GUARANTEES.values()) | set(INSURANCES.values()) | set(KINDS.values()) | set(PENALTY_METHODS.values())
     out |= set(VO_STATUS.values())
+    from app.resources import ALLOCATION_STATUS, EQUIPMENT_STATUS, OWNERSHIP, PERSON_STATUS, RESOURCE_KINDS
+    out |= set(ALLOCATION_STATUS.values()) | set(EQUIPMENT_STATUS.values()) | set(OWNERSHIP.values())
+    out |= set(PERSON_STATUS.values()) | set(RESOURCE_KINDS.values())
     return out
 
 

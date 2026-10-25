@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ eq.code if eq else _('New equipment') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('resources.equipment') }}">{{ icon('back', 15) }} {{ _('Equipment') }}</a>{% if eq %}<span class="code">{{ eq.code }}</span>{% endif %}</div>
+  <h1>{{ (eq_names.get(eq.catalog_code, eq.catalog_code) ~ (' · ' ~ eq.label if eq.label else '')) if eq else _('New equipment') }}</h1>
+  {% if not eq %}<p class="lead">{{ _('Choose the type first, then the equipment name from the catalog. The code is generated from the catalog code.') }}</p>{% endif %}
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Equipment') }}</h2><p>{{ _('The name is chosen from the equipment catalog, grouped by type.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="catalog_code" class="req">{{ _('Equipment name') }}</label>
+        <select id="catalog_code" name="catalog_code" required {{ 'disabled' if eq }}>
+          {% for t, items in catalog %}<optgroup label="{{ label(t) }}">{% for x in items %}<option value="{{ x.code }}" {{ 'selected' if form.get('catalog_code') == x.code }}>{{ label(x) }}</option>{% endfor %}</optgroup>{% endfor %}
+        </select>{% if eq %}<input type="hidden" name="catalog_code" value="{{ eq.catalog_code }}">{% endif %}</div>
+      <div class="field"><label for="label">{{ _('Distinguishing description') }}</label><input id="label" name="label" placeholder="{{ _('e.g. no. 3') }}" value="{{ form.get('label') or '' }}"></div>
+      <div class="field"><label for="make_model">{{ _('Manufacturer and model') }}</label><input id="make_model" name="make_model" dir="ltr" value="{{ form.get('make_model') or '' }}"></div>
+      <div class="field"><label for="plate_serial" class="req">{{ _('Plate or serial no.') }}</label><input id="plate_serial" name="plate_serial" dir="ltr" required value="{{ form.get('plate_serial') or '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Ownership, cost and status') }}</h2><p>{{ _('Equipment out of service can\'t be allocated.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="ownership" class="req">{{ _('Ownership') }}</label>
+        <select id="ownership" name="ownership" required>{% for k, v in OWNERSHIP.items() %}<option value="{{ k }}" {{ 'selected' if form.get('ownership') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="lessor">{{ _('Lessor (if rented)') }}</label><input id="lessor" name="lessor" value="{{ form.get('lessor') or '' }}"></div>
+      <div class="field"><label for="daily_cost" class="req">{{ _('Daily cost') }}</label><div class="affix"><input id="daily_cost" name="daily_cost" dir="ltr" inputmode="decimal" data-money required value="{{ form.get('daily_cost') or '' }}"><span>{{ _('SAR') }}</span></div></div>
+      <div class="field"><label for="status" class="req">{{ _('Status') }}</label>
+        <select id="status" name="status">{% for k, v in EQUIPMENT_STATUS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('status') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('resources.equipment') }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if eq else _('Add equipment') }}</button>
+  </div>
+</form>
+{% endblock %}

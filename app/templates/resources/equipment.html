@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Equipment') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Equipment') }}</h1><p class="lead">{{ _('Every piece of equipment the company owns or rents. The name comes from the equipment catalog.') }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('resources.equipment_form') }}">{{ icon('plus', 16) }} {{ _('New equipment') }}</a>
+</header>
+<section class="card flush">
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Equipment') }}</th><th>{{ _('Plate or serial no.') }}</th><th>{{ _('Ownership') }}</th><th class="num">{{ _('Daily cost') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a class="row-link" href="{{ url_for('resources.equipment_form', eq_id=r.id) }}">{{ eq_names.get(r.catalog_code, r.catalog_code) }}{% if r.label %} · {{ r.label }}{% endif %}</a><span class="sub"><span class="code">{{ r.code }}</span>{% if r.make_model %} · {{ r.make_model }}{% endif %}</span></td>
+      <td class="code">{{ r.plate_serial }}</td><td>{{ _(OWNERSHIP[r.ownership]) }}{% if r.lessor %}<span class="sub">{{ r.lessor }}</span>{% endif %}</td>
+      <td class="num">{{ money(r.daily_cost) }}</td>
+      <td><span class="pill {{ 'ok' if r.status == 'working' else ('warn' if r.status == 'maintenance' else 'bad') }}">{{ _(EQUIPMENT_STATUS[r.status]) }}</span></td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('settings', 28) }}<p>{{ _('No equipment registered yet.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

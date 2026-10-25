@@ -4,15 +4,22 @@ The project's memory between chats. Claude reads this at the start of **every** 
 
 ## Now
 
-- **Current task:** writing the constitution with Muhammad. Articles 1–4 are all approved (3 and 4 on 2026-10-25). Article 4 = part 2, «إدارة المشروع وحوكمته», drafted from his 9 points; decisions applied 2026-10-25; all applied, including the 10,000 SAR limit per payment (`docs/constitution.md`). Discussion only: he said not to build anything until the discussion is finished. Open questions are listed under each article.
-- **Published 2026-10-25 (commits `ba07534` and `17fe87f`, Vercel "Deployment has completed"):** the sign-in panel sentence «إدارة وأتمتة المشاريع وأكثر…», the constitution (articles 1–4), CLAUDE.md rules, and this log. Verified the GitHub copy of the constitution is byte-identical to the local one.
-- **Published:** the new identity and the sign-in subtitle (commit `62ab8bb`). Vercel reported "Deployment has completed".
-- **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale). Whether the protection should be off for the team is a programmer/Vercel setting.
-- **Waiting on Muhammad:** his review of the demo (role names, chart bars, site-wide gradient) and his yes to publish. The migration renames role labels in the live database, so it needs that yes.
-- **Next planned step:** the item pipeline (سلسلة تنفيذ البنود). Confirm the details with Muhammad, and with the programmer for the engine design, before building. See CLAUDE.md, "Roadmap".
-- **Also open:** the decisions listed in CLAUDE.md, "Roadmap and open decisions".
+- **Current task:** building the whole constitution on the platform and publishing it step by step («زي ما كتبنا المشروع في الدستور ارفعو على المنصة بالكامل»). Muhammad asked Claude to keep going overnight without breaking the live site («مش عايز اصحى الاقي المنصة الاون لاين مش شغاله»), so each step is published only after all tests pass on SQLite and Postgres.
+- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), and resources: people, crews, equipment, organization chart and allocation (3.6).
+- **Next, in order:** scope of work with steps, weights and execution party (3.7); the schedule with Gantt, planned vs actual and import, plus the contract payment schedule (3.4, 3.2); the daily report, EVM and RAG status (4.3); then part 2: procurement, payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
+- **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
+- **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
+- **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
+- **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 3, resources (constitution 3.6):
+  - Migration `013_resources` (both folders): `people`, `crews` and `crew_members`, `equipment`, `project_positions`, `allocations`; ten site job titles added to the list (safety officer, foreman, carpenter, steel fixer, mason, electrician, plumber, equipment operator, driver, labourer), skipped if the admin already added the same code.
+  - Screens: Registers → Personnel / Crews / Equipment; project page → «موارد المشروع» with the organization chart, the allocations table and form, and a weekly resource-demand chart (stacked columns, palette checked with the dataviz validator; table view under it).
+  - Rules: no resource above 100% on any day across projects (blocked, names the other project); no terminated person, out-of-service equipment, stopped crew or unapproved subcontractor; warnings when the period is shorter than the productivity needs, when the unit cost exceeds the item's contract rate, and when equipment is in maintenance; the Director approves, never the preparer; cancelling needs a reason, and after budget approval only the Director can cancel.
+  - 75 tests pass on SQLite and Postgres.
+  - Demo resources added to the trial copy only: 24 people, 4 crews, 8 equipment, 10 positions, 18 allocations (13 approved, 1 cancelled).
 
 - **2026-10-25.** Round 2, the main contract (constitution 3.2), at Muhammad's insistence («زي ما كتبنا المشروع في الدستور ارفعو على المنصة بالكامل»):
   - Migration `012_contracts`: `contracts`, `contract_guarantees`, `contract_insurances`, `variation_orders` and their items.

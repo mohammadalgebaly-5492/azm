@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Personnel') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>{{ _('Personnel') }}</h1><p class="lead">{{ _('The company register of engineers, technicians and workers, with the daily cost used in planning and in actual cost.') }}</p></div>
+  <a class="btn btn-primary" href="{{ url_for('resources.person_form') }}">{{ icon('user-plus', 16) }} {{ _('New person') }}</a>
+</header>
+<section class="card flush">
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Name') }}</th><th>{{ _('Profession') }}</th><th>{{ _('Job title') }}</th><th class="num">{{ _('Daily cost') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a class="row-link" href="{{ url_for('resources.person_form', person_id=r.id) }}">{{ r.full_name }}</a><span class="sub"><span class="code">{{ r.code }}</span></span></td>
+      <td>{{ professions.get(r.profession_code, r.profession_code) }}</td><td>{{ job_titles.get(r.job_title_code, r.job_title_code) }}</td>
+      <td class="num">{{ money(r.daily_cost) }}</td>
+      <td><span class="pill {{ 'ok' if r.status == 'active' else ('warn' if r.status == 'leave' else 'bad') }}">{{ _(PERSON_STATUS[r.status]) }}</span></td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No people registered yet.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

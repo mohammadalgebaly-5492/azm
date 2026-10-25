@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Project resources') }}{% endblock %}
+{% macro node(item, date_attrs) -%}
+{% set pos, kids = item %}
+<li><div class="org-card"><b>{{ job_titles.get(pos.job_title_code, pos.job_title_code) }}</b><span>{{ pos.full_name }}</span><span class="code">{{ pos.code }}</span>
+  {% if can('projects.manage') %}<details class="row-menu"><summary class="btn btn-ghost">{{ _('End') }}</summary><form method="post" action="{{ url_for('resources.position_end', pid=p.id, oid=pos.id) }}" class="org-end"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="date" name="to_date" required {{ date_attrs|safe }} aria-label="{{ _('End date') }}"><button class="btn" type="submit">{{ _('Confirm') }}</button></form></details>{% endif %}</div>
+  {% if kids %}<ul>{% for k in kids %}{{ node(k, date_attrs) }}{% endfor %}</ul>{% endif %}</li>
+{%- endmacro %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Project resources') }}</h1>
+  <p class="lead">{{ _('Who runs the project, who and what executes each item, when, and at what cost.') }}</p>
+</div></header>
+<div class="stats">
+  <div class="stat hero"><div class="stat-top"><span>{{ _('Planned resource cost') }}</span></div><b class="num">{{ money(planned_total) }}</b><span>{{ _('SAR') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Positions') }}</span></div><b class="num">{{ positions|length }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Allocations') }}</span></div><b class="num">{{ allocs|selectattr('status', 'ne', 'cancelled')|list|length }}</b></div>
+</div>
+
+<section class="card" id="org">
+  <div class="card-head"><div><h2>{{ _('Project organization chart') }}</h2><p>{{ _('Drawn from each position and its direct manager.') }}</p></div></div>
+  {% if tree %}<ul class="org">{% for item in tree %}{{ node(item, date_attrs) }}{% endfor %}</ul>
+  {% else %}<div class="empty">{{ icon('users', 28) }}<p>{{ _('No positions yet. Start with the project manager.') }}</p></div>{% endif %}
+  {% if can('projects.manage') %}
+  <form method="post" action="{{ url_for('resources.position_add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="pos_title" class="req">{{ _('Job title') }}</label>
+        <select id="pos_title" name="job_title_code" required>{% for x in title_list %}<option value="{{ x.code }}">{{ label(x) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="pos_person" class="req">{{ _('Position holder') }}</label>
+        <select id="pos_person" name="person_id" required>{% for x in all_people %}<option value="{{ x.id }}">{{ x.full_name }} · {{ x.code }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="pos_boss">{{ _('Direct manager') }}</label>
+        <select id="pos_boss" name="reports_to"><option value="">{{ _('No direct manager (top position)') }}</option>{% for x in positions %}<option value="{{ x.id }}">{{ job_titles.get(x.job_title_code, '') }} · {{ x.full_name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="pos_from" class="req">{{ _('From date') }}</label><input id="pos_from" name="from_date" type="date" required {{ date_attrs|safe }}></div>
+      <div class="field wide"><label for="pos_duties">{{ _('Duties (optional)') }}</label><input id="pos_duties" name="duties"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add position') }}</button>
+        {% if not all_people %}<span class="hint">{{ _('Register people first.') }} {% if can('registers.manage') %}<a href="{{ url_for('resources.person_form') }}">{{ _('New person') }}</a>{% endif %}</span>{% endif %}</div>
+    </div>
+  </form>
+  {% endif %}
+  {% if history %}<details class="hint"><summary>{{ _('Ended positions') }} ({{ history|length }})</summary>
+    <div class="table-wrap"><table><tbody>{% for h in history %}<tr><td>{{ job_titles.get(h.job_title_code, '') }}</td><td>{{ h.full_name }}</td><td class="num">{{ h.from_date|string|truncate(10, True, '') }} → {{ h.to_date|string|truncate(10, True, '') }}</td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
+</section>
+
+<section class="card flush" id="allocations">
+  <div class="card-head"><div><h2>{{ _('Allocations') }}</h2><p>{{ _('No resource can be booked above its capacity on the same day, across all projects.') }}{% if locked and not can('changes.approve') %} {{ _('After the budget approval, only the Director can cancel an allocation.') }}{% endif %}</p></div><span class="count">{{ allocs|length }}</span></div>
+  {% if allocs %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Allocated') }}</th><th>{{ _('Item') }}</th><th>{{ _('Period') }}</th><th class="num">{{ _('Days') }}</th><th class="num">{{ _('Planned cost') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    <tbody>{% for a in allocs %}{% set ev = evals[a.id] %}<tr>
+      <td>{{ eq_names.get(a.eq_catalog, a.eq_catalog) ~ (' · ' ~ a.res_name if a.res_name else '') if a.eq_catalog else a.res_name }}<span class="sub"><span class="code">{{ a.code }}</span> · {{ _(RESOURCE_KINDS[a.resource_kind]) }}</span></td>
+      <td><span class="code">{{ a.item_code }}</span><span class="sub">{{ a.item_desc }}</span></td>
+      <td class="num tight">{{ a.from_date|string|truncate(10, True, '') }}<span class="sub">{{ a.to_date|string|truncate(10, True, '') }}</span></td>
+      <td class="num">{{ ev.days }}<span class="sub">{{ _('needed') }} {{ ev.needed }}</span></td>
+      <td class="num">{{ money(ev.cost) }}</td>
+      <td><span class="pill {{ 'ok' if a.status in ('approved', 'active', 'done') else ('bad' if a.status == 'cancelled' else 'warn') }}">{{ _(ALLOCATION_STATUS[a.status]) }}</span>
+        {% for w in ev.warnings %}{% if a.status != 'cancelled' %}<span class="sub warn-text">{{ w }}</span>{% endif %}{% endfor %}
+        {% if a.change_reason %}<span class="sub">{{ a.change_reason }}</span>{% endif %}</td>
+      <td class="cell-actions">
+        {% if a.status == 'planned' and can('changes.approve') %}<form method="post" action="{{ url_for('resources.allocation_approve', pid=p.id, aid=a.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn" type="submit">{{ icon('check', 16) }} {{ _('Approve') }}</button></form>{% endif %}
+        {% if a.status in ('planned', 'approved', 'active') and (can('changes.approve') or (can('projects.manage') and not locked)) %}<details class="row-menu"><summary class="btn btn-ghost">{{ _('Cancel') }}</summary><form method="post" action="{{ url_for('resources.allocation_cancel', pid=p.id, aid=a.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for cancelling') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Confirm cancelling') }}</button></form></details>{% endif %}
+      </td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('calendar', 28) }}<p>{{ _('No allocations yet.') }}</p></div>{% endif %}
+  {% if can('projects.manage') %}
+  <form method="post" action="{{ url_for('resources.allocation_add', pid=p.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="al_kind" class="req">{{ _('Type') }}</label>
+        <select id="al_kind" name="resource_kind" required data-shows="alloc-kind">{% for k, v in RESOURCE_KINDS.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field" data-group="alloc-kind" data-value="person"><label for="al_person" class="req">{{ _('Person') }}</label>
+        <select id="al_person" name="resource_id_person">{% for x in all_people %}<option value="{{ x.id }}">{{ x.full_name }} · {{ x.code }}</option>{% endfor %}</select></div>
+      <div class="field" data-group="alloc-kind" data-value="crew"><label for="al_crew" class="req">{{ _('Crew') }}</label>
+        <select id="al_crew" name="resource_id_crew">{% for x in all_crews %}<option value="{{ x.id }}">{{ x.name }} · {{ x.code }}</option>{% endfor %}</select></div>
+      <div class="field" data-group="alloc-kind" data-value="equipment"><label for="al_eq" class="req">{{ _('Equipment item') }}</label>
+        <select id="al_eq" name="resource_id_equipment">{% for x in all_equipment %}<option value="{{ x.id }}">{{ eq_names.get(x.catalog_code, '') }}{{ ' · ' ~ x.label if x.label }} · {{ x.code }}</option>{% endfor %}</select></div>
+      <div class="field" data-group="alloc-kind" data-value="subcontractor"><label for="al_sub" class="req">{{ _('Subcontractor') }}</label>
+        <select id="al_sub" name="resource_id_subcontractor">{% for x in subs %}<option value="{{ x.id }}">{{ x.name }} · {{ x.code }}</option>{% endfor %}</select></div>
+      <div class="field" data-group="alloc-kind" data-value="person"><label for="al_pos" class="req">{{ _('Position in the project') }}</label>
+        <select id="al_pos" name="position_id"><option value=""></option>{% for x in positions %}<option value="{{ x.id }}">{{ job_titles.get(x.job_title_code, '') }} · {{ x.full_name }}</option>{% endfor %}</select></div>
+      <div class="field wide"><label for="al_item" class="req">{{ _('Item') }}</label>
+        <select id="al_item" name="boq_item_id" required>{% for b in items %}<option value="{{ b.id }}">{{ b.code }} · {{ b.description }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="al_sup" class="req">{{ _('Supervisor') }}</label>
+        <select id="al_sup" name="supervisor_id" required><option value=""></option>{% for x in positions %}<option value="{{ x.id }}">{{ job_titles.get(x.job_title_code, '') }} · {{ x.full_name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="al_from" class="req">{{ _('From date') }}</label><input id="al_from" name="from_date" type="date" required {{ date_attrs|safe }}></div>
+      <div class="field"><label for="al_to" class="req">{{ _('To date') }}</label><input id="al_to" name="to_date" type="date" required {{ date_attrs|safe }}></div>
+      <div class="field"><label for="al_days" class="req">{{ _('Working days per week') }}</label><input id="al_days" name="days_per_week" dir="ltr" inputmode="numeric" value="6" required></div>
+      <div class="field"><label for="al_hours" class="req">{{ _('Working hours per day') }}</label><input id="al_hours" name="hours_per_day" dir="ltr" inputmode="numeric" value="8" required></div>
+      <div class="field"><label for="al_pct" class="req">{{ _('Allocation percentage') }}</label><div class="affix"><input id="al_pct" name="allocation_pct" dir="ltr" inputmode="decimal" value="100" required><span>%</span></div></div>
+      <div class="field"><label for="al_qty">{{ _('Quantity (default: the whole item)') }}</label><input id="al_qty" name="qty" dir="ltr" inputmode="decimal"></div>
+      <div class="field"><label for="al_prod" class="req">{{ _('Planned daily productivity') }}</label><input id="al_prod" name="productivity" required dir="ltr" inputmode="decimal"></div>
+      <div class="field" data-group="alloc-kind" data-value="subcontractor"><label for="al_rate" class="req">{{ _('Estimated unit rate') }}</label><div class="affix"><input id="al_rate" name="unit_rate" dir="ltr" inputmode="decimal" data-money><span>{{ _('SAR') }}</span></div></div>
+      <div class="field wide"><label for="al_notes">{{ _('Notes') }}</label><input id="al_notes" name="notes"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add allocation') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+{% if demand %}
+{% set kinds = (('person', _('Personnel')), ('crew', _('Crews')), ('equipment', _('Equipment'))) %}
+{% set top = demand|map(attribute='total')|max or 1 %}
+{% set step = (demand|length + 7) // 8 %}
+{% set peak = namespace(i=-1) %}{% for w in demand %}{% if peak.i < 0 and w.total == top %}{% set peak.i = loop.index0 %}{% endif %}{% endfor %}
+<section class="card" id="demand">
+  <div class="card-head"><div><h2>{{ _('Resource demand by week') }}</h2><p>{{ _('How many people, crews and equipment the project needs each week.') }}</p></div>
+    <div class="typelegend">{% for k, t in kinds %}<span><span class="tdot k-{{ k }}"></span>{{ t }}</span>{% endfor %}</div></div>
+  <div class="demand" role="img" aria-label="{{ _('Resource demand by week') }}">
+    {% for w in demand %}<div class="wk" tabindex="0" data-tip="{{ w.start }} · {% for k, t in kinds %}{{ t }} {{ w[k] }}{{ ' · ' if not loop.last }}{% endfor %}">
+      {% if loop.index0 == peak.i %}<span class="cap num">{{ w.total }}</span>{% endif %}
+      <svg aria-hidden="true">{% set ns = namespace(y=100.0) %}{% for k, t in kinds %}{% if w[k] %}{% set h = w[k] * 100.0 / top %}{% set ns.y = ns.y - h %}<rect class="seg k-{{ k }}" x="12%" width="76%" y="{{ '%.2f'|format(ns.y) }}%" height="{{ '%.2f'|format(h) }}%" rx="2"/>{% endif %}{% endfor %}</svg>
+      {% if loop.index0 % step == 0 %}<span class="tick num">{{ w.start }}</span>{% endif %}
+    </div>{% endfor %}
+  </div>
+  <details class="hint"><summary>{{ _('Show as a table') }}</summary>
+    <div class="table-wrap"><table>
+      <thead><tr><th>{{ _('Week starting') }}</th>{% for k, t in kinds %}<th class="num">{{ t }}</th>{% endfor %}<th class="num">{{ _('Total') }}</th></tr></thead>
+      <tbody>{% for w in demand %}<tr><td class="num">{{ w.start }}</td>{% for k, t in kinds %}<td class="num">{{ w[k] }}</td>{% endfor %}<td class="num"><b>{{ w.total }}</b></td></tr>{% endfor %}</tbody>
+    </table></div></details>
+</section>
+{% endif %}
+{% endblock %}

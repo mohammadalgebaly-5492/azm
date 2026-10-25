@@ -125,6 +125,7 @@ Rules:
   - `projects.py`
   - `boq.py`
   - `audit.py`: append-only log, plus readable details via `describe()`.
+  - `resources.py`: resources (constitution 3.6): company registers of people (`EMP-ENG-0001`), crews (`CRW-CNC-001`) and equipment (`EQP-EXC-0001`); each project's organization chart (`…-ORG-01`); allocations (`…-ALC-0001`) of a person, crew, equipment or subcontractor to a BOQ item, with planned days, cost and warnings. No resource is booked above 100% on any day across projects. Allocations are approved with `changes.approve`, never by their preparer; after budget approval only that permission can cancel one.
   - `contracts.py`: the main contract (constitution 3.2): details, guarantees, insurance, change orders (approval: `changes.approve`, never by their preparer). After budget approval, value, start and duration change only through approved change orders.
   - `registers.py`: shared registers (constitution article 2 and 3.9): lookup lists (`catalog_items`), entities (owner, consultant, subcontractor) with addresses and people, and each project's parties and representatives.
   - `analytics/`: one module per card.
