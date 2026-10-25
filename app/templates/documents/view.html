@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ doc.title }}{% endblock %}
+{% macro decision(prefix, date_attrs) -%}
+  {% for st in ('approved', 'approved_notes', 'rejected') %}
+  <div class="field" data-group="{{ prefix }}" data-value="{{ st }}"><label for="{{ prefix }}-ent-{{ st }}">{{ _('Approving entity') }}</label>
+    <select id="{{ prefix }}-ent-{{ st }}" name="approver_entity_id"><option value=""></option>{% for e in ents %}<option value="{{ e.id }}">{{ e.name }}</option>{% endfor %}</select></div>
+  <div class="field" data-group="{{ prefix }}" data-value="{{ st }}"><label for="{{ prefix }}-rep-{{ st }}">{{ _('Representative of the approving entity') }}</label>
+    <select id="{{ prefix }}-rep-{{ st }}" name="approver_person_id"><option value=""></option>{% for e, ps in reps %}{% if ps %}<optgroup label="{{ e.name }}">{% for x in ps %}<option value="{{ x.id }}">{{ x.full_name }}</option>{% endfor %}</optgroup>{% endif %}{% endfor %}</select></div>
+  <div class="field" data-group="{{ prefix }}" data-value="{{ st }}"><label for="{{ prefix }}-on-{{ st }}">{{ _('Approval date') }}</label><input id="{{ prefix }}-on-{{ st }}" name="approved_on" type="date" {{ date_attrs|safe }}></div>
+  {% endfor %}
+{%- endmacro %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('documents.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Project documents') }}</a><span class="code">{{ doc.code }}</span></div>
+    <h1>{{ doc.title }}</h1>
+    <p class="lead keep">{{ types.get(doc.doc_type, doc.doc_type) }} · {{ _(ISSUERS[doc.issuer]) }}{% if doc.issuer_ref %} · <span dir="ltr">{{ doc.issuer_ref }}</span>{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if can('documents.manage') %}<a class="btn" href="{{ url_for('documents.form', pid=p.id, did=doc.id) }}">{{ icon('edit', 16) }} {{ _('Edit details') }}</a>{% endif %}
+    {% if can('projects.manage') and not doc.reviewed_at and doc.created_by != g.user.id %}<form method="post" action="{{ url_for('documents.review', pid=p.id, did=doc.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ _('Mark the data as reviewed') }}</button></form>{% endif %}
+  </div>
+</header>
+<section class="card">
+  <dl class="kv">
+    <dt>{{ _('Issue date') }}</dt><dd class="num">{{ doc.issued_on|string|truncate(10, True, '') }}</dd>
+    <dt>{{ _('Linked to') }}</dt><dd>{% if link %}<span class="code">{{ link.code }}</span> {{ link.name }}{% else %}{{ _('The whole project') }}{% endif %}</dd>
+    <dt>{{ _('Data review') }}</dt><dd>{% if doc.reviewed_at %}<span class="pill ok">{{ _('Reviewed') }}</span> {{ users.get(doc.reviewed_by, '') }}{% else %}<span class="faint">{{ _('Not reviewed yet') }}</span>{% endif %}</dd>
+    <dt>{{ _('Recorded by') }}</dt><dd>{{ users.get(doc.created_by, '') }}</dd>
+  </dl>
+  {% if doc.summary %}<p class="prose">{{ doc.summary }}</p>{% endif %}
+  {% if scope_items %}<p class="hint">{{ _('Reference for the scope of:') }} {% for b in scope_items %}<a class="code" href="{{ url_for('scope.item', pid=p.id, iid=b.id) }}">{{ b.code }}</a>{{ '، ' if not loop.last }}{% endfor %}</p>{% endif %}
+</section>
+
+<section class="card flush" id="revisions">
+  <div class="card-head"><div><h2>{{ _('Revisions') }}</h2><p>{{ _('A new revision is added and the old ones stay. A response is recorded once; a change needs a new revision.') }}</p></div><span class="count">{{ revs|length }}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th class="num">{{ _('Revision') }}</th><th>{{ _('Date') }}</th><th>{{ _('Approval status') }}</th><th>{{ _('Approved by') }}</th><th>{{ _('Approval notes') }}</th><th></th></tr></thead>
+    <tbody>{% for r in revs %}<tr>
+      <td class="num"><b>{{ r.rev_no }}</b>{% if loop.first %}<span class="sub">{{ _('Latest') }}</span>{% endif %}</td>
+      <td class="num tight">{{ r.rev_date|string|truncate(10, True, '') }}</td>
+      <td><span class="pill {{ 'ok' if r.status == 'approved' else ('bad' if r.status == 'rejected' else 'warn') }}">{{ _(REV_STATUS[r.status]) }}</span>{% if r.approved_on %}<span class="sub num">{{ r.approved_on|string|truncate(10, True, '') }}</span>{% endif %}</td>
+      <td>{{ r.entity_name or '—' }}{% if r.person_name %}<span class="sub">{{ r.person_name }}</span>{% endif %}</td>
+      <td class="details">{{ r.notes or '' }}</td>
+      <td class="cell-actions">{% if r.status == 'review' and can('documents.manage') %}<details class="row-menu"><summary class="btn btn-ghost">{{ _('Record the response') }}</summary>
+        <form method="post" action="{{ url_for('documents.revision_response', pid=p.id, did=doc.id, rid=r.id) }}" class="row-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="field"><label for="st-{{ r.id }}" class="req">{{ _('Approval status') }}</label>
+            <select id="st-{{ r.id }}" name="status" data-shows="resp-{{ r.id }}">{% for k, v in REV_STATUS.items() if k != 'review' %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+          {{ decision('resp-' ~ r.id, date_attrs) }}
+          <div class="field"><label for="nt-{{ r.id }}">{{ _('Approval notes') }}</label><textarea id="nt-{{ r.id }}" name="notes"></textarea></div>
+          <button class="btn btn-primary" type="submit">{{ _('Save the response') }}</button>
+        </form></details>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% if can('documents.manage') %}
+  <form method="post" action="{{ url_for('documents.revision_add', pid=p.id, did=doc.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field"><label for="rev_no" class="req">{{ _('Revision number') }}</label><input id="rev_no" name="rev_no" dir="ltr" inputmode="numeric" required value="{{ next_rev }}"></div>
+      <div class="field"><label for="rev_date" class="req">{{ _('Revision date') }}</label><input id="rev_date" name="rev_date" type="date" required {{ date_attrs|safe }}></div>
+      <div class="field"><label for="status" class="req">{{ _('Approval status') }}</label>
+        <select id="status" name="status" data-shows="new-rev">{% for k, v in REV_STATUS.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      {{ decision('new-rev', date_attrs) }}
+      <div class="field wide"><label for="notes">{{ _('Approval notes') }}</label><input id="notes" name="notes"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add revision') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

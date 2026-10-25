@@ -5,14 +5,21 @@ The project's memory between chats. Claude reads this at the start of **every** 
 ## Now
 
 - **Current task:** building the whole constitution on the platform and publishing it step by step («زي ما كتبنا المشروع في الدستور ارفعو على المنصة بالكامل»). Muhammad asked Claude to keep going overnight without breaking the live site («مش عايز اصحى الاقي المنصة الاون لاين مش شغاله»), so each step is published only after all tests pass on SQLite and Postgres.
-- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), and resources: people, crews, equipment, organization chart and allocation (3.6).
-- **Next, in order:** scope of work with steps, weights and execution party (3.7); the schedule with Gantt, planned vs actual and import, plus the contract payment schedule (3.4, 3.2); the daily report, EVM and RAG status (4.3); then part 2: procurement, payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
+- **Built and published so far:** shared registers and project parties (article 2, 3.9), the main contract with guarantees, insurance and change orders (3.2), resources: people, crews, equipment, organization chart and allocation (3.6), project documents with revisions and approvals (3.1), and the scope of work with execution steps (3.7).
+- **Next, in order:** the schedule with Gantt, planned vs actual and import, plus the contract payment schedule (3.4, 3.2); the daily report, EVM and RAG status (4.3); then part 2: procurement, payment certificates, change requests, alerts, closeout, KPIs and the delegation of authority.
 - **Waits on the programmer:** file storage (profile files, attachments, documents), the email provider, and the approval-engine design.
 - **Waits on Muhammad:** his yes to add the live example to the live database (script: scratchpad `tools/demo_full.py`; production database access was denied to Claude, so he or the programmer runs it). Never create demo accounts with known passwords on the live site.
 - **Live site address:** `https://azm-mohammad5493.vercel.app` (Vercel project `mohammad5493/azm`). It sits behind Vercel sign-in (Deployment Protection), so Claude cannot open it to verify; Muhammad can when signed in to Vercel. Do NOT use `azm.vercel.app` or `azm-app.vercel.app` (other people's apps) or `azm-iota-lime.vercel.app` (stale).
 - **Trial copy:** `data/azm.sqlite3`, served locally on port 5050. It holds the demo project with its parties, contract and resources. A copy from before the resources demo is in the scratchpad (`azm-before-resources.sqlite3`).
 
 ## Log
+
+- **2026-10-25.** Round 4, project documents (3.1) and scope of work (3.7):
+  - Migration `014_documents_scope` (both folders): `documents`, `document_revisions`, `item_scopes`, `item_scope_docs`, `scope_steps`, and `allocations.step_id`. New permission `documents.manage`, granted to Cost Control and PM (the constitution has the project engineer prepare both).
+  - Screens: project page → «وثائق المشروع» (register with type tabs, document page with revisions and the response form) and «نطاق العمل» (status of every item, item page with scope, drawings, specifications and steps).
+  - Rules: revision numbers only go up; a response is recorded once; «approved with comments» and «rejected» need notes; the representative must belong to the approving entity; no data review by whoever recorded the document, and an edit resets the review; scope needs at least one drawing; weights never above 100%, and review needs exactly 100%; reviewed scope is locked; reopening needs a reason and, after budget approval, the Director. Allocations on an item with steps must name a step whose party matches (constitution 3.6, rule 6). A BOQ item with allocations can no longer be deleted (it used to fail with a database error).
+  - 81 tests pass on SQLite and Postgres.
+  - Demo on the trial copy only: 11 documents, scope for 4 items with 13 steps, 2 reviewed; the earlier demo allocations were linked to their steps.
 
 - **2026-10-25.** Round 3, resources (constitution 3.6):
   - Migration `013_resources` (both folders): `people`, `crews` and `crew_members`, `equipment`, `project_positions`, `allocations`; ten site job titles added to the list (safety officer, foreman, carpenter, steel fixer, mason, electrician, plumber, equipment operator, driver, labourer), skipped if the admin already added the same code.

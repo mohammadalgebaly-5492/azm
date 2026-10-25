@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Scope of work') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Scope of work') }}</h1>
+  <p class="lead">{{ _('What each item includes, its reference drawings, and its technical steps in order with their weights and who executes each.') }}</p>
+</div></header>
+<div class="stats">
+  <div class="stat"><div class="stat-top"><span>{{ _('Items') }}</span></div><b class="num">{{ rows|length }}</b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Complete scope') }}</span></div><b class="num">{{ n_complete }}<span class="of"> / {{ rows|length }}</span></b></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Reviewed') }}</span></div><b class="num">{{ n_reviewed }}<span class="of"> / {{ rows|length }}</span></b></div>
+</div>
+<section class="card flush">
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Item') }}</th><th class="num">{{ _('Steps') }}</th><th class="num">{{ _('Weights') }}</th><th>{{ _('Execution method') }}</th><th>{{ _('Status') }}</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a class="row-link" href="{{ url_for('scope.item', pid=p.id, iid=r.item.id) }}"><span class="code">{{ r.item.code }}</span></a><span class="sub">{{ r.item.description }}</span></td>
+      <td class="num">{{ r.steps or '—' }}</td>
+      <td class="num {{ 'warn-text' if r.steps and r.weight != 10000 }}">{{ fmt_pct(r.weight) if r.steps else '—' }}</td>
+      <td>{% if r.method %}<span class="pill">{{ _(METHODS[r.method]) }}</span>{% else %}<span class="faint">—</span>{% endif %}</td>
+      <td>{% if r.reviewed %}<span class="pill ok">{{ _('Reviewed') }}</span>{% elif r.complete %}<span class="pill warn">{{ _('Waiting for review') }}</span>{% else %}<span class="faint">{{ _('Incomplete') }}</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('Add the BOQ items first.') }}</p></div>{% endif %}
+</section>
+{% endblock %}

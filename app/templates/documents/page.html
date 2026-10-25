@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Project documents') }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+    <h1>{{ _('Project documents') }}</h1>
+    <p class="lead">{{ _('One trusted register of the project documents: the latest revision of each and its approval status.') }}</p>
+  </div>
+  {% if can('documents.manage') %}<a class="btn btn-primary" href="{{ url_for('documents.form', pid=p.id, type=kind or None) }}">{{ icon('plus', 16) }} {{ _('New document') }}</a>{% endif %}
+</header>
+<nav class="tabs" aria-label="{{ _('Document type') }}">
+  <a href="{{ url_for('documents.page', pid=p.id) }}" class="{{ 'on' if not kind }}">{{ _('All') }}</a>
+  {% for t in type_list %}{% if counts.get(t.code) or t.active %}<a href="{{ url_for('documents.page', pid=p.id, type=t.code) }}" class="{{ 'on' if kind == t.code }}">{{ label(t) }}{% if counts.get(t.code) %} <span class="faint num">{{ counts[t.code] }}</span>{% endif %}</a>{% endif %}{% endfor %}
+</nav>
+<section class="card flush">
+  {% if rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Document') }}</th><th>{{ _('Type') }}</th><th>{{ _('Linked to') }}</th><th>{{ _('Issued by') }}</th><th class="num">{{ _('Latest revision') }}</th><th>{{ _('Approval status') }}</th><th>{{ _('Data review') }}</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a class="row-link" href="{{ url_for('documents.view', pid=p.id, did=r.id) }}">{{ r.title }}</a><span class="sub"><span class="code">{{ r.code }}</span>{% if r.issuer_ref %} · {{ r.issuer_ref }}{% endif %}</span></td>
+      <td>{{ types.get(r.doc_type, r.doc_type) }}</td>
+      <td>{% if r.item_code %}<span class="code">{{ r.item_code }}</span>{% elif r.wbs_code %}<span class="code">{{ r.wbs_code }}</span>{% else %}<span class="faint">—</span>{% endif %}</td>
+      <td>{{ _(ISSUERS[r.issuer]) }}<span class="sub num">{{ r.issued_on|string|truncate(10, True, '') }}</span></td>
+      <td class="num">{{ r.rev_no if r.rev_no is not none else '—' }}<span class="sub">{{ r.rev_date|string|truncate(10, True, '') }}</span></td>
+      <td>{% if r.rev_status %}<span class="pill {{ 'ok' if r.rev_status == 'approved' else ('bad' if r.rev_status == 'rejected' else 'warn') }}">{{ _(REV_STATUS[r.rev_status]) }}</span>{% endif %}</td>
+      <td>{% if r.reviewed_at %}<span class="pill ok">{{ _('Reviewed') }}</span>{% else %}<span class="faint">{{ _('Not reviewed yet') }}</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('No documents registered yet.') }}</p></div>{% endif %}
+</section>
+<div class="alert" role="note">{{ icon('file', 17) }}<span>{{ _('Attaching the file of each document and revision needs file storage, which the programmer will add. Until then the register keeps the data, revisions and approvals.') }}</span></div>
+{% endblock %}

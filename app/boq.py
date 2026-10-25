@@ -218,6 +218,8 @@ def delete_item(db, pid, item_id, actor_id):
     cur = db.execute("SELECT code FROM boq_items WHERE id = ? AND project_id = ?", (item_id, pid)).fetchone()
     if cur is None:
         raise AuthError(_("Item not found."))
+    if db.execute("SELECT 1 FROM allocations WHERE boq_item_id = ?", (item_id,)).fetchone():
+        raise AuthError(_("Resources are allocated to this item, so it can't be deleted. Its allocations stay in the record."))
     with tx(db):
         db.execute("DELETE FROM boq_items WHERE id = ?", (item_id,))
         audit.log(db, actor_id, "boq_item_deleted", "boq_item", item_id, pid, code=cur["code"])

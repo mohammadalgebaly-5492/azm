@@ -51,7 +51,7 @@
     <thead><tr><th>{{ _('Allocated') }}</th><th>{{ _('Item') }}</th><th>{{ _('Period') }}</th><th class="num">{{ _('Days') }}</th><th class="num">{{ _('Planned cost') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
     <tbody>{% for a in allocs %}{% set ev = evals[a.id] %}<tr>
       <td>{{ eq_names.get(a.eq_catalog, a.eq_catalog) ~ (' · ' ~ a.res_name if a.res_name else '') if a.eq_catalog else a.res_name }}<span class="sub"><span class="code">{{ a.code }}</span> · {{ _(RESOURCE_KINDS[a.resource_kind]) }}</span></td>
-      <td><span class="code">{{ a.item_code }}</span><span class="sub">{{ a.item_desc }}</span></td>
+      <td><span class="code">{{ a.item_code }}</span><span class="sub">{{ a.item_desc }}</span>{% if a.step_code %}<span class="sub"><span class="code">{{ a.step_code }}</span> · {{ a.step_name }}</span>{% endif %}</td>
       <td class="num tight">{{ a.from_date|string|truncate(10, True, '') }}<span class="sub">{{ a.to_date|string|truncate(10, True, '') }}</span></td>
       <td class="num">{{ ev.days }}<span class="sub">{{ _('needed') }} {{ ev.needed }}</span></td>
       <td class="num">{{ money(ev.cost) }}</td>
@@ -82,6 +82,9 @@
         <select id="al_pos" name="position_id"><option value=""></option>{% for x in positions %}<option value="{{ x.id }}">{{ job_titles.get(x.job_title_code, '') }} · {{ x.full_name }}</option>{% endfor %}</select></div>
       <div class="field wide"><label for="al_item" class="req">{{ _('Item') }}</label>
         <select id="al_item" name="boq_item_id" required>{% for b in items %}<option value="{{ b.id }}">{{ b.code }} · {{ b.description }}</option>{% endfor %}</select></div>
+      {% if step_groups %}<div class="field wide"><label for="al_step">{{ _('Scope step') }}</label>
+        <select id="al_step" name="step_id"><option value="">{{ _('The item has no steps') }}</option>{% for b in items if b.id in step_groups %}<optgroup label="{{ b.code }} · {{ b.description }}">{% for s in step_groups[b.id] %}<option value="{{ s.id }}">{{ s.code }} · {{ s.name }} · {{ _(PARTIES[s.party]) }}</option>{% endfor %}</optgroup>{% endfor %}</select>
+        <span class="hint">{{ _('Required when the item has execution steps. A subcontractor step takes a subcontractor; a company step takes people, crews and equipment.') }}</span></div>{% endif %}
       <div class="field"><label for="al_sup" class="req">{{ _('Supervisor') }}</label>
         <select id="al_sup" name="supervisor_id" required><option value=""></option>{% for x in positions %}<option value="{{ x.id }}">{{ job_titles.get(x.job_title_code, '') }} · {{ x.full_name }}</option>{% endfor %}</select></div>
       <div class="field"><label for="al_from" class="req">{{ _('From date') }}</label><input id="al_from" name="from_date" type="date" required {{ date_attrs|safe }}></div>

@@ -330,8 +330,30 @@ def evaluate(db, a: dict) -> dict:
         warnings.append(_("The period has {d} working days, but the productivity rate needs {n}.", d=days, n=needed))
     if item is not None and unit_cost > item["unit_rate"]:
         warnings.append(_("The cost per unit is higher than the item's contract rate."))
+    step_id = dict(a).get("step_id")
+    step = db.execute("SELECT * FROM scope_steps WHERE id = ?", (step_id,)).fetchone() if step_id else None
+    if step is not None and step["party"] == "subcontractor" and step["entity_id"] != a["entity_id"]:
+        warnings.append(_("The scope step is assigned to another subcontractor."))
+    if step is not None and a["resource_kind"] == "crew" and step["crew_id"] != a["crew_id"]:
+        warnings.append(_("The scope step is assigned to another crew."))
     return {"days": days, "needed": needed, "daily": daily, "cost": cost, "unit_cost": unit_cost, "warnings": warnings,
             "item": item}
+
+
+def _step_for(db, item_id, kind, raw):
+    """خطوة نطاق العمل إلزامية متى كانت للبند خطوات، ونوع المخصَّص يطابق جهة تنفيذها (القاعدة 6)."""
+    rows = db.execute("SELECT * FROM scope_steps WHERE boq_item_id = ?", (item_id,)).fetchall()
+    if not rows:
+        return None
+    raw = str(raw or "")
+    step = next((r for r in rows if raw.isdigit() and r["id"] == int(raw)), None)
+    if step is None:
+        raise AuthError(_("Choose the scope step of this item."))
+    if step["party"] == "subcontractor" and kind != "subcontractor":
+        raise AuthError(_("This step is assigned to a subcontractor, so only a subcontractor can be allocated to it."))
+    if step["party"] == "crew" and kind == "subcontractor":
+        raise AuthError(_("This step is executed by company crews, so a subcontractor can't be allocated to it."))
+    return step
 
 
 def add_allocation(db, pid, form, actor_id) -> tuple[int, str, list]:
@@ -356,6 +378,7 @@ def add_allocation(db, pid, form, actor_id) -> tuple[int, str, list]:
                       (int(item_raw), pid)).fetchone() if item_raw.isdigit() else None
     if item is None:
         raise AuthError(_("Choose the BOQ item."))
+    step = _step_for(db, item["id"], kind, form.get("step_id"))
     current = {r["id"] for r in positions(db, pid) if not r["to_date"]}
     sup = str(form.get("supervisor_id") or "")
     if not sup.isdigit() or int(sup) not in current:
@@ -402,7 +425,8 @@ def add_allocation(db, pid, form, actor_id) -> tuple[int, str, list]:
          "entity_id": res["id"] if kind == "subcontractor" else None, "position_id": position, "wbs_id": item["wbs_id"],
          "boq_item_id": item["id"], "supervisor_id": int(sup), "from_date": start, "to_date": end,
          "days_per_week": per_week, "hours_per_day": hours, "allocation_bp": bp, "qty_milli": qty,
-         "productivity_milli": productivity, "unit_rate": rate, "notes": (form.get("notes") or "").strip() or None}
+         "productivity_milli": productivity, "unit_rate": rate, "notes": (form.get("notes") or "").strip() or None,
+         "step_id": step["id"] if step else None}
     ev = evaluate(db, a)
     counter = "alc-%d" % pid
     with tx(db):
@@ -416,11 +440,13 @@ def add_allocation(db, pid, form, actor_id) -> tuple[int, str, list]:
 
 def allocations(db, pid):
     return db.execute(
-        "SELECT a.*, b.code AS item_code, b.description AS item_desc, b.unit AS item_unit, "
+        "SELECT a.*, b.code AS item_code, b.description AS item_desc, b.unit AS item_unit, st.code AS step_code, "
+        "st.name AS step_name, "
         "COALESCE(pe.full_name, c.name, e.label, en.name) AS res_name, COALESCE(pe.code, c.code, e.code, en.code) AS res_code, "
         "e.catalog_code AS eq_catalog FROM allocations a JOIN boq_items b ON b.id = a.boq_item_id "
         "LEFT JOIN people pe ON pe.id = a.person_id LEFT JOIN crews c ON c.id = a.crew_id "
         "LEFT JOIN equipment e ON e.id = a.equipment_id LEFT JOIN entities en ON en.id = a.entity_id "
+        "LEFT JOIN scope_steps st ON st.id = a.step_id "
         "WHERE a.project_id = ? ORDER BY a.id", (pid,)).fetchall()
 
 

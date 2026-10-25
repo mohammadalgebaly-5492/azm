@@ -49,6 +49,9 @@ def table_strings():
     from app.resources import ALLOCATION_STATUS, EQUIPMENT_STATUS, OWNERSHIP, PERSON_STATUS, RESOURCE_KINDS
     out |= set(ALLOCATION_STATUS.values()) | set(EQUIPMENT_STATUS.values()) | set(OWNERSHIP.values())
     out |= set(PERSON_STATUS.values()) | set(RESOURCE_KINDS.values())
+    from app.documents import ISSUERS, REV_STATUS
+    from app.scope import METHODS, PARTIES
+    out |= set(ISSUERS.values()) | set(REV_STATUS.values()) | set(METHODS.values()) | set(PARTIES.values())
     return out
 
 

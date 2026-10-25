@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ doc.title if doc else _('New document') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('documents.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Project documents') }}</a>{% if doc %}<span class="code">{{ doc.code }}</span>{% endif %}</div>
+  <h1>{{ doc.title if doc else _('New document') }}</h1>
+  {% if not doc %}<p class="lead">{{ _('The code is generated from the project and the document type, and never changes.') }}</p>{% endif %}
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Document details') }}</h2><p>{{ _('As written on the document itself.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field wide"><label for="title" class="req">{{ _('Document title') }}</label><input id="title" name="title" required value="{{ form.get('title') or '' }}"></div>
+      <div class="field"><label for="doc_type" class="req">{{ _('Document type') }}</label>
+        <select id="doc_type" name="doc_type" required {{ 'disabled' if doc }}>{% for t in type_list %}<option value="{{ t.code }}" {{ 'selected' if form.get('doc_type') == t.code }}>{{ label(t) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="link">{{ _('Linked section or item') }}</label>
+        <select id="link" name="link"><option value="">{{ _('The whole project') }}</option>
+          {% if sections %}<optgroup label="{{ _('WBS sections') }}">{% for s in sections %}<option value="wbs-{{ s.id }}" {{ 'selected' if form.get('link') == 'wbs-' ~ s.id }}>{{ s.code }} · {{ s.name }}</option>{% endfor %}</optgroup>{% endif %}
+          {% if items %}<optgroup label="{{ _('BOQ items') }}">{% for b in items %}<option value="item-{{ b.id }}" {{ 'selected' if form.get('link') == 'item-' ~ b.id }}>{{ b.code }} · {{ b.description }}</option>{% endfor %}</optgroup>{% endif %}
+        </select></div>
+      <div class="field"><label for="issuer" class="req">{{ _('Issued by') }}</label>
+        <select id="issuer" name="issuer" required>{% for k, v in ISSUERS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('issuer') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="issuer_ref">{{ _('Document number at the issuer') }}</label><input id="issuer_ref" name="issuer_ref" dir="ltr" value="{{ form.get('issuer_ref') or '' }}"></div>
+      <div class="field"><label for="issued_on" class="req">{{ _('Issue date') }}</label><input id="issued_on" name="issued_on" type="date" required {{ date_attrs|safe }} value="{{ form.get('issued_on') or '' }}"></div>
+      <div class="field wide"><label for="summary">{{ _('Document summary') }}</label><textarea id="summary" name="summary">{{ form.get('summary') or '' }}</textarea></div>
+    </div>
+  </section>
+  {% if not doc %}
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('First revision') }}</h2><p>{{ _('Its date is the issue date. Record the approval status as received from the consultant or the owner.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="rev_no" class="req">{{ _('Revision number') }}</label><input id="rev_no" name="rev_no" dir="ltr" inputmode="numeric" required value="{{ form.get('rev_no', '0') }}"></div>
+      <div class="field"><label for="status" class="req">{{ _('Approval status') }}</label>
+        <select id="status" name="status" data-shows="rev-status">{% for k, v in REV_STATUS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('status') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      {% for st in ('approved', 'approved_notes', 'rejected') %}
+      <div class="field" data-group="rev-status" data-value="{{ st }}"><label for="ent_{{ st }}">{{ _('Approving entity') }}</label>
+        <select id="ent_{{ st }}" name="approver_entity_id"><option value=""></option>{% for e in ents %}<option value="{{ e.id }}">{{ e.name }}</option>{% endfor %}</select></div>
+      <div class="field" data-group="rev-status" data-value="{{ st }}"><label for="rep_{{ st }}">{{ _('Representative of the approving entity') }}</label>
+        <select id="rep_{{ st }}" name="approver_person_id"><option value=""></option>{% for e, ps in reps %}{% if ps %}<optgroup label="{{ e.name }}">{% for x in ps %}<option value="{{ x.id }}">{{ x.full_name }}</option>{% endfor %}</optgroup>{% endif %}{% endfor %}</select></div>
+      <div class="field" data-group="rev-status" data-value="{{ st }}"><label for="on_{{ st }}">{{ _('Approval date') }}</label><input id="on_{{ st }}" name="approved_on" type="date" {{ date_attrs|safe }}></div>
+      {% endfor %}
+      <div class="field wide"><label for="notes">{{ _('Approval notes') }}</label><textarea id="notes" name="notes">{{ form.get('notes') or '' }}</textarea></div>
+    </div>
+  </section>
+  {% endif %}
+  <div class="alert" role="note">{{ icon('file', 17) }}<span>{{ _('Attaching the file of each document and revision needs file storage, which the programmer will add. Until then the register keeps the data, revisions and approvals.') }}</span></div>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('documents.view', pid=p.id, did=doc.id) if doc else url_for('documents.page', pid=p.id) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Save changes') if doc else _('Add document') }}</button>
+  </div>
+</form>
+{% endblock %}

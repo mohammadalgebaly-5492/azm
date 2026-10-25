@@ -72,6 +72,12 @@ ACTION_LABELS = {
     "position_added": "Position added to the organization chart", "position_ended": "Position ended",
     "allocation_added": "Resource allocation recorded", "allocation_approved": "Resource allocation approved",
     "allocation_cancelled": "Resource allocation cancelled",
+    "document_added": "Project document registered", "document_updated": "Project document updated",
+    "document_revised": "Document revision added", "document_response": "Document approval response recorded",
+    "document_reviewed": "Document data reviewed",
+    "scope_saved": "Item scope saved", "scope_reviewed": "Item scope reviewed and locked",
+    "scope_reopened": "Item scope reopened", "step_added": "Execution step added", "step_updated": "Execution step updated",
+    "step_deleted": "Execution step deleted",
 }
 
 
@@ -109,6 +115,9 @@ FIELD_LABELS = {
     "nationality": "Nationality", "daily_cost": "Daily cost", "user_id": "Account on the platform",
     "catalog_code": "Equipment name", "make_model": "Manufacturer and model", "plate_serial": "Plate or serial no.",
     "ownership": "Ownership", "lessor": "Lessor (if rented)",
+    "title": "Document title", "issuer": "Issued by", "issuer_ref": "Document number at the issuer",
+    "issued_on": "Issue date", "summary": "Document summary", "weight_bp": "Weight of the item progress",
+    "seq": "Order", "party": "Executed by",
 }
 REASONS = {
     "system owner role introduced": "System Owner role introduced",
@@ -129,8 +138,9 @@ def _value(key, v):
     if key == "role":
         return role_label(v)
     if key == "status":
+        from .documents import REV_STATUS
         from .resources import EQUIPMENT_STATUS, PERSON_STATUS
-        labels = {**PERSON_STATUS, **EQUIPMENT_STATUS, **STATUS_LABELS}
+        labels = {**PERSON_STATUS, **EQUIPMENT_STATUS, **REV_STATUS, **STATUS_LABELS}
         return _(labels[v]) if v in labels else str(v)
     if key in ("amount", "total", "contract_value", "unit_rate"):
         return fmt_money(v)
@@ -152,6 +162,9 @@ def _value(key, v):
     named = {"kind": {**{k: t[0] for k, t in ENTITY_KINDS.items()}, **KINDS, **GUARANTEES, **INSURANCES},
              "approval_status": APPROVAL, "label": ADDRESS_LABELS, "penalty_method": PENALTY_METHODS,
              "list": {k: t[0] for k, t in CATALOGS.items()}, "cost_unit": COST_UNITS}
+    from .documents import ISSUERS
+    from .scope import PARTIES
+    named.update({"issuer": ISSUERS, "party": PARTIES})
     if key in named and v in named[key]:
         return _(named[key][v])
     if key == "specialties" and isinstance(v, list):

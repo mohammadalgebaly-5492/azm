@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ it.code }} · {{ _('Scope of work') }}{% endblock %}
+{% macro step_fields(prefix, s, crews, subs, equipment, eq_names, PARTIES, fmt_pct) -%}
+  <div class="field"><label for="{{ prefix }}-name" class="req">{{ _('Step name') }}</label><input id="{{ prefix }}-name" name="name" required value="{{ s.name if s else '' }}"></div>
+  <div class="field"><label for="{{ prefix }}-w" class="req">{{ _('Weight of the item progress') }}</label><div class="affix"><input id="{{ prefix }}-w" name="weight_pct" dir="ltr" inputmode="decimal" required value="{{ fmt_pct(s.weight_bp)|replace('%', '') if s else '' }}"><span>%</span></div></div>
+  <div class="field"><label for="{{ prefix }}-seq">{{ _('Order') }}</label><input id="{{ prefix }}-seq" name="seq" dir="ltr" inputmode="numeric" value="{{ s.seq if s else '' }}" placeholder="{{ _('Next') }}"></div>
+  <div class="field"><label for="{{ prefix }}-party" class="req">{{ _('Executed by') }}</label>
+    <select id="{{ prefix }}-party" name="party" data-shows="{{ prefix }}-party">{% for k, v in PARTIES.items() %}<option value="{{ k }}" {{ 'selected' if s and s.party == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+  <div class="field" data-group="{{ prefix }}-party" data-value="crew"><label for="{{ prefix }}-crew" class="req">{{ _('Company crew') }}</label>
+    <select id="{{ prefix }}-crew" name="crew_id">{% for c in crews %}<option value="{{ c.id }}" {{ 'selected' if s and s.crew_id == c.id }}>{{ c.name }} · {{ c.code }}</option>{% endfor %}</select></div>
+  <div class="field" data-group="{{ prefix }}-party" data-value="subcontractor"><label for="{{ prefix }}-sub" class="req">{{ _('Subcontractor') }}</label>
+    <select id="{{ prefix }}-sub" name="entity_id">{% for e in subs %}<option value="{{ e.id }}" {{ 'selected' if s and s.entity_id == e.id }}>{{ e.name }} · {{ e.code }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="{{ prefix }}-eq">{{ _('Main equipment') }}</label>
+    <select id="{{ prefix }}-eq" name="equipment_id"><option value="">{{ _('None') }}</option>{% for x in equipment %}<option value="{{ x.id }}" {{ 'selected' if s and s.equipment_id == x.id }}>{{ eq_names.get(x.catalog_code, '') }}{{ ' · ' ~ x.label if x.label }} · {{ x.code }}</option>{% endfor %}</select></div>
+  <div class="field wide"><label for="{{ prefix }}-notes">{{ _('Notes') }}</label><input id="{{ prefix }}-notes" name="notes" value="{{ (s.notes or '') if s else '' }}"></div>
+{%- endmacro %}
+{% block content %}
+{% set open = not (sc and sc.reviewed_at) %}
+{% set editable = open and can('documents.manage') %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('scope.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Scope of work') }}</a><span class="code">{{ it.code }}</span></div>
+    <h1>{{ it.description }}</h1>
+    <p class="lead keep">{% if method %}{{ _('Execution method') }}: <b>{{ _(METHODS[method]) }}</b> · {% endif %}{{ _('Weights') }}: <b class="num {{ 'warn-text' if weight != 10000 }}">{{ fmt_pct(weight) }}</b></p>
+  </div>
+  <div class="actions">
+    {% if sc and not sc.reviewed_at and can('projects.manage') and sc.updated_by != g.user.id and complete %}
+    <form method="post" action="{{ url_for('scope.review', pid=p.id, iid=it.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ _('Review and lock') }}</button></form>{% endif %}
+    {% if sc and sc.reviewed_at and (can('changes.approve') or (can('projects.manage') and not locked)) %}
+    <details class="row-menu"><summary class="btn">{{ icon('lock', 16) }} {{ _('Reopen for changes') }}</summary>
+      <form method="post" action="{{ url_for('scope.reopen', pid=p.id, iid=it.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for reopening') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Reopen') }}</button></form></details>{% endif %}
+  </div>
+</header>
+
+<section class="card">
+  <div class="card-head"><div><h2>{{ _('Completeness') }}</h2><p class="keep">{% if sc and sc.reviewed_at %}{{ _('Reviewed and locked by {name}.', name=users.get(sc.reviewed_by, '')) }}{% else %}{{ _('Prepared by the project engineer and reviewed by the cost control engineer, who locks it.') }}{% endif %}</p></div></div>
+  <ul class="checklist">{% for ok_, text in checks %}<li class="{{ 'ok' if ok_ else 'bad' }}">{{ icon('check' if ok_ else 'alert', 16) }} <span>{{ text }}</span></li>{% endfor %}</ul>
+</section>
+
+<section class="card" id="scope">
+  <div class="card-head"><div><h2>{{ _('Scope of the item') }}</h2><p>{{ _('A short, clear description of what the item covers.') }}</p></div></div>
+  {% if editable %}
+  <form method="post" action="{{ url_for('scope.save', pid=p.id, iid=it.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field wide"><label for="summary" class="req">{{ _('Brief description of the scope') }}</label><textarea id="summary" name="summary" required>{{ sc.summary if sc else '' }}</textarea></div>
+      <div class="field"><label for="includes" class="req">{{ _('What the item includes') }}</label><textarea id="includes" name="includes" required>{{ sc.includes if sc else '' }}</textarea></div>
+      <div class="field"><label for="excludes">{{ _('What the item does not include') }}</label><textarea id="excludes" name="excludes">{{ (sc.excludes or '') if sc else '' }}</textarea></div>
+      <div class="field wide"><span class="label req">{{ _('Reference drawings') }}</span>
+        {% if drawings %}<div class="checks">{% for d in drawings %}<label class="check"><input type="checkbox" name="documents" value="{{ d.id }}" {{ 'checked' if d.id in linked }}><span>{{ d.title }}<span class="sub code">{{ d.code }}</span></span></label>{% endfor %}</div>
+        {% else %}<p class="hint">{{ _('No drawings registered in this project yet.') }} {% if can('documents.manage') %}<a href="{{ url_for('documents.form', pid=p.id, type='DRW') }}">{{ _('New document') }}</a>{% endif %}</p>{% endif %}</div>
+      <div class="field wide"><span class="label">{{ _('Reference specifications') }}</span>
+        {% if specs %}<div class="checks">{% for d in specs %}<label class="check"><input type="checkbox" name="documents" value="{{ d.id }}" {{ 'checked' if d.id in linked }}><span>{{ d.title }}<span class="sub code">{{ d.code }}</span></span></label>{% endfor %}</div>
+        {% else %}<p class="hint">{{ _('No specifications registered in this project yet.') }}</p>{% endif %}</div>
+      <div class="form-foot"><button class="btn btn-primary" type="submit">{{ _('Save the scope') }}</button></div>
+    </div>
+  </form>
+  {% elif sc %}
+  <dl class="kv">
+    <dt>{{ _('Brief description of the scope') }}</dt><dd class="prose">{{ sc.summary }}</dd>
+    <dt>{{ _('What the item includes') }}</dt><dd class="prose">{{ sc.includes }}</dd>
+    <dt>{{ _('What the item does not include') }}</dt><dd class="prose">{{ sc.excludes or '—' }}</dd>
+    <dt>{{ _('Reference documents') }}</dt><dd>{% for d in linked_docs %}<a href="{{ url_for('documents.view', pid=p.id, did=d.id) }}">{{ d.title }}</a> <span class="code">{{ d.code }}</span>{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</dd>
+  </dl>
+  {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('The scope of this item is not written yet.') }}</p></div>{% endif %}
+</section>
+
+<section class="card flush" id="steps">
+  <div class="card-head"><div><h2>{{ _('Execution steps') }}</h2><p>{{ _('The item progress is calculated from its finished steps, by their weights.') }}</p></div><span class="count">{{ steps|length }}</span></div>
+  {% if steps %}<div class="table-wrap"><table>
+    <thead><tr><th class="num">{{ _('Order') }}</th><th>{{ _('Step') }}</th><th class="num">{{ _('Weight') }}</th><th>{{ _('Executed by') }}</th><th>{{ _('Main equipment') }}</th><th></th></tr></thead>
+    <tbody>{% for s in steps %}<tr>
+      <td class="num">{{ s.seq }}</td>
+      <td>{{ s.name }}<span class="sub"><span class="code">{{ s.code }}</span>{% if s.notes %} · {{ s.notes }}{% endif %}</span></td>
+      <td class="num">{{ fmt_pct(s.weight_bp) }}</td>
+      <td>{{ _(PARTIES[s.party]) }}<span class="sub">{{ s.crew_name or s.entity_name }}</span></td>
+      <td>{% if s.eq_code %}{{ eq_names.get(s.eq_catalog, '') }}{{ ' · ' ~ s.eq_label if s.eq_label }}<span class="sub code">{{ s.eq_code }}</span>{% else %}<span class="faint">—</span>{% endif %}</td>
+      <td class="cell-actions">{% if editable %}
+        <details class="row-menu"><summary class="btn btn-ghost">{{ _('Edit') }}</summary>
+          <form method="post" action="{{ url_for('scope.step_edit', pid=p.id, iid=it.id, sid=s.id) }}" class="row-form"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+            {{ step_fields('st' ~ s.id, s, crews, subs, equipment, eq_names, PARTIES, fmt_pct) }}
+            <button class="btn btn-primary" type="submit">{{ _('Save changes') }}</button></form></details>
+        {% if not s.n_allocs %}<form method="post" action="{{ url_for('scope.step_delete', pid=p.id, iid=it.id, sid=s.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-ghost btn-danger" type="submit">{{ _('Delete') }}</button></form>{% endif %}
+      {% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('table', 28) }}<p>{{ _('No steps yet. Add the technical steps of the item in order.') }}</p></div>{% endif %}
+  {% if editable %}
+  <form method="post" action="{{ url_for('scope.step_add', pid=p.id, iid=it.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      {{ step_fields('new', None, crews, subs, equipment, eq_names, PARTIES, fmt_pct) }}
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add step') }}</button></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

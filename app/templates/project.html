@@ -37,6 +37,14 @@
       <a class="btn" href="{{ url_for('contracts.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open the contract') }}</a>
     </div>
     <div class="boq-summary">
+      <div><b>{{ _('Project documents') }}</b><br><span class="muted">{{ _('Drawings, specifications, contract documents and correspondence, with every revision and its approval.') }}</span></div>
+      <a class="btn" href="{{ url_for('documents.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open documents') }}</a>
+    </div>
+    <div class="boq-summary">
+      <div><b>{{ _('Scope of work') }}</b><br><span class="muted">{{ _('What each item includes, its reference drawings, and its execution steps with weights.') }}</span></div>
+      <a class="btn" href="{{ url_for('scope.page', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open the scope') }}</a>
+    </div>
+    <div class="boq-summary">
       <div><b>{{ _('Project resources') }}</b><br><span class="muted">{{ _('Organization chart, and the people, crews, equipment and subcontractors allocated to each item.') }}</span></div>
       <a class="btn" href="{{ url_for('resources.project', pid=p.id) }}">{{ icon('users', 16) }} {{ _('Open resources') }}</a>
     </div>

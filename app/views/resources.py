@@ -1,7 +1,7 @@
 """شاشات الموارد: سجلات الأفراد والأطقم والمعدات، والهيكل التنظيمي والتخصيص في كل مشروع."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from .. import registers as R, resources as S
+from .. import registers as R, resources as S, scope as W
 from ..auth import AuthError, login_required, permission_required
 from ..boq import is_locked
 from ..db import get_db
@@ -148,7 +148,14 @@ def project(pid):
         subs=[e for e in R.entities(db, "subcontractor", active_only=True) if e["approval_status"] == "approved"],
         items=db.execute("SELECT id, code, description, unit FROM boq_items WHERE project_id = ? ORDER BY code", (pid,)).fetchall(),
         title_list=R.catalog(db, "job_title", True), RESOURCE_KINDS=S.RESOURCE_KINDS, ALLOCATION_STATUS=S.ALLOCATION_STATUS,
-        locked=is_locked(db, pid), planned_total=sum(evals[a["id"]]["cost"] for a in allocs if a["status"] in S.LIVE), **_names(db))
+        locked=is_locked(db, pid), step_groups=_step_groups(db, pid), PARTIES=W.PARTIES, planned_total=sum(evals[a["id"]]["cost"] for a in allocs if a["status"] in S.LIVE), **_names(db))
+
+
+def _step_groups(db, pid):
+    out = {}
+    for s in W.project_steps(db, pid):
+        out.setdefault(s["boq_item_id"], []).append(s)
+    return out
 
 
 def _back(pid, anchor):
