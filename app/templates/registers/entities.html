@@ -3,7 +3,7 @@
 {% block title %}{{ _('Entities') }}{% endblock %}
 {% block content %}
 <header class="page-head">
-  <div><h1>{{ _('Entities') }}</h1><p class="lead">{{ _('One shared list of owners, consultants and subcontractors. Each entity is recorded once and chosen in every project.') }}</p></div>
+  <div><h1>{{ _('Entities') }}</h1><p class="lead">{{ _('One shared list of owners, consultants, subcontractors and suppliers. Each entity is recorded once and chosen in every project.') }}</p></div>
   <a class="btn btn-primary" href="{{ url_for('registers.entity_new', kind=kind or 'owner') }}">{{ icon('plus', 16) }} {{ _('New entity') }}</a>
 </header>
 <nav class="tabs" aria-label="{{ _('Entity type') }}">

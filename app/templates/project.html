@@ -45,6 +45,10 @@
       <a class="btn" href="{{ url_for('scope.page', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open the scope') }}</a>
     </div>
     <div class="boq-summary">
+      <div><b>{{ _('Procurement') }}</b><br><span class="muted">{{ _('Purchase and subcontract requests, quotes, approvals within the limits, and the orders issued against the item budgets.') }}</span></div>
+      <a class="btn" href="{{ url_for('procurement.page', pid=p.id) }}">{{ icon('file', 16) }} {{ _('Open procurement') }}</a>
+    </div>
+    <div class="boq-summary">
       <div><b>{{ _('Daily site reports and performance') }}</b><br><span class="muted">{{ _('The daily report, its review, and the earned value with the project status in colour.') }}</span></div>
       <div class="actions"><a class="btn" href="{{ url_for('daily.page', pid=p.id) }}">{{ icon('log', 16) }} {{ _('Daily site reports') }}</a><a class="btn" href="{{ url_for('daily.performance', pid=p.id) }}">{{ icon('chart', 16) }} {{ _('Project performance') }}</a></div>
     </div>

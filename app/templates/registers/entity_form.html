@@ -26,14 +26,16 @@
     </div>
   </section>
   <section class="fsection">
-    <div class="fsection-head"><h2>{{ _('Registration') }}</h2><p>{{ _('Required for subcontractors.') if kind == 'subcontractor' else _('Optional for owners and consultants.') }}</p></div>
+    <div class="fsection-head"><h2>{{ _('Registration') }}</h2><p>{{ _('Required for subcontractors and suppliers.') if kind in ('subcontractor', 'supplier') else _('Optional for owners and consultants.') }}</p></div>
     <div class="fsection-body">
-      <div class="field"><label for="cr_no" class="{{ 'req' if kind == 'subcontractor' }}">{{ _('Commercial registration no.') }}</label><input id="cr_no" name="cr_no" dir="ltr" {{ 'required' if kind == 'subcontractor' }} value="{{ form.get('cr_no') or '' }}"></div>
-      <div class="field"><label for="vat_no" class="{{ 'req' if kind == 'subcontractor' }}">{{ _('VAT number') }}</label><input id="vat_no" name="vat_no" dir="ltr" {{ 'required' if kind == 'subcontractor' }} value="{{ form.get('vat_no') or '' }}"></div>
-      {% if kind == 'subcontractor' %}
+      <div class="field"><label for="cr_no" class="{{ 'req' if kind in ('subcontractor', 'supplier') }}">{{ _('Commercial registration no.') }}</label><input id="cr_no" name="cr_no" dir="ltr" {{ 'required' if kind in ('subcontractor', 'supplier') }} value="{{ form.get('cr_no') or '' }}"></div>
+      <div class="field"><label for="vat_no" class="{{ 'req' if kind in ('subcontractor', 'supplier') }}">{{ _('VAT number') }}</label><input id="vat_no" name="vat_no" dir="ltr" {{ 'required' if kind in ('subcontractor', 'supplier') }} value="{{ form.get('vat_no') or '' }}"></div>
+      {% if kind in ('subcontractor', 'supplier') %}
       <div class="field"><label for="classification">{{ _('Classification grade') }}</label><input id="classification" name="classification" value="{{ form.get('classification') or '' }}"></div>
       <div class="field"><label for="approval_status" class="req">{{ _('Approval status') }}</label>
         <select id="approval_status" name="approval_status" required>{% for k, v in APPROVAL.items() %}<option value="{{ k }}" {{ 'selected' if form.get('approval_status') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      {% endif %}
+      {% if kind == 'subcontractor' %}
       <div class="field wide"><span class="label req">{{ _('Specialties') }}</span>
         <div class="checks">{% for s in specialties %}<label class="check"><input type="checkbox" name="specialties" value="{{ s.code }}" {{ 'checked' if s.code in chosen }}><span><span class="code">{{ s.code }}</span> {{ label(s) }}</span></label>{% endfor %}</div></div>
       {% endif %}

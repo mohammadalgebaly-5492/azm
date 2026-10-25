@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ r.code }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+{% set open = r.status in ('quoting', 'returned') %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('procurement.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Procurement') }}</a><span class="code">{{ r.code }}</span></div>
+    <h1>{{ _(KINDS[r.kind]) }} · <span class="code">{{ r.item_code }}</span></h1>
+    <p class="lead keep">{{ r.item_desc }}</p>
+  </div>
+  <div class="actions"><span class="pill {{ 'ok' if r.status == 'approved' else ('bad' if r.status in ('returned', 'cancelled') else 'warn') }}">{{ _(STATUS[r.status]) }}</span></div>
+</header>
+{% if r.status == 'returned' %}<div class="alert bad" role="status">{{ icon('alert', 17) }}<span>{{ _('Returned') }}: {{ r.return_reason }}</span></div>{% endif %}
+{% if r.status == 'cancelled' %}<div class="alert" role="status">{{ icon('alert', 17) }}<span>{{ _('Cancelled') }}: {{ r.return_reason }}</span></div>{% endif %}
+{% if order %}<div class="alert ok" role="status">{{ icon('check', 17) }}<span>{{ _('Order {code} issued and recorded as a commitment on the item budget.', code=order.code) }}</span></div>{% endif %}
+
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Request') }}</h2></div>
+    <dl class="kv">
+      <dt>{{ _('Required scope of work') }}</dt><dd class="prose">{{ r.scope }}</dd>
+      <dt>{{ _('Quantity') }}</dt><dd class="num">{{ fmt_qty(r.qty_milli) }} {{ r.unit }}</dd>
+      <dt>{{ _('Required date for supply or start') }}</dt><dd class="num">{{ r.needed_on|string|truncate(10, True, '') }}</dd>
+      <dt>{{ _('Scope steps') }}</dt><dd>{% for s in steps %}<span class="code">{{ s.code }}</span> {{ s.name }}{% if not loop.last %}<br>{% endif %}{% else %}—{% endfor %}</dd>
+      <dt>{{ _('Drawings and specifications') }}</dt><dd>{% for d in docs %}<a href="{{ url_for('documents.view', pid=p.id, did=d.id) }}">{{ d.title }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</dd>
+      <dt>{{ _('Raised by') }}</dt><dd>{{ users.get(r.created_by, '') }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>{{ _('Approval path') }}</h2></div>
+    <ul class="checklist">
+      <li class="ok">{{ icon('check', 16) }} <span>{{ _('Raised by') }} {{ users.get(r.created_by, '') }}</span></li>
+      <li class="{{ 'ok' if r.selected_by else 'warn' }}">{{ icon('check' if r.selected_by else 'clock', 16) }} <span>{{ _('Quote chosen by the project manager') }}{% if r.selected_by %}: {{ users.get(r.selected_by, '') }}{% endif %}</span></li>
+      <li class="{{ 'ok' if r.cc_by else 'warn' }}">{{ icon('check' if r.cc_by else 'clock', 16) }} <span>{{ _('Cost control approval') }}{% if r.cc_by %}: {{ users.get(r.cc_by, '') }}{% endif %}</span></li>
+      {% if r.needs_director or r.dir_by %}<li class="{{ 'ok' if r.dir_by else 'warn' }}">{{ icon('check' if r.dir_by else 'clock', 16) }} <span>{{ _('Director approval (above 10,000 SAR)') }}{% if r.dir_by %}: {{ users.get(r.dir_by, '') }}{% endif %}</span></li>{% endif %}
+    </ul>
+    {% if r.selection_reason %}<p class="hint keep">{{ _('Reason for the choice') }}: {{ r.selection_reason }}</p>{% endif %}
+    <div class="card-actions">
+      {% set waiting_cc = r.status == 'selected' and can('procurement.approve') %}
+      {% set waiting_dir = r.status == 'cc_approved' and can('changes.approve') %}
+      {% if (waiting_cc or waiting_dir) and g.user.id not in (r.created_by, r.selected_by, r.cc_by) %}
+      <form method="post" action="{{ url_for('procurement.approve', pid=p.id, rid=r.id) }}" class="inline"><input type="hidden" name="csrf_token" value="{{ csrf }}"><button class="btn btn-primary" type="submit">{{ icon('check', 16) }} {{ _('Approve') }}</button></form>
+      <details class="row-menu"><summary class="btn">{{ _('Return with a reason') }}</summary>
+        <form method="post" action="{{ url_for('procurement.send_back', pid=p.id, rid=r.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for returning') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Return') }}</button></form></details>
+      {% endif %}
+      {% if r.status not in ('approved', 'cancelled') and can('procurement.request') %}
+      <details class="row-menu"><summary class="btn btn-ghost">{{ _('Cancel the request') }}</summary>
+        <form method="post" action="{{ url_for('procurement.cancel', pid=p.id, rid=r.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="reason" required placeholder="{{ _('Reason for cancelling') }}" aria-label="{{ _('Reason') }}"><button class="btn btn-danger" type="submit">{{ _('Confirm cancelling') }}</button></form></details>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<section class="card flush" id="quotes">
+  <div class="card-head"><div><h2>{{ _('Comparison of quotes') }}</h2><p>{{ _('Available budget of the item') }}: <b class="num">{{ money(cmp.available) }}</b> {{ _('SAR') }}. {{ _('At least two quotes; a non-compliant quote can\'t be chosen; choosing other than the lowest needs a reason.') }}</p></div><span class="count">{{ cmp.quotes|length }}</span></div>
+  {% if cmp.rows %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Quote') }}</th><th class="num">{{ _('Unit price') }}</th><th class="num">{{ _('Total') }}</th><th class="num">{{ _('Difference from the available budget') }}</th><th class="num">{{ _('Period in days') }}</th><th>{{ _('Technical evaluation') }}</th><th>{{ _('Payment terms') }}</th><th></th></tr></thead>
+    <tbody>{% for x in cmp.rows %}{% set q = x.q %}<tr>
+      <td>{{ q.entity_name }}{% if q.id == cmp.lowest %} <span class="pill ok">{{ _('Lowest') }}</span>{% endif %}{% if q.id == r.selected_quote_id %} <span class="pill">{{ _('Chosen') }}</span>{% endif %}<span class="sub"><span class="code">{{ q.code }}</span> · {{ _('valid until') }} {{ q.valid_until|string|truncate(10, True, '') }}</span></td>
+      <td class="num">{{ money(q.unit_price) }}</td><td class="num"><b>{{ money(q.total) }}</b></td>
+      <td class="num {{ 'warn-text' if x.over }}">{{ money(x.diff) }}</td>
+      <td class="num">{{ q.duration_days }}</td>
+      <td><span class="pill {{ 'ok' if q.evaluation == 'compliant' else ('bad' if q.evaluation == 'non_compliant' else 'warn') }}">{{ _(EVALUATION[q.evaluation]) }}</span></td>
+      <td class="details">{{ q.payment_terms }}</td>
+      <td class="cell-actions">{% if open and can('procurement.select') and q.evaluation != 'non_compliant' and cmp.quotes|length >= 2 and g.user.id != r.created_by %}
+        <details class="row-menu"><summary class="btn">{{ _('Choose') }}</summary>
+          <form method="post" action="{{ url_for('procurement.select', pid=p.id, rid=r.id) }}" class="vo-decide"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="quote_id" value="{{ q.id }}">
+            <input name="reason" {{ 'required' if q.id != cmp.lowest }} placeholder="{{ _('Reason for the choice') }}{{ '' if q.id != cmp.lowest else ' (' ~ _('optional') ~ ')' }}" aria-label="{{ _('Reason for the choice') }}"><button class="btn btn-primary" type="submit">{{ _('Choose this quote') }}</button></form></details>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty">{{ icon('file', 28) }}<p>{{ _('No quotes yet.') }}</p></div>{% endif %}
+  {% if open and can('procurement.quotes') %}
+  <form method="post" action="{{ url_for('procurement.quote', pid=p.id, rid=r.id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field wide"><label for="q_ent" class="req">{{ _('Subcontractor') if want == 'subcontractor' else _('Supplier') }}</label>
+        <select id="q_ent" name="entity_id" required>{% for e in vendors %}<option value="{{ e.id }}">{{ e.name }} · {{ e.code }}</option>{% endfor %}</select>
+        {% if not vendors %}<span class="hint">{{ _('No approved entities of this type yet.') }} {% if can('registers.manage') %}<a href="{{ url_for('registers.entity_new', kind=want) }}">{{ _('New entity') }}</a>{% endif %}</span>{% endif %}</div>
+      <div class="field"><label for="q_price" class="req">{{ _('Unit price') }}</label><div class="affix"><input id="q_price" name="unit_price" dir="ltr" inputmode="decimal" data-money required><span>{{ _('SAR') }}</span></div></div>
+      <div class="field"><label for="q_days" class="req">{{ _('Period in days') }}</label><input id="q_days" name="duration_days" dir="ltr" inputmode="numeric" required></div>
+      <div class="field"><label for="q_valid" class="req">{{ _('Valid until') }}</label><input id="q_valid" name="valid_until" type="date" required {{ date_attrs|safe }}></div>
+      <div class="field"><label for="q_eval" class="req">{{ _('Technical evaluation') }}</label>
+        <select id="q_eval" name="evaluation" required>{% for k, v in EVALUATION.items() %}<option value="{{ k }}">{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field wide"><label for="q_terms" class="req">{{ _('Payment terms') }}</label><input id="q_terms" name="payment_terms" required></div>
+      <div class="field wide"><label for="q_notes">{{ _('Notes') }}</label><input id="q_notes" name="notes"></div>
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add quote') }}</button><span class="hint">{{ _('The quote file needs file storage, which the programmer will add.') }}</span></div>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

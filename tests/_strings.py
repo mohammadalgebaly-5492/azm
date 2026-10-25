@@ -57,6 +57,8 @@ def table_strings():
     from app.daily import IDLE, STATUS as DSR_STATUS
     from app.performance import RAG
     out |= set(IDLE.values()) | set(DSR_STATUS.values()) | set(RAG.values())
+    from app.procurement import EVALUATION, KINDS as PR_KINDS, STATUS as PR_STATUS
+    out |= set(EVALUATION.values()) | set(PR_KINDS.values()) | set(PR_STATUS.values())
     return out
 
 

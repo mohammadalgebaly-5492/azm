@@ -1,0 +1,81 @@
+-- المشتريات والتعاقد مع مقاولي الباطن والموردين (الدستور، البند 4.2): الطلب، وعروض الأسعار، والاختيار، والاعتماد
+-- حسب حدود الصلاحية، والالتزام على ميزانية البند (أمر الشراء أو عقد مقاول الباطن). المبالغ بالهللة.
+CREATE TABLE purchase_requests (
+    id                 INTEGER PRIMARY KEY,
+    project_id         INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    code               TEXT NOT NULL UNIQUE,              -- P-2026-001-PR-0001
+    kind               TEXT NOT NULL CHECK (kind IN ('material','subcontract','rental')),
+    boq_item_id        INTEGER NOT NULL REFERENCES boq_items(id),
+    scope              TEXT NOT NULL,
+    qty_milli          BIGINT NOT NULL CHECK (qty_milli > 0),
+    unit               TEXT NOT NULL,
+    needed_on          TEXT NOT NULL,
+    status             TEXT NOT NULL DEFAULT 'quoting'
+                       CHECK (status IN ('quoting','selected','cc_approved','approved','returned','cancelled')),
+    selected_quote_id  INTEGER,
+    selection_reason   TEXT,
+    needs_director     INTEGER NOT NULL DEFAULT 0,
+    return_reason      TEXT,
+    created_at         TEXT NOT NULL,
+    created_by         INTEGER NOT NULL REFERENCES users(id),
+    selected_at        TEXT,
+    selected_by        INTEGER REFERENCES users(id),
+    cc_at              TEXT,
+    cc_by              INTEGER REFERENCES users(id),
+    dir_at             TEXT,
+    dir_by             INTEGER REFERENCES users(id)
+);
+CREATE INDEX purchase_requests_project ON purchase_requests(project_id);
+
+CREATE TABLE pr_steps (
+    request_id  INTEGER NOT NULL REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    step_id     INTEGER NOT NULL REFERENCES scope_steps(id),
+    PRIMARY KEY (request_id, step_id)
+);
+
+CREATE TABLE pr_documents (
+    request_id   INTEGER NOT NULL REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    document_id  INTEGER NOT NULL REFERENCES documents(id),
+    PRIMARY KEY (request_id, document_id)
+);
+
+CREATE TABLE quotes (
+    id             INTEGER PRIMARY KEY,
+    request_id     INTEGER NOT NULL REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    code           TEXT NOT NULL UNIQUE,                  -- P-2026-001-QT-0001
+    entity_id      INTEGER NOT NULL REFERENCES entities(id),
+    unit_price     BIGINT NOT NULL CHECK (unit_price >= 0),
+    total          BIGINT NOT NULL CHECK (total >= 0),
+    duration_days  INTEGER NOT NULL CHECK (duration_days > 0),
+    payment_terms  TEXT NOT NULL,
+    valid_until    TEXT NOT NULL,
+    evaluation     TEXT NOT NULL CHECK (evaluation IN ('compliant','notes','non_compliant')),
+    notes          TEXT,
+    created_at     TEXT NOT NULL,
+    created_by     INTEGER NOT NULL REFERENCES users(id)
+);
+
+CREATE TABLE commitments (
+    id           INTEGER PRIMARY KEY,
+    project_id   INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    request_id   INTEGER NOT NULL UNIQUE REFERENCES purchase_requests(id),
+    quote_id     INTEGER NOT NULL REFERENCES quotes(id),
+    code         TEXT NOT NULL UNIQUE,                    -- P-2026-001-PO-0001 أو P-2026-001-SC-001
+    kind         TEXT NOT NULL CHECK (kind IN ('material','subcontract','rental')),
+    entity_id    INTEGER NOT NULL REFERENCES entities(id),
+    boq_item_id  INTEGER NOT NULL REFERENCES boq_items(id),
+    qty_milli    BIGINT NOT NULL,
+    unit_price   BIGINT NOT NULL,
+    total        BIGINT NOT NULL,
+    issued_at    TEXT NOT NULL,
+    issued_by    INTEGER NOT NULL REFERENCES users(id)
+);
+CREATE INDEX commitments_item ON commitments(boq_item_id);
+
+INSERT INTO role_permissions(role, permission)
+SELECT r.key, p.perm FROM roles r JOIN (
+    SELECT 'admin' AS role, 'procurement.request' AS perm UNION ALL SELECT 'pm', 'procurement.request'
+    UNION ALL SELECT 'admin', 'procurement.quotes' UNION ALL SELECT 'procurement', 'procurement.quotes'
+    UNION ALL SELECT 'pm', 'procurement.select' UNION ALL SELECT 'admin', 'procurement.approve'
+) p ON p.role = r.key WHERE 1 = 1
+ON CONFLICT DO NOTHING;

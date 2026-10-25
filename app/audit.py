@@ -87,6 +87,10 @@ ACTION_LABELS = {
     "dsr_submitted": "Daily site report submitted", "dsr_updated": "Daily site report updated",
     "dsr_resubmitted": "Daily site report resubmitted", "dsr_approved": "Daily site report approved",
     "dsr_returned": "Daily site report returned",
+    "pr_created": "Purchase request raised", "quote_added": "Quote added", "pr_selected": "Quote chosen",
+    "pr_cc_approved": "Request approved by cost control", "pr_director_approved": "Request approved by the Director",
+    "order_issued": "Order issued as a commitment", "pr_returned": "Purchase request returned",
+    "pr_cancelled": "Purchase request cancelled",
 }
 
 
@@ -173,8 +177,11 @@ def _value(key, v):
              "approval_status": APPROVAL, "label": ADDRESS_LABELS, "penalty_method": PENALTY_METHODS,
              "list": {k: t[0] for k, t in CATALOGS.items()}, "cost_unit": COST_UNITS}
     from .documents import ISSUERS
+    from .procurement import KINDS as PR_KINDS
     from .scope import PARTIES
     named.update({"issuer": ISSUERS, "party": PARTIES})
+    if key == "kind" and v in PR_KINDS:
+        return _(PR_KINDS[v])
     if key in named and v in named[key]:
         return _(named[key][v])
     if key == "specialties" and isinstance(v, list):

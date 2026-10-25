@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('New request') }}{% endblock %}
+{% block content %}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ url_for('procurement.page', pid=p.id) }}">{{ icon('back', 15) }} {{ _('Procurement') }}</a></div>
+  <h1>{{ _('New purchase or subcontract request') }}</h1>
+  <p class="lead">{{ _('The project engineer writes the required scope; procurement then collects at least two quotes.') }}</p>
+</div></header>
+{% if error %}<div class="alert bad" role="alert">{{ icon('alert', 17) }}<span>{{ error }}</span></div>{% endif %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf }}">
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('What is needed') }}</h2><p>{{ _('The available budget is the item budget minus the approved commitments.') }}</p></div>
+    <div class="fsection-body">
+      <div class="field"><label for="kind" class="req">{{ _('Type') }}</label>
+        <select id="kind" name="kind" required>{% for k, v in KINDS.items() %}<option value="{{ k }}" {{ 'selected' if form.get('kind') == k }}>{{ _(v) }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="needed_on" class="req">{{ _('Required date for supply or start') }}</label><input id="needed_on" name="needed_on" type="date" required {{ date_attrs|safe }} value="{{ form.get('needed_on') or '' }}"></div>
+      <div class="field wide"><label for="item" class="req">{{ _('Item') }}</label>
+        <select id="item" name="boq_item_id" required>{% for b in items %}<option value="{{ b.id }}" {{ 'selected' if form.get('boq_item_id') == b.id|string }}>{{ b.code }} · {{ b.description }} · {{ _('available') }} {{ money(avail[b.id]) }}{% if dates[b.id] %} · {{ _('starts') }} {{ dates[b.id] }}{% endif %}</option>{% endfor %}</select></div>
+      <div class="field wide"><label for="scope" class="req">{{ _('Required scope of work') }}</label><textarea id="scope" name="scope" required>{{ form.get('scope') or '' }}</textarea></div>
+      <div class="field"><label for="qty" class="req">{{ _('Quantity') }}</label><input id="qty" name="qty" dir="ltr" inputmode="decimal" required value="{{ form.get('qty') or '' }}"></div>
+      <div class="field"><label for="unit">{{ _('Unit (default: the item unit)') }}</label><input id="unit" name="unit" value="{{ form.get('unit') or '' }}"></div>
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Scope steps') }}</h2><p>{{ _('Required when the item has execution steps: choose the steps of the chosen item.') }}</p></div>
+    <div class="fsection-body">
+      {% if steps %}<div class="field wide"><div class="checks">{% for s in steps %}<label class="check"><input type="checkbox" name="steps" value="{{ s.id }}" {{ 'checked' if s.id|string in form.getlist('steps') }}><span>{{ s.name }}<span class="sub"><span class="code">{{ s.item_code }}</span></span></span></label>{% endfor %}</div></div>
+      {% else %}<p class="hint wide">{{ _('No scope steps in this project yet.') }}</p>{% endif %}
+    </div>
+  </section>
+  <section class="fsection">
+    <div class="fsection-head"><h2>{{ _('Drawings and specifications') }}</h2><p>{{ _('At least one from the project documents.') }}</p></div>
+    <div class="fsection-body">
+      {% if docs %}<div class="field wide"><div class="checks">{% for d in docs %}<label class="check"><input type="checkbox" name="documents" value="{{ d.id }}" {{ 'checked' if d.id|string in form.getlist('documents') }}><span>{{ d.title }}<span class="sub"><span class="code">{{ d.code }}</span></span></span></label>{% endfor %}</div></div>
+      {% else %}<p class="hint wide">{{ _('Register the drawings in the project documents first.') }}</p>{% endif %}
+    </div>
+  </section>
+  <div class="form-actions">
+    <a class="btn btn-ghost" href="{{ url_for('procurement.page', pid=p.id) }}">{{ _('Cancel') }}</a>
+    <button class="btn btn-primary" type="submit">{{ _('Raise the request') }}</button>
+  </div>
+</form>
+{% endblock %}

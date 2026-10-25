@@ -26,7 +26,9 @@ ENTITY_KINDS = {
     "owner": ("Owner", "OWN"),
     "consultant": ("Consultant", "CNS"),
     "subcontractor": ("Subcontractor", "SUB"),
+    "supplier": ("Supplier", "SUP"),
 }
+VENDORS = ("subcontractor", "supplier")   # جهات لها سجل تجاري واعتماد لدى الشركة
 APPROVAL = {"approved": "Approved", "review": "Under evaluation", "suspended": "Suspended"}
 ADDRESS_LABELS = {"main": "Head office", "branch": "Branch"}
 MIN_REPRESENTATIVES = 2
@@ -157,7 +159,7 @@ def _clean_entity(db, form, kind):
         "notes": (form.get("notes") or "").strip() or None,
     }
     specialties = []
-    if kind == "subcontractor":
+    if kind in VENDORS:
         if not data["cr_no"]:
             raise AuthError(_("Enter the commercial registration number."))
         if not data["vat_no"]:
@@ -165,6 +167,7 @@ def _clean_entity(db, form, kind):
         if form.get("approval_status") not in APPROVAL:
             raise AuthError(_("Choose the approval status."))
         data["approval_status"] = form.get("approval_status")
+    if kind == "subcontractor":
         allowed = {r["code"] for r in catalog(db, "specialty", active_only=True)}
         specialties = sorted({s for s in _getlist(form, "specialties") if s in allowed})
         if not specialties:
