@@ -1,0 +1,22 @@
+{# تقارير المهندس على مستند: يتطلب rep_kind وrep_id في السياق، وp للمشروع. #}
+{% from "_icons.html" import icon %}
+{% set rep_rows = report_entries(p.id, rep_kind, rep_id) %}
+<section class="card" id="engineer-reports">
+  <div class="card-head"><div><h2>{{ _('Engineer reports') }}</h2><p>{{ _('Text, a PDF file or both. Reports are added and never deleted.') }}</p></div><span class="count">{{ rep_rows|length }}</span></div>
+  {% if rep_rows %}<ul class="plain-list reports">{% for a in rep_rows %}
+    <li><div class="report-meta"><b>{{ a.full_name }}</b> <span class="num">{{ a.created_at|string|truncate(16, True, '')|replace('T', ' ') }}</span>
+      {% if a.storage_key %}<a class="code" href="{{ url_for('attachments.file', pid=p.id, aid=a.id) }}">{{ icon('file', 14) }} {{ a.storage_key.rsplit('/', 1)[-1] }}</a>{% endif %}</div>
+      {% if a.body %}<p class="prose">{{ a.body }}</p>{% endif %}</li>{% endfor %}</ul>
+  {% else %}<div class="empty"><p>{{ _('No engineer reports yet.') }}</p></div>{% endif %}
+  {% if report_can_add(rep_kind) %}
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('attachments.page', pid=p.id, kind=rep_kind, doc_id=rep_id) }}" class="card-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+    <div class="form-grid">
+      <div class="field wide"><label for="rep_body">{{ _('Report') }}</label><textarea id="rep_body" name="body" maxlength="5000"></textarea></div>
+      {% if report_storage() %}<div class="field wide"><label for="rep_file">{{ _('PDF file') }}</label><input id="rep_file" type="file" name="file" accept="application/pdf"></div>{% endif %}
+      <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Add the report') }}</button>
+        {% if not report_storage() %}<span class="hint keep">{{ _('Uploading waits for file storage, which the programmer will add.') }}</span>{% endif %}</div>
+    </div>
+  </form>
+  {% endif %}
+</section>

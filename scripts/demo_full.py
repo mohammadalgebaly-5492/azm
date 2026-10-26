@@ -2,7 +2,9 @@
 وأوامر تغييره، وجدول الكميات وتحليل الأسعار وخط أساس الميزانية، والمستندات، ونطاق العمل وخطواته، والجدول الزمني وجدول
 الدفعات، والموارد والهيكل التنظيمي والتخصيصات، ومحضر بدء التنفيذ، والتقارير اليومية لكل أيام العمل حتى اليوم، والمشتريات
 وأوامر الشراء وعقود الباطن، ومحاضر الاستلام والفواتير والمستخلصات والصرف، ومستخلصات المالك والتحصيل، وطلبات التغيير،
-والتأخير وخطط التعافي، ومراجعة خط الأساس، والنسخ الموقّعة، ومستويات صلاحية المهندس.
+والتأخير وخطط التعافي، ومراجعة خط الأساس، والنسخ الموقّعة، وتقارير المهندس، ومستويات صلاحية المهندس.
+قيمة العقد 4,000,000 ريال لمبنى من ثلاثة طوابق مساحة الطابق 400 م2: الهيكل 700 ريال للمتر المربع لكل سقف،
+والتشطيب 2,500 ريال (بين 2,000 و4,000 حسب م. محمد 2026-10-26)، والأعمال التمهيدية 160,000 ريال.
 
 الاستخدام (من مجلد المشروع):
   python scripts/demo_full.py cost=<مهندس تحكم تكلفة> director=<المدير التنفيذي> pm=<مدير المشروع>
@@ -19,7 +21,7 @@ from werkzeug.datastructures import MultiDict
 
 sys.path.insert(0, ".")
 from wsgi import app  # noqa: E402
-from app import (authority as AU, billing as B, boq, changes as CH, contracts as C, daily as Y, documents as D,  # noqa: E402
+from app import (attachments as AT, authority as AU, billing as B, boq, changes as CH, contracts as C, daily as Y, documents as D,  # noqa: E402
                  files, governance as G, payables as X, pricing as PRC, procurement as Q, projects, registers as R,
                  resources as S, schedule as T, scope as W, signed as SG)
 from app.db import connect, tx  # noqa: E402
@@ -27,7 +29,7 @@ from app.db import connect, tx  # noqa: E402
 TAG = "(بيانات تجريبية)"
 CONTRACT_NO = "DEMO-2026-014"
 ROLES = ("cost", "director", "pm", "engineer", "accountant", "procurement")
-COST_SCALE = 0.65  # التكلفة اليومية للأطقم والمعدات والأفراد
+COST_SCALE = 1.55  # التكلفة اليومية للأطقم والمعدات والأفراد
 
 db = connect(app.config["DATABASE"])
 print("database:", "LIVE POSTGRES" if str(app.config["DATABASE"]).startswith("postgres") else app.config["DATABASE"])
@@ -128,6 +130,9 @@ with app.test_request_context():
     SUB_ELE = vendor("subcontractor", "شركة النور للأعمال الكهربائية", "info@noor-elec.example", "0507777000", ["ELE"],
                      "م. وليد السالم")
     SUB_ELE2 = vendor("subcontractor", "مؤسسة الطاقة الحديثة", "info@taqa.example", "0507777111", ["ELE"], "م. هاني يوسف")
+    SUB_LAB = vendor("subcontractor", "مختبر الجودة للاختبارات الهندسية", "info@qlab.example", "0507777222", ["CNC"],
+                     "م. أيمن فاروق")
+    SUB_ELV = vendor("subcontractor", "شركة المصاعد العربية", "info@arab-lifts.example", "0507777333", ["MEC"], "م. طلال الحربي")
     SUP_RMX = vendor("supplier", "مصنع الخرسانة الجاهزة الأول", "info@rmx1.example", "0508000001", [], "أ. صالح العمري")
     SUP_RMX2 = vendor("supplier", "شركة الإسمنت والخرسانة المتحدة", "info@ucc.example", "0508000002", [], "أ. نايف المالكي")
     SUP_STL = vendor("supplier", "مؤسسة الحديد الوطني", "info@steel.example", "0508000003", [], "أ. عادل القحطاني")
@@ -138,7 +143,7 @@ with app.test_request_context():
 
     # ---------- المشروع والأطراف والعقد (3.2) ----------
     pid, pcode = projects.create_project(db, {"name": f"مبنى إداري من ثلاثة طوابق {TAG}", "location": "الرياض، حي الملقا",
-                                              "contract_no": CONTRACT_NO, "contract_value": "1,000,000.00",
+                                              "contract_no": CONTRACT_NO, "contract_value": "4,000,000.00",
                                               "start_date": d(0), "end_date": d(364)}, cost)
     for uid in U.values():
         projects.add_member(db, pid, uid, cost)
@@ -146,50 +151,66 @@ with app.test_request_context():
         ("owner_entity_id", str(OWNER)), ("owner_reps", str(o_people[0])), ("owner_reps", str(o_people[1])),
         ("consultant_entity_id", str(CONS)), ("consultant_reps", str(c_people[0])), ("consultant_reps", str(c_people[1]))]), cost)
     C.save_contract(db, pid, {
-        "contract_no": CONTRACT_NO, "signed_on": d(-14), "kind": "lump_sum", "value_ex_vat": "1,000,000.00", "vat_pct": "15",
+        "contract_no": CONTRACT_NO, "signed_on": d(-14), "kind": "lump_sum", "value_ex_vat": "4,000,000.00", "vat_pct": "15",
         "scope": "إنشاء مبنى إداري من ثلاثة طوابق شامل الأعمال الإنشائية والكهروميكانيكية والتشطيبات",
         "site_handover_on": d(-5), "start_on": d(0), "duration_days": "365", "warranty_months": "12",
         "advance_pct": "10", "advance_recovery_pct": "10", "retention_pct": "10", "retention_cap_pct": "5",
         "payment_days": "30", "penalty_method": "daily_pct", "penalty_value": "0.1", "penalty_cap_pct": "10"}, cost)
     con = C.contract_of(db, pid)
     C.add_guarantee(db, con["id"], {"kind": "performance", "bank": "البنك الأهلي السعودي", "number": "LG-2026-0417",
-                                    "amount": "50,000", "issued_on": d(-14),
+                                    "amount": "200,000", "issued_on": d(-14),
                                     "expires_on": (TODAY + timedelta(days=21)).isoformat()}, cost)
-    C.add_guarantee(db, con["id"], {"kind": "advance", "bank": "بنك الرياض", "number": "LG-2026-0418", "amount": "100,000",
+    C.add_guarantee(db, con["id"], {"kind": "advance", "bank": "بنك الرياض", "number": "LG-2026-0418", "amount": "400,000",
                                     "issued_on": d(-14), "expires_on": d(380)}, cost)
     C.add_insurance(db, con["id"], {"kind": "car", "insurer": "التعاونية للتأمين", "policy_no": "CAR-55120",
-                                    "cover_amount": "1,000,000", "expires_on": d(400)}, cost)
+                                    "cover_amount": "4,000,000", "expires_on": d(400)}, cost)
     C.add_insurance(db, con["id"], {"kind": "third_party", "insurer": "التعاونية للتأمين", "policy_no": "TPL-55121",
-                                    "cover_amount": "500,000", "expires_on": d(400)}, cost)
+                                    "cover_amount": "1,000,000", "expires_on": d(400)}, cost)
 
     # ---------- جدول الكميات وتحليل الأسعار وخط أساس الميزانية (3.3، 3.5) ----------
-    PHASES = [
+    PHASES = [  # الهيكل 840,000 (700 × 1,200 م2)، والتشطيب 3,000,000 (2,500 × 1,200 م2)، والتمهيدية 160,000
         ("الأعمال التمهيدية والحفر", [
             ("تجهيز الموقع", [("A-01", "تسوير الموقع بسور مؤقت", "exec", "م.ط", "180", "70"),
                               ("A-02", "تسوية الموقع وتنظيفه", "exec", "م2", "1500", "9"),
-                              ("A-03", "مكتب ومرافق الموقع المؤقتة", "both", "مقطوعية", "1", "22000")]),
-            ("الحفر والردم", [("A-04", "حفر عام للأساسات", "exec", "م3", "1800", "18"),
-                              ("A-05", "ردم بمواد مختارة ومدموكة", "both", "م3", "700", "30")])]),
+                              ("A-03", "مكتب ومرافق الموقع المؤقتة", "both", "مقطوعية", "1", "22000"),
+                              ("A-07", "اختبارات التربة والخرسانة في مختبر معتمد", "exec", "مقطوعية", "1", "22200")]),
+            ("الحفر والردم", [("A-04", "حفر عام للأساسات", "exec", "م3", "1800", "30"),
+                              ("A-05", "ردم بمواد مختارة ومدموكة", "both", "م3", "700", "41"),
+                              ("A-06", "رش مبيد النمل الأبيض", "both", "م2", "500", "14")])]),
         ("الأعمال الإنشائية", [
-            ("الأساسات", [("B-01", "خرسانة عادية للنظافة", "both", "م3", "70", "280"),
-                          ("B-02", "خرسانة مسلحة للقواعد", "both", "م3", "160", "620")]),
-            ("الهيكل الخرساني", [("B-03", "خرسانة مسلحة للأعمدة", "both", "م3", "85", "780"),
-                                 ("B-04", "خرسانة مسلحة للكمرات والبلاطات", "both", "م3", "220", "690")])]),
+            ("الأساسات", [("B-01", "خرسانة عادية للنظافة", "both", "م3", "70", "350"),
+                          ("B-02", "خرسانة مسلحة للقواعد", "both", "م3", "160", "1300"),
+                          ("B-06", "خزان مياه أرضي من الخرسانة المسلحة", "both", "م3", "60", "1400"),
+                          ("B-07", "عزل بيتوميني للأساسات", "both", "م2", "600", "33")]),
+            ("الهيكل الخرساني", [("B-03", "خرسانة مسلحة للأعمدة", "both", "م3", "85", "1600"),
+                                 ("B-04", "خرسانة مسلحة للكمرات والبلاطات", "both", "م3", "220", "1500"),
+                                 ("B-05", "خرسانة مسلحة للسلالم", "both", "م3", "26", "1450")])]),
         ("أعمال المباني والعزل", [
-            ("أعمال البناء", [("C-01", "بناء بلوك أسمنتي 25 سم للجدران الخارجية", "both", "م2", "1100", "78"),
-                              ("C-02", "بناء بلوك أسمنتي 10 سم للقواطع", "both", "م2", "650", "52")]),
-            ("العزل", [("C-03", "عزل مائي للأسطح", "both", "م2", "480", "42"),
-                       ("C-04", "عزل حراري للأسطح", "both", "م2", "480", "38")])]),
+            ("أعمال البناء", [("C-01", "بناء بلوك أسمنتي 25 سم للجدران الخارجية", "both", "م2", "1100", "95"),
+                              ("C-02", "بناء بلوك أسمنتي 10 سم للقواطع", "both", "م2", "650", "70"),
+                              ("C-05", "لياسة داخلية", "both", "م2", "3400", "32"),
+                              ("C-06", "لياسة خارجية", "both", "م2", "1300", "40")]),
+            ("العزل", [("C-03", "عزل مائي للأسطح", "both", "م2", "480", "65"),
+                       ("C-04", "عزل حراري للأسطح", "both", "م2", "480", "55")])]),
         ("الأعمال الكهروميكانيكية", [
-            ("الأعمال الكهربائية", [("D-01", "لوحات توزيع رئيسية وفرعية", "both", "عدد", "6", "9500"),
-                                    ("D-02", "تمديدات كهربائية للإنارة والقوى", "both", "م2", "1350", "38")]),
-            ("التكييف والسباكة", [("D-03", "وحدات تكييف منفصلة", "both", "عدد", "14", "6800"),
-                                  ("D-04", "شبكة سباكة وتصريف", "both", "مقطوعية", "1", "48000")])]),
+            ("الأعمال الكهربائية", [("D-01", "لوحات توزيع رئيسية وفرعية", "both", "عدد", "6", "18000"),
+                                    ("D-02", "تمديدات كهربائية للإنارة والقوى", "both", "م2", "1200", "120"),
+                                    ("D-08", "مولد احتياطي 250 ك.ف.أ مع لوحة التحويل", "both", "عدد", "1", "145000"),
+                                    ("D-09", "شبكات البيانات وكاميرات المراقبة", "both", "م2", "1200", "40")]),
+            ("التكييف والسباكة", [("D-03", "وحدات تكييف منفصلة", "both", "عدد", "30", "9500"),
+                                  ("D-04", "شبكة سباكة وتصريف", "both", "مقطوعية", "1", "220000")]),
+            ("السلامة والمصاعد", [("D-05", "نظام إنذار الحريق", "both", "م2", "1200", "45"),
+                                  ("D-06", "نظام إطفاء الحريق بالرشاشات", "both", "م2", "1200", "85"),
+                                  ("D-07", "مصعد ركاب 8 أشخاص لثلاث وقفات", "both", "عدد", "1", "185000")])]),
         ("التشطيبات والتسليم", [
-            ("التشطيبات الداخلية", [("E-01", "أرضيات بورسلان", "both", "م2", "900", "64"),
-                                    ("E-02", "دهانات داخلية وخارجية", "exec", "م2", "2400", "16"),
-                                    ("E-03", "أبواب خشبية ونوافذ ألمنيوم", "both", "عدد", "20", "1850")]),
-            ("التسليم", [("E-04", "تنظيف نهائي وتسليم المشروع للمالك", "exec", "مقطوعية", "1", "19100")])]),
+            ("التشطيبات الداخلية", [("E-01", "أرضيات بورسلان", "both", "م2", "1050", "240"),
+                                    ("E-02", "دهانات داخلية وخارجية", "both", "م2", "4700", "42"),
+                                    ("E-03", "أبواب خشبية ونوافذ ألمنيوم", "both", "عدد", "60", "3800"),
+                                    ("E-05", "أسقف مستعارة من ألواح الجبس", "both", "م2", "1000", "120"),
+                                    ("E-07", "سيراميك الحمامات والمطابخ", "both", "م2", "450", "150"),
+                                    ("E-08", "درابزين ستانلس ستيل للسلالم", "both", "م.ط", "60", "650")]),
+            ("الواجهات", [("E-06", "كسوة الواجهات بالحجر الطبيعي", "both", "م2", "900", "450")]),
+            ("التسليم", [("E-04", "تنظيف نهائي وتسليم المشروع للمالك", "exec", "مقطوعية", "1", "31700")])]),
     ]
     I, QTY, WBS = {}, {}, {}
     for pname, secs in PHASES:
@@ -203,16 +224,18 @@ with app.test_request_context():
                 QTY[ref] = float(qty)
     CODE = {r["id"]: r["code"] for r in db.execute("SELECT id, code FROM boq_items WHERE project_id = ?", (pid,))}
     ANALYSIS = {  # (النوع، الوصف، الوحدة، الكمية لكل وحدة بند، السعر)
-        "A-04": [("subcontract", "حفر بمعدات مقاول الباطن", "م3", "1", "15"), ("equipment", "لودر لتسوية القاع", "يوم", "0.002", "900")],
-        "B-02": [("material", "خرسانة جاهزة C30", "م3", "1.02", "255"), ("material", "حديد تسليح", "م3", "1", "270"),
-                 ("labour", "طاقم النجارة والحديد", "يوم", "0.06", "860"), ("equipment", "خلاطة وهزاز", "يوم", "0.03", "300")],
-        "B-03": [("material", "خرسانة جاهزة C35", "م3", "1.02", "260"), ("material", "حديد تسليح", "م3", "1", "320"),
-                 ("labour", "طاقم النجارة والحديد", "يوم", "0.1", "860")],
-        "B-04": [("material", "خرسانة جاهزة C35", "م3", "1.02", "260"), ("material", "حديد تسليح", "م3", "1", "295"),
-                 ("labour", "طاقم الشدات والحديد والصب", "يوم", "0.08", "1200")],
-        "C-01": [("material", "بلوك أسمنتي 25 سم مع المونة", "م2", "1.03", "30"), ("labour", "طاقم المباني", "يوم", "0.04", "800")],
-        "C-03": [("material", "لفائف عزل مائي 4 مم", "م2", "1.1", "22"), ("labour", "طاقم العزل", "يوم", "0.02", "340")],
-        "D-02": [("subcontract", "تمديدات كهربائية بمقاول الباطن", "م2", "1", "30")],
+        "A-04": [("subcontract", "حفر بمعدات مقاول الباطن", "م3", "1", "22"), ("equipment", "لودر لتسوية القاع", "يوم", "0.002", "900")],
+        "B-02": [("material", "خرسانة جاهزة C30", "م3", "1.02", "290"), ("material", "حديد تسليح", "م3", "1", "430"),
+                 ("labour", "طاقم النجارة والحديد", "يوم", "0.15", "1500"), ("equipment", "خلاطة وهزاز", "يوم", "0.05", "600")],
+        "B-03": [("material", "خرسانة جاهزة C35", "م3", "1.02", "300"), ("material", "حديد تسليح", "م3", "1", "450"),
+                 ("labour", "طاقم النجارة والحديد", "يوم", "0.3", "1500")],
+        "B-04": [("material", "خرسانة جاهزة C35", "م3", "1.02", "295"), ("material", "حديد تسليح", "م3", "1", "420"),
+                 ("labour", "طاقم الشدات والحديد والصب", "يوم", "0.25", "1800"), ("equipment", "شدات معدنية مستأجرة", "م3", "1", "120")],
+        "C-01": [("material", "بلوك أسمنتي 25 سم مع المونة", "م2", "1.03", "45"), ("labour", "طاقم المباني", "يوم", "0.04", "900")],
+        "C-03": [("material", "لفائف عزل مائي 4 مم", "م2", "1.1", "32"), ("labour", "طاقم العزل", "يوم", "0.03", "500")],
+        "D-02": [("subcontract", "تمديدات كهربائية بمقاول الباطن", "م2", "1", "90")],
+        "D-07": [("subcontract", "توريد وتركيب المصعد بمقاول الباطن", "عدد", "1", "150000")],
+        "E-06": [("material", "حجر طبيعي مع المثبتات", "م2", "1.05", "210"), ("labour", "طاقم التركيب", "يوم", "0.08", "1000")],
     }
     for ref, lines in ANALYSIS.items():
         for kind, desc, unit, q, price in lines:
@@ -244,6 +267,9 @@ with app.test_request_context():
     doc("ele", "مخطط الأعمال الكهربائية", "DRW", "consultant", "E-301", -17, "approved", 1, -8)
     doc("mep", "مخطط التكييف والسباكة", "DRW", "consultant", "M-401", -17, "approved", 1, -8)
     doc("fin", "مخطط التشطيبات والأرضيات", "DRW", "consultant", "A-301", -16, "approved", 0, -6)
+    doc("fire", "مخطط إنذار وإطفاء الحريق", "DRW", "consultant", "F-501", -17, "approved", 1, -8)
+    doc("elv", "مواصفات المصعد", "SPC", "consultant", "SPEC-07", -17, "approved", 1, -8)
+    doc("fac", "مخطط الواجهات والحجر", "DRW", "consultant", "A-501", -16, "approved", 0, -6)
     doc("spc", "مواصفات الأعمال الخرسانية", "SPC", "consultant", "SPEC-03", -25, "approved", 0, -22)
     doc("spm", "مواصفات أعمال المباني والعزل", "SPC", "consultant", "SPEC-04", -25, "approved", 0, -22)
     doc("ctd", "عقد المقاولة الموقّع", "CTD", "owner", "CT-2026-14", -14, "approved", 0, -14)
@@ -382,6 +408,41 @@ with app.test_request_context():
                  [("المعجون والتجهيز", 40, "crew", "gen", None), ("الدهان", 60, "crew", "gen", None)]),
         "E-03": ("أبواب خشبية ونوافذ ألمنيوم.", ["fin", "arch"],
                  [("التوريد", 50, "crew", "car", None), ("التركيب", 50, "crew", "car", None)]),
+        "A-06": ("رش مبيد النمل الأبيض تحت البلاطات وحول القواعد.", ["dig", "spc"],
+                 [("رش التربة", 70, "crew", "ins", None), ("الفحص والتوثيق", 30, "crew", "ins", None)]),
+        "A-07": ("اختبارات التربة والخرسانة طوال التنفيذ في مختبر معتمد.", ["site", "spc"],
+                 [("اختبارات التربة", 30, "subcontractor", SUB_LAB, None),
+                  ("اختبارات الخرسانة أثناء الصب", 50, "subcontractor", SUB_LAB, None),
+                  ("الاختبارات النهائية", 20, "subcontractor", SUB_LAB, None)]),
+        "B-05": ("خرسانة مسلحة لسلالم الطوابق الثلاثة.", ["col", "spc"],
+                 [("الشدات", 35, "crew", "car", None), ("الحديد", 35, "crew", "stl", None), ("الصب", 30, "crew", "cnc", None)]),
+        "B-06": ("خزان مياه أرضي من الخرسانة المسلحة سعة 100 م3.", ["ftg", "spc"],
+                 [("الحفر والشدات", 30, "subcontractor", SUB_DIG2, None), ("الحديد والصب", 50, "subcontractor", SUB_DIG2, None),
+                  ("العزل واختبار الامتلاء", 20, "subcontractor", SUB_DIG2, None)]),
+        "B-07": ("عزل بيتوميني للقواعد والرقاب والميد.", ["ftg", "spm"],
+                 [("الدهان الأول", 50, "crew", "ins", None), ("الدهان الثاني والحماية", 50, "crew", "ins", None)]),
+        "C-05": ("لياسة داخلية للجدران والقواطع.", ["blk", "fin"],
+                 [("الطرطشة والبؤج", 30, "crew", "mas2", None), ("اللياسة", 70, "crew", "mas2", None)]),
+        "C-06": ("لياسة خارجية للواجهات غير المكسوة بالحجر.", ["blk", "fac"],
+                 [("الشبك والطرطشة", 30, "crew", "mas", None), ("اللياسة", 70, "crew", "mas", None)]),
+        "D-05": ("نظام إنذار الحريق المعنون.", ["fire"],
+                 [("التمديدات", 50, "subcontractor", SUB_ELE, None), ("الأجهزة والتشغيل", 50, "subcontractor", SUB_ELE, None)]),
+        "D-06": ("شبكة رشاشات الإطفاء وصناديق الحريق.", ["fire"],
+                 [("التمديدات", 60, "crew", "mep", None), ("الرشاشات والاختبار", 40, "crew", "mep", None)]),
+        "D-07": ("مصعد ركاب 8 أشخاص لثلاث وقفات.", ["arch", "elv"],
+                 [("التوريد", 50, "subcontractor", SUB_ELV, None), ("التركيب والتشغيل", 50, "subcontractor", SUB_ELV, None)]),
+        "D-08": ("مولد احتياطي 250 ك.ف.أ مع لوحة التحويل.", ["ele"],
+                 [("التوريد", 60, "subcontractor", SUB_ELE, None), ("التركيب والتشغيل", 40, "subcontractor", SUB_ELE, None)]),
+        "D-09": ("شبكات البيانات وكاميرات المراقبة.", ["ele"],
+                 [("التمديدات", 50, "subcontractor", SUB_ELE, None), ("الأجهزة والبرمجة", 50, "subcontractor", SUB_ELE, None)]),
+        "E-05": ("أسقف مستعارة من ألواح الجبس.", ["fin"],
+                 [("الهيكل المعدني", 40, "crew", "car", None), ("الألواح والتشطيب", 60, "crew", "car", None)]),
+        "E-06": ("كسوة الواجهات بالحجر الطبيعي.", ["fac"],
+                 [("توريد الحجر", 40, "crew", "mas", None), ("التركيب", 60, "crew", "mas", None)]),
+        "E-07": ("سيراميك جدران وأرضيات الحمامات والمطابخ.", ["fin"],
+                 [("التوريد", 40, "crew", "mas2", None), ("التركيب", 60, "crew", "mas2", None)]),
+        "E-08": ("درابزين ستانلس ستيل للسلالم.", ["arch"],
+                 [("التوريد", 50, "crew", "car", None), ("التركيب", 50, "crew", "car", None)]),
         "E-04": ("التنظيف النهائي وتسليم المشروع للمالك.", ["arch"],
                  [("التنظيف النهائي", 50, "crew", "gen", None), ("الاستلام الابتدائي", 50, "crew", "gen", None)]),
     }
@@ -400,25 +461,34 @@ with app.test_request_context():
     # ---------- الجدول الزمني وجدول الدفعات (3.4، 3.2) ----------
     PLAN = [  # (البند، النشاط، البدء، الانتهاء، السابق)
         ("A-01", "تسوير الموقع", 0, 6, []), ("A-02", "تسوية الموقع وتنظيفه", 0, 6, []),
-        ("A-03", "تجهيز مكتب الموقع ومرافقه", 2, 13, []), ("A-04", "الحفر العام للأساسات", 7, 27, ["A-02"]),
-        ("A-05", "الردم بمواد مختارة", 28, 41, ["A-04"]), ("B-01", "خرسانة النظافة", 42, 46, ["A-04"]),
-        ("B-02", "خرسانة القواعد المسلحة", 42, 69, ["A-04"]), ("B-03", "خرسانة الأعمدة", 70, 97, ["B-02"]),
-        ("B-04", "خرسانة الكمرات والبلاطات", 98, 150, ["B-03"]), ("C-01", "بلوك الجدران الخارجية", 120, 195, ["B-03"]),
-        ("C-02", "بلوك القواطع الداخلية", 151, 211, ["B-04"]), ("C-03", "العزل المائي للأسطح", 151, 170, ["B-04"]),
-        ("C-04", "العزل الحراري للأسطح", 171, 190, ["C-03"]), ("D-02", "التمديدات الكهربائية", 151, 241, ["B-04"]),
-        ("D-04", "شبكة السباكة والتصريف", 165, 256, ["B-04"]), ("D-01", "لوحات التوزيع", 212, 241, ["C-02"]),
-        ("D-03", "وحدات التكييف", 242, 287, ["D-02"]), ("E-01", "أرضيات البورسلان", 257, 303, ["C-02", "D-04"]),
-        ("E-02", "الدهانات الداخلية والخارجية", 273, 333, ["C-02"]), ("E-03", "تركيب الأبواب والنوافذ", 287, 333, ["C-01"]),
-        ("E-04", "التنظيف النهائي والتسليم", 334, 364, ["E-02", "E-01", "E-03", "D-03"]),
+        ("A-03", "تجهيز مكتب الموقع ومرافقه", 2, 13, []), ("A-07", "اختبارات التربة والخرسانة", 5, 330, []),
+        ("A-04", "الحفر العام للأساسات", 7, 27, ["A-02"]), ("A-05", "الردم بمواد مختارة", 28, 41, ["A-04"]),
+        ("A-06", "رش مبيد النمل الأبيض", 40, 44, ["A-04"]), ("B-01", "خرسانة النظافة", 42, 46, ["A-04"]),
+        ("B-02", "خرسانة القواعد المسلحة", 42, 69, ["A-04"]), ("B-06", "الخزان الأرضي", 50, 90, ["A-04"]),
+        ("B-07", "عزل الأساسات", 70, 84, ["B-02"]), ("B-03", "خرسانة الأعمدة", 70, 97, ["B-02"]),
+        ("B-04", "خرسانة الكمرات والبلاطات", 98, 150, ["B-03"]), ("B-05", "خرسانة السلالم", 105, 150, ["B-03"]),
+        ("C-01", "بلوك الجدران الخارجية", 120, 195, ["B-03"]), ("C-02", "بلوك القواطع الداخلية", 151, 211, ["B-04"]),
+        ("C-03", "العزل المائي للأسطح", 151, 170, ["B-04"]), ("C-04", "العزل الحراري للأسطح", 171, 190, ["C-03"]),
+        ("D-02", "التمديدات الكهربائية", 151, 241, ["B-04"]), ("D-04", "شبكة السباكة والتصريف", 165, 256, ["B-04"]),
+        ("C-06", "اللياسة الخارجية", 196, 240, ["C-01"]), ("D-06", "نظام إطفاء الحريق", 200, 280, ["B-04"]),
+        ("D-01", "لوحات التوزيع", 212, 241, ["C-02"]), ("C-05", "اللياسة الداخلية", 212, 270, ["C-02"]),
+        ("E-06", "كسوة الواجهات بالحجر", 241, 320, ["C-06"]), ("D-03", "وحدات التكييف", 242, 287, ["D-02"]),
+        ("D-05", "نظام إنذار الحريق", 242, 290, ["D-02"]), ("D-07", "المصعد", 250, 320, ["B-04"]),
+        ("D-09", "الشبكات وكاميرات المراقبة", 260, 310, ["D-02"]), ("E-01", "أرضيات البورسلان", 257, 303, ["C-02", "D-04"]),
+        ("E-05", "الأسقف المستعارة", 271, 320, ["C-05"]), ("E-07", "سيراميك الحمامات والمطابخ", 271, 303, ["C-05"]),
+        ("E-02", "الدهانات الداخلية والخارجية", 273, 333, ["C-05"]), ("E-03", "تركيب الأبواب والنوافذ", 287, 333, ["C-01"]),
+        ("D-08", "المولد الاحتياطي", 290, 320, ["D-01"]), ("E-08", "درابزين السلالم", 300, 330, ["B-05"]),
+        ("E-04", "التنظيف النهائي والتسليم", 334, 364,
+         ["E-02", "E-01", "E-03", "D-03", "E-05", "E-06", "E-07", "E-08", "D-05", "D-06", "D-07", "D-08", "D-09", "A-07"]),
     ]
     A, PLANNED = {}, {}
     for ref, name, ps, pf, preds in PLAN:
         A[ref] = T.add_activity(db, pid, {"name": name, "link": f"item-{I[ref]}", "planned_start": d(ps), "planned_finish": d(pf),
                                           "predecessors": [str(A[x]) for x in preds]}, eng)[0]
         PLANNED[ref] = (ps, pf, preds, name)
-    for desc, ref, share in (("دفعة الأعمال التمهيدية والحفر", "A-05", 10), ("دفعة الأساسات", "B-02", 15),
-                             ("دفعة الهيكل الخرساني", "B-04", 25), ("دفعة المباني والعزل", "C-02", 15),
-                             ("دفعة الأعمال الكهروميكانيكية", "D-03", 15), ("دفعة التشطيبات", "E-02", 15),
+    for desc, ref, share in (("دفعة الأعمال التمهيدية والحفر", "A-05", 5), ("دفعة الأساسات", "B-02", 7),
+                             ("دفعة الهيكل الخرساني", "B-04", 13), ("دفعة المباني والعزل", "C-02", 15),
+                             ("دفعة الأعمال الكهروميكانيكية", "D-03", 25), ("دفعة التشطيبات", "E-02", 30),
                              ("دفعة التسليم الابتدائي", "E-04", 5)):
         T.add_milestone(db, pid, {"description": desc, "activity_id": str(A[ref]), "share_pct": str(share)}, cost)
     T.review(db, pid, cost)
@@ -431,8 +501,9 @@ with app.test_request_context():
     ACTUAL = {  # البند: (البدء الفعلي، الانتهاء الفعلي أو None، نسبة الكمية المنفذة حتى أمس، أيام انتهاء الخطوات)
         "A-01": (0, 6, 1.0, None), "A-02": (0, 7, 1.0, None), "A-03": (2, 14, 1.0, None), "A-04": (8, 33, 1.0, None),
         "A-05": (34, 46, 1.0, None), "B-01": (44, 48, 1.0, None), "B-02": (46, 77, 1.0, None), "B-03": (78, 104, 1.0, None),
-        "B-04": (105, 162, 1.0, None), "C-01": (128, None, 0.36, [160]), "C-02": (166, None, 0.08, []),
-        "C-03": (160, 174, 1.0, [165, 171, 174]), "D-02": (160, None, 0.3, [172]), "D-04": (172, None, 0.05, []),
+        "B-04": (105, 162, 1.0, None), "C-01": (128, None, 0.36, [160]), "A-06": (40, 44, 1.0, None),
+        "A-07": (5, None, 0.8, [12, 160]), "B-05": (110, None, 0.75, [130, 150]), "B-06": (52, None, 0.85, [70, 95]), "B-07": (72, 88, 1.0, None), "C-02": (166, None, 0.08, []),
+        "C-03": (160, None, 0.85, [165, 171]), "D-02": (160, None, 0.3, [172]), "D-04": (172, None, 0.05, []),
     }
 
     def snap(n, back=True):
@@ -487,9 +558,16 @@ with app.test_request_context():
     alloc("crew", K["cnc"], "B-03", 2, 78, 104, 4, pct=50, hours=4)
     alloc("equipment", E["mix"], "B-03", 2, 78, 104, 4, pct=50, hours=4)
     alloc("equipment", E["vib"], "B-03", 2, 78, 104, 4)
-    alloc("crew", K["car"], "B-04", 0, 105, 162, 5)
-    alloc("crew", K["stl"], "B-04", 1, 105, 162, 5)
-    alloc("crew", K["cnc"], "B-04", 2, 105, 162, 5)
+    alloc("crew", K["car"], "B-04", 0, 105, 162, 5, pct=70, hours=6)
+    alloc("crew", K["stl"], "B-04", 1, 105, 162, 5, pct=70, hours=6)
+    alloc("crew", K["cnc"], "B-04", 2, 105, 162, 5, pct=70, hours=6)
+    alloc("crew", K["car"], "B-05", 0, 110, 158, 1, pct=30, hours=2)
+    alloc("crew", K["stl"], "B-05", 1, 110, 158, 1, pct=30, hours=2)
+    alloc("crew", K["cnc"], "B-05", 2, 110, 158, 1, pct=30, hours=2)
+    alloc("crew", K["ins"], "A-06", 0, 40, 44, 100)
+    alloc("subcontractor", SUB_LAB, "A-07", 0, 5, 330, 0.01, unit_rate="15000", notes="المختبر يأخذ العينات ويرسل النتائج")
+    alloc("subcontractor", SUB_DIG2, "B-06", 0, 52, 95, 2, unit_rate="900", notes="الخزان بالمواد والعمالة")
+    alloc("crew", K["ins"], "B-07", 0, 72, 88, 40)
     alloc("equipment", E["mix"], "B-04", 2, 105, 162, 5)
     alloc("equipment", E["vib"], "B-04", 2, 105, 162, 5)
     alloc("equipment", E["pmp"], "B-04", 2, 105, 162, 5, hours=0)
@@ -521,7 +599,7 @@ with app.test_request_context():
     IDLE = {9: "breakdown", 10: "breakdown", 11: "breakdown"}
     RETURN = {30: "الكمية المنفذة للحفر أعلى من محضر القياس المعتمد.", 66: "ساعات طاقم الحديد غير مطابقة لكشف الحضور.",
               108: "لم تُسجَّل الخرسانة المصبوبة اليوم.", 147: "الخطوة المسجلة لم تنتهِ فعلًا حسب زيارة الموقع."}
-    restricted = set()
+    RID = {}
     days = [n for n in range(0, LAST + 1) if working(n)]
     for n in days:
         if n == 120:
@@ -554,7 +632,7 @@ with app.test_request_context():
         if n in ISSUES:
             form.add("issues", ISSUES[n])
         author = pm if dd(n).weekday() == 3 else eng
-        rid = Y.create_report(db, pid, form, author)[0]
+        rid = RID[n] = Y.create_report(db, pid, form, author)[0]
         late = 2 if author == eng and 96 <= n < 118 else 0
         stamp("daily_reports", rid, created_at=ts(n + late, 15))
         if n in RETURN:
@@ -586,38 +664,53 @@ with app.test_request_context():
         stamp("commitments", cid, issued_at=ts(day))
         return cid
 
+    C_, N_ = "compliant", "notes"
     PO = {
+        "lab": bought("A-07", "subcontract", 1, "اختبارات التربة والخرسانة طوال المشروع في مختبر معتمد", ["spc"],
+                      [(SUB_LAB, 15000, C_), (SUB_DIG2, 17500, N_)], 2),
+        "dig": bought("A-04", "subcontract", 1800, "حفر عام للأساسات بمعدات المقاول ونقل الناتج", ["dig"],
+                      [(SUB_DIG, 22, C_), (SUB_DIG2, 24, C_)], 5),
         "fill": bought("A-05", "material", 700, "توريد مواد ردم مختارة مطابقة للمواصفات", ["dig", "spc"],
-                       [(SUP_SND, 12, "compliant"), (SUP_RMX, 13.5, "compliant")], 26),
+                       [(SUP_SND, 14, C_), (SUP_RMX, 15.5, C_)], 26),
         "lean": bought("B-01", "material", 70, "توريد خرسانة جاهزة C15 للنظافة", ["ftg", "spc"],
-                       [(SUP_RMX, 230, "compliant"), (SUP_RMX2, 245, "compliant")], 38),
+                       [(SUP_RMX, 240, C_), (SUP_RMX2, 255, C_)], 38),
         "ftg_c": bought("B-02", "material", 160, "توريد خرسانة جاهزة C30 للقواعد", ["ftg", "spc"],
-                        [(SUP_RMX, 260, "compliant"), (SUP_RMX2, 268, "compliant")], 40),
+                        [(SUP_RMX, 290, C_), (SUP_RMX2, 298, C_)], 40),
         "ftg_s": bought("B-02", "material", 160, "توريد حديد تسليح للقواعد (لكل م3 خرسانة)", ["ftg", "shd"],
-                        [(SUP_STL, 280, "compliant"), (SUP_STL2, 290, "notes")], 41),
-        "col_c": bought("B-03", "material", 85, "توريد خرسانة جاهزة C35 للأعمدة", ["col", "spc"],
-                        [(SUP_RMX, 260, "compliant"), (SUP_RMX2, 270, "compliant")], 74),
+                        [(SUP_STL, 430, C_), (SUP_STL2, 445, N_)], 41),
+        "tank": bought("B-06", "subcontract", 60, "تنفيذ الخزان الأرضي كاملًا بالمواد والعمالة", ["ftg"],
+                       [(SUB_DIG2, 900, C_), (SUB_DIG, 950, C_)], 45),
+        "bit": bought("B-07", "material", 600, "توريد عزل بيتوميني للأساسات", ["ftg", "spm"],
+                      [(SUP_INS, 12, C_), (SUP_BLK, 13, C_)], 66),
         "col_s": bought("B-03", "material", 85, "توريد حديد تسليح للأعمدة (لكل م3 خرسانة)", ["col"],
-                        [(SUP_STL, 330, "compliant"), (SUP_STL2, 340, "compliant")], 72),
+                        [(SUP_STL, 450, C_), (SUP_STL2, 465, C_)], 72),
+        "col_c": bought("B-03", "material", 85, "توريد خرسانة جاهزة C35 للأعمدة", ["col", "spc"],
+                        [(SUP_RMX, 300, C_), (SUP_RMX2, 308, C_)], 74),
         "slb_c": bought("B-04", "material", 220, "توريد خرسانة جاهزة C35 للكمرات والبلاطات مع الضخ", ["col", "spc"],
-                        [(SUP_RMX2, 258, "non_compliant"), (SUP_RMX, 262, "compliant")], 100, pick=SUP_RMX,
+                        [(SUP_RMX2, 292, "non_compliant"), (SUP_RMX, 295, C_)], 100, pick=SUP_RMX,
                         reason="العرض الأقل غير مطابق: لا يشمل الضخ ولا شهادات الاختبار."),
         "slb_s": bought("B-04", "material", 220, "توريد حديد تسليح للكمرات والبلاطات (لكل م3 خرسانة)", ["col"],
-                        [(SUP_STL, 300, "compliant"), (SUP_STL2, 310, "compliant")], 100),
+                        [(SUP_STL, 420, C_), (SUP_STL2, 435, C_)], 100),
+        "stair_s": bought("B-05", "material", 26, "توريد حديد تسليح للسلالم (لكل م3 خرسانة)", ["col"],
+                          [(SUP_STL, 450, C_), (SUP_STL2, 465, C_)], 104),
+        "stair_c": bought("B-05", "material", 26, "توريد خرسانة جاهزة C35 للسلالم", ["col", "spc"],
+                          [(SUP_RMX, 300, C_), (SUP_RMX2, 310, C_)], 106),
         "blk": bought("C-01", "material", 1100, "توريد بلوك أسمنتي 25 سم مع المونة", ["blk", "spm"],
-                      [(SUP_BLK, 28, "compliant"), (SUP_RMX2, 29.5, "compliant")], 122),
+                      [(SUP_BLK, 45, C_), (SUP_RMX2, 47, C_)], 122),
         "wpf": bought("C-03", "material", 480, "توريد لفائف عزل مائي 4 مم", ["ins", "spm"],
-                      [(SUP_INS, 22, "compliant"), (SUP_BLK, 23.5, "notes")], 152),
-        "dig": bought("A-04", "subcontract", 1800, "حفر عام للأساسات بمعدات المقاول ونقل الناتج", ["dig"],
-                      [(SUB_DIG, 15, "compliant"), (SUB_DIG2, 16.5, "compliant")], 5),
-        "ele": bought("D-02", "subcontract", 1350, "تمديدات الإنارة والقوى للطوابق الثلاثة", ["ele"],
-                      [(SUB_ELE, 30, "compliant"), (SUB_ELE2, 32, "compliant")], 155),
+                      [(SUP_INS, 32, C_), (SUP_BLK, 34, N_)], 152),
+        "ele": bought("D-02", "subcontract", 1200, "تمديدات الإنارة والقوى للطوابق الثلاثة", ["ele"],
+                      [(SUB_ELE, 90, C_), (SUB_ELE2, 96, C_)], 155),
     }
 
     # ---------- الاستلام والفواتير والمستخلصات والصرف (4.7) ----------
+    GRN = []
+
     def receive(key, day, qty):
         code = X.add_receipt(db, pid, {"commitment_id": str(PO[key]), "received_on": d(day), "qty": str(qty)}, eng)
-        stamp("goods_receipts", one("SELECT id FROM goods_receipts WHERE code = ?", code), created_at=ts(day, 13))
+        gid = one("SELECT id FROM goods_receipts WHERE code = ?", code)
+        stamp("goods_receipts", gid, created_at=ts(day, 13))
+        GRN.append((key, gid, day))
 
     def payable(form, day, approve=True, paid=None):
         code = X.raise_payable(db, pid, form, eng)
@@ -636,6 +729,12 @@ with app.test_request_context():
     def invoice(key, qty, day, ref, **kw):
         return payable({"commitment_id": str(PO[key]), "qty": str(qty), "vendor_ref": ref}, day, **kw)
 
+    receive("bit", 70, 600)
+    invoice("bit", 600, 71, "INS-0655", paid=100)
+    receive("stair_s", 108, 26)
+    invoice("stair_s", 26, 110, "STL-5733", paid=140)
+    receive("stair_c", 120, 26)
+    invoice("stair_c", 26, 122, "RMX-9122", paid=152)
     receive("fill", 34, 400)
     receive("fill", 38, 300)
     invoice("fill", 700, 40, "SND-2214", paid=70)
@@ -664,13 +763,19 @@ with app.test_request_context():
     receive("wpf", 158, 480)
     invoice("wpf", 480, 160, "INS-0712")
 
+    SPC = []
+
     def certificate(key, qty, start, end, day, **kw):
+        SPC.append((end, day))
         return payable({"commitment_id": str(PO[key]), "qty": str(qty), "period_from": d(start), "period_to": d(end),
                         "retention_pct": "10"}, day, **kw)
 
     certificate("dig", 1000, 8, 20, 22, paid=52)
     certificate("dig", 800, 21, 33, 35, paid=65)
-    certificate("ele", 400, 160, LAST - 1, LAST)
+    certificate("tank", 30, 52, 75, 77, paid=100)
+    certificate("tank", 20, 76, 95, 97, paid=125)
+    certificate("lab", 0.5, 5, 90, 92, paid=120)
+    certificate("ele", 350, 160, LAST - 1, LAST)
 
     # ---------- مستخلصات المالك والتحصيل (4.8) ----------
     def ipc(ref, day, submit, certify=None, amount=None, collect=None):
@@ -685,9 +790,9 @@ with app.test_request_context():
         if collect is not None:
             B.advance(db, pid, oid, "collect", {"on": d(collect)}, acc)
 
-    ipc("A-05", 47, 49, 63, "100,000", 95)
-    ipc("B-02", 78, 80, 98, "145,000", 134)
-    ipc("B-04", 163, 165, 172, "250,000")
+    ipc("A-05", 47, 49, 63, "200,000", 95)
+    ipc("B-02", 78, 80, 98, "275,000", 134)
+    ipc("B-04", 163, 165, 172, "520,000")
 
     # ---------- طلبات التغيير (4.9) ----------
     def cr(kind, source, desc, ref, amount, days, day):
@@ -697,32 +802,32 @@ with app.test_request_context():
         stamp("change_requests", cid, created_at=ts(day))
         return cid
 
-    c1 = cr("internal", "company", "زيادة سماكة خرسانة النظافة إلى 10 سم حسب ملاحظة الاستشاري", "B-01", "2,000", 0, 40)
+    c1 = cr("internal", "company", "زيادة سماكة خرسانة النظافة إلى 10 سم حسب ملاحظة الاستشاري", "B-01", "8,000", 0, 40)
     CH.advance(db, pid, c1, pm, "pm")
     CH.advance(db, pid, c1, cost, "cc")
-    c2 = cr("contractual", "owner", "إضافة مظلات سيارات معدنية في الموقف الخارجي بطلب المالك", "E-04", "38,500", 12, 150)
+    c2 = cr("contractual", "owner", "إضافة مظلات سيارات معدنية في الموقف الخارجي بطلب المالك", "E-04", "150,000", 12, 150)
     CH.advance(db, pid, c2, pm, "pm")
     CH.advance(db, pid, c2, cost, "cc")
     CH.advance(db, pid, c2, director, "director")
-    cr("internal", "company", "تغيير بلوك القواطع إلى بلوك معزول لتحسين العزل الصوتي", "C-02", "6,500", 0, LAST - 1)
+    cr("internal", "company", "تغيير بلوك القواطع إلى بلوك معزول لتحسين العزل الصوتي", "C-02", "18,000", 0, LAST - 1)
     v, _ = C.add_variation_order(db, con["id"], {"description": "استبدال الدهانات الخارجية بدهان مقاوم للحرارة بطلب الاستشاري",
-                                                 "issued_on": d(120), "value_delta": "9,600", "days_delta": "0"}, cost)
+                                                 "issued_on": d(120), "value_delta": "36,000", "days_delta": "0"}, cost)
     C.decide_variation_order(db, con["id"], v, "approved", "", director)
 
     # ---------- التأخير والإنذار المبكر والتعافي (4.5، 4.6) ----------
-    G.set_overhead(db, pid, "1,200", cost)
+    G.set_overhead(db, pid, "4,500", cost)
     for act, days_, cause, who, day in (("A-04", "3", "تعطل الحفار الرئيسي وانتظار قطعة الغيار", "company", 15),
                                         ("B-02", "4", "تأخر اعتماد الاستشاري لمخطط تسليح القاعدة ق3 المعدّل", "consultant", 55),
                                         ("C-01", "6", "نقص عمالة المباني بسبب الإجازات", "company", 142)):
         code = G.record_delay(db, pid, {"activity_id": str(A[act]), "days": days_, "cause": cause, "responsible": who}, cost)
         stamp("delays", one("SELECT id FROM delays WHERE code = ?", code), created_at=ts(day))
     p1 = G.add_plan(db, pid, {"option": "overtime", "description": "وردية مسائية لطاقم المباني لمدة ثلاثة أسابيع",
-                              "days_saved": "8", "extra_cost": "9,000"}, pm)
+                              "days_saved": "8", "extra_cost": "35,000"}, pm)
     p1 = one("SELECT id FROM recovery_plans WHERE code = ?", p1)
     G.decide_plan(db, pid, p1, "approve", "", cost)
     G.decide_plan(db, pid, p1, "approve", "", director, director=True)
     p2 = G.add_plan(db, pid, {"option": "resources", "description": "تشغيل طاقم المباني الثاني على القواطع بالتوازي",
-                              "days_saved": "10", "extra_cost": "14,000"}, pm)
+                              "days_saved": "10", "extra_cost": "48,000"}, pm)
     G.decide_plan(db, pid, one("SELECT id FROM recovery_plans WHERE code = ?", p2), "approve", "", cost)
 
     # ---------- إعادة التخطيط بمراجعة خط الأساس (4.5) ----------
@@ -754,6 +859,52 @@ with app.test_request_context():
     else:
         print("file storage is off: signed copies skipped")
 
+    # ---------- تقارير المهندس: نص وملفات PDF (قرار م. محمد 2026-10-26) ----------
+    def report(kind, doc_id, day, text=None, title=None):
+        data = pdf("AZM - engineer report (demo data)", title) if title and files.enabled() else None
+        if not text and data is None:
+            return
+        AT.add(db, pid, kind, doc_id, text, io.BytesIO(data) if data else None, f"{title}.pdf" if data else None, eng)
+        with tx(db):
+            db.execute("UPDATE attachments SET created_at = ? WHERE id = (SELECT MAX(id) FROM attachments)", (ts(day, 16),))
+
+    NAMES = {ref: name for ref, name, *_rest in PLAN}
+    for n, rid in RID.items():
+        code = one("SELECT code FROM daily_reports WHERE id = ?", rid)
+        active = [NAMES[ref] for ref, ds in ACT_DAYS.items() if n in ds]
+        steps = [r[0] for r in db.execute("SELECT s.name FROM dsr_steps x JOIN scope_steps s ON s.id = x.step_id "
+                                          "WHERE x.report_id = ?", (rid,))]
+        if steps:
+            report("dsr", rid, n, "انتهت اليوم: " + "، ".join(steps) + ". استلمها مهندس الاستشاري بعد المعاينة، "
+                   "ومحضر الاستلام مرفق.", f"{code} inspection record" if n % 3 == 0 else None)
+        elif n in ISSUES:
+            report("dsr", rid, n, ISSUES[n] + " أُبلغ مدير المشروع، والتفاصيل في التقرير الفني المرفق.", f"{code} technical note")
+        elif dd(n).weekday() == 3:
+            report("dsr", rid, n, f"ملخص الأسبوع حتى {d(n)}: العمل مستمر في " + "، ".join(active)
+                   + ". لا حوادث، والطقس مناسب، ونسبة الحضور مطابقة لكشف العمالة.")
+    for key, cid in PO.items():
+        r = db.execute("SELECT r.id, r.code, r.qty_milli, r.unit, r.created_at FROM purchase_requests r JOIN commitments c "
+                       "ON c.request_id = r.id WHERE c.id = ?", (cid,)).fetchone()
+        day = (date.fromisoformat(str(r["created_at"])[:10]) - START).days
+        report("pr", r["id"], day, f"حصر الكمية من المخطط المعتمد: {r['qty_milli'] / 1000:g} {r['unit']}، مع نسبة هالك محسوبة "
+               "في سعر التوريد. العروض المستلمة راجعتها المشتريات.", f"{r['code']} quantity take-off"
+               if key in ("ftg_c", "ftg_s", "slb_c", "slb_s", "tank", "ele") else None)
+    report("cr", c1, 40, "ملاحظة الاستشاري على مخطط S-201 تطلب سماكة 10 سم لخرسانة النظافة بدل 7 سم، والفرق محسوب "
+           "على كمية القواعد.")
+    report("cr", c2, 150, "خطاب المالك يطلب مظلات سيارات معدنية لعدد 24 موقفًا، والسعر من عرض مقاول الباطن مع هامش الشركة.",
+           "CR owner letter and quotation")
+    for (end, day), xid in zip(SPC, [r[0] for r in db.execute(
+            "SELECT id FROM payables WHERE project_id = ? AND kind = 'certificate' ORDER BY id", (pid,))]):
+        code = one("SELECT code FROM payables WHERE id = ?", xid)
+        report("payable", xid, day, f"الكمية من محضر القياس المعتمد من الاستشاري حتى {d(end)}، ومطابقة للكميات في التقارير "
+               "اليومية المعتمدة.", f"{code} measurement sheet")
+    for key, gid, day in GRN:
+        report("grn", gid, day, "تم الاستلام ومطابقة الكمية لإشعار التسليم، وأُخذت العينات للمختبر.",
+               f"{one('SELECT code FROM goods_receipts WHERE id = ?', gid)} mill certificate" if key.endswith("_s") else None)
+    print("engineer reports:", one("SELECT COUNT(*) FROM attachments WHERE project_id = ?", pid),
+          "| with PDF:", one("SELECT COUNT(*) FROM attachments WHERE project_id = ? AND storage_key IS NOT NULL", pid))
+
     from app import performance
     m = performance.indicators(db, pid)["project"]
-    print("project:", pcode, "| progress:", m["progress"] / 100, "% | SPI:", m["spi"], "| CPI:", m["cpi"], "| status:", m["status"])
+    print("project:", pcode, "| BOQ:", one("SELECT SUM(amount) FROM boq_items WHERE project_id = ?", pid) / 100,
+          "| progress:", m["progress"] / 100, "% | SPI:", m["spi"], "| CPI:", m["cpi"], "| status:", m["status"])

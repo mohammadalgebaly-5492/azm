@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Engineer reports') }} · {{ d.code }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <div class="eyebrow"><a class="crumb" href="{{ back }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+  <h1>{{ _('Engineer reports') }}</h1>
+  <p class="lead keep">{{ _(title) }} <span class="code">{{ d.code }}</span></p>
+</div></header>
+{% set rep_kind, rep_id = kind, d.id %}
+{% include "attachments/_section.html" %}
+{% endblock %}

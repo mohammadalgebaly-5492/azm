@@ -73,8 +73,9 @@
   <div class="card-head"><div><h2>{{ _('Certificates and invoices') }}</h2><p>{{ _('Up to 10,000 SAR the cost control engineer approves alone; above it the Director approves too. Accounting pays after approval.') }}</p></div><span class="count">{{ rows|length }}</span></div>
   {% if rows %}<div class="table-wrap"><table>
     <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Order or subcontract') }}</th><th class="num">{{ _('Value of works') }}</th><th class="num">{{ _('Deductions') }}</th><th class="num">{{ _('Net due') }}</th><th>{{ _('Status') }}</th><th>{{ _('Signed copy') }}</th><th></th></tr></thead>
+    {% set rc = report_counts(p.id, 'payable') %}
     <tbody>{% for x in rows %}<tr>
-      <td class="code">{{ x.code }}<span class="sub">{{ _(KINDS[x.kind]) }}</span></td>
+      <td class="code">{{ x.code }}<span class="sub">{{ _(KINDS[x.kind]) }}</span><a class="sub" href="{{ url_for('attachments.page', pid=p.id, kind='payable', doc_id=x.id) }}">{{ icon('file', 13) }} {{ _('Engineer reports') }} ({{ rc.get(x.id, 0) }})</a></td>
       <td><span class="code">{{ x.order_code }}</span><span class="sub">{{ x.entity_name }}</span></td>
       <td class="num">{{ money(x.gross) }}<span class="sub">{{ fmt_qty(x.qty_milli) }}</span></td>
       <td class="num">{{ money(x.retention + x.advance + x.deductions) }}{% if x.deduction_note %}<span class="sub">{{ x.deduction_note }}</span>{% endif %}</td>
@@ -98,7 +99,8 @@
 {% if receipts %}
 <section class="card flush"><div class="card-head"><h2>{{ _('Goods receipts') }}</h2></div>
   <div class="table-wrap"><table><thead><tr><th>{{ _('Code') }}</th><th>{{ _('Purchase order') }}</th><th>{{ _('Date') }}</th><th class="num">{{ _('Quantity') }}</th></tr></thead>
-    <tbody>{% for r in receipts %}<tr><td class="code">{{ r.code }}</td><td class="code">{{ r.order_code }}</td><td class="num">{{ r.received_on|string|truncate(10, True, '') }}</td><td class="num">{{ fmt_qty(r.qty_milli) }}</td></tr>{% endfor %}</tbody></table></div>
+    {% set rc = report_counts(p.id, 'grn') %}
+    <tbody>{% for r in receipts %}<tr><td class="code">{{ r.code }}<a class="sub" href="{{ url_for('attachments.page', pid=p.id, kind='grn', doc_id=r.id) }}">{{ icon('file', 13) }} {{ _('Engineer reports') }} ({{ rc.get(r.id, 0) }})</a></td><td class="code">{{ r.order_code }}</td><td class="num">{{ r.received_on|string|truncate(10, True, '') }}</td><td class="num">{{ fmt_qty(r.qty_milli) }}</td></tr>{% endfor %}</tbody></table></div>
 </section>
 {% endif %}
 {% endblock %}

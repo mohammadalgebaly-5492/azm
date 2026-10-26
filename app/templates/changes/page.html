@@ -11,8 +11,9 @@
   <div class="card-head"><div><h2>{{ _('Requests') }}</h2><p>{{ _('Project engineer, then project manager, then cost control studies the impact and approves internal changes up to 10,000 SAR; the Director approves above it and every contractual change.') }}</p></div><span class="count">{{ rows|length }}</span></div>
   {% if rows %}<div class="table-wrap"><table>
     <thead><tr><th>{{ _('Request') }}</th><th>{{ _('Type') }}</th><th>{{ _('Affected items') }}</th><th class="num">{{ _('Cost impact') }}</th><th class="num">{{ _('Days') }}</th><th>{{ _('Status') }}</th><th></th></tr></thead>
+    {% set rc = report_counts(p.id, 'cr') %}
     <tbody>{% for r in rows %}<tr>
-      <td><span class="code">{{ r.code }}</span><span class="sub">{{ r.description }}</span>{% if r.resource_impact %}<span class="sub">{{ r.resource_impact }}</span>{% endif %}</td>
+      <td><span class="code">{{ r.code }}</span><span class="sub">{{ r.description }}</span><a class="sub" href="{{ url_for('attachments.page', pid=p.id, kind='cr', doc_id=r.id) }}">{{ icon('file', 13) }} {{ _('Engineer reports') }} ({{ rc.get(r.id, 0) }})</a>{% if r.resource_impact %}<span class="sub">{{ r.resource_impact }}</span>{% endif %}</td>
       <td>{{ _(KINDS[r.kind]) }}<span class="sub">{{ _(SOURCES[r.source]) }}</span></td>
       <td>{% for x in items[r.id] %}<span class="code">{{ x.code }}</span>{% if x.amount %} <span class="num">{{ money(x.amount) }}</span>{% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
       <td class="num">{{ money(r.cost_impact) }}</td><td class="num">{{ '%+d'|format(r.days_impact) if r.days_impact else '0' }}</td>

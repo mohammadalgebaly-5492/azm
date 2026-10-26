@@ -466,6 +466,9 @@ html.loading .app::before { content: ""; position: fixed; top: 0; inset-inline: 
 .org-card span { color: var(--muted); font-size: 13px; }
 .org-end { display: inline-flex; gap: 6px; align-items: center; }
 .org-end input { width: 150px; }
+.reports li + li { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+.report-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: 13px; color: var(--muted); }
+.report-meta b { color: var(--ink); font-weight: 600; }
 .prose { white-space: pre-line; margin-top: 14px; color: var(--ink-2); font-size: 14px; line-height: 1.8; }
 .row-form { display: flex; flex-direction: column; gap: 10px; width: 300px; max-width: 80vw; text-align: start; white-space: normal; }
 .row-form [hidden] { display: none; }

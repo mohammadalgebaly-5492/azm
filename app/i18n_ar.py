@@ -2146,4 +2146,16 @@ AR = {
     # حالة النسخة الموقّعة، وأمر الشراء
     "Accepted": "مقبولة",
     "Purchase order": "أمر الشراء",
+    # تقارير المهندس
+    "Add the report": "إضافة التقرير",
+    "Certificate or invoice": "مستخلص أو فاتورة",
+    "Engineer report added": "إضافة تقرير مهندس",
+    "Engineer report added.": "أُضيف تقرير المهندس.",
+    "Engineer reports": "تقارير المهندس",
+    "No engineer reports yet.": "لا توجد تقارير مهندس بعد.",
+    "PDF file": "ملف PDF",
+    "Purchase request": "طلب شراء",
+    "Text, a PDF file or both. Reports are added and never deleted.": "نص أو ملف PDF أو كلاهما. تُضاف التقارير ولا تُحذف.",
+    "The report text is longer than {n} characters.": "نص التقرير أطول من {n} حرف.",
+    "Write the report or choose a PDF file.": "اكتب التقرير أو اختر ملف PDF.",
 }

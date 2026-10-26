@@ -56,4 +56,6 @@
   {% else %}<div class="empty"><p>{{ _('No people, crews or equipment are recorded for this day.') }}</p></div>{% endif %}
 </section>
 {% if r.issues %}<section class="card"><div class="card-head"><h2>{{ _('Obstacles and problems') }}</h2></div><p class="prose">{{ r.issues }}</p></section>{% endif %}
+{% set rep_kind, rep_id = 'dsr', r.id %}
+{% include "attachments/_section.html" %}
 {% endblock %}
