@@ -74,6 +74,8 @@ PERMISSIONS = {
     "changes.request": ("Raise and review change requests",
                         "Raise a change request on the project plan, or review one raised by another engineer."),
     "project.lead": ("Lead the project", "Approve the plan at kickoff, prepare recovery plans, and write the closeout lessons."),
+    "stores.manage": ("Manage the company store",
+                      "Receive scaffolding into the main store, issue it to projects, take it back, and record damaged or lost pieces."),
     "registers.manage": ("Manage shared registers",
                          "Owners, consultants and subcontractors with their addresses and people, and the lookup lists."),
 }
@@ -81,7 +83,7 @@ PERMISSION_GROUPS = (
     ("Projects", ("projects.view_all", "projects.create", "projects.manage", "boq.manage", "documents.manage",
                   "schedule.manage", "changes.request", "project.lead",
                   "changes.approve")),
-    ("Procurement", ("procurement.request", "procurement.quotes", "procurement.select", "procurement.approve")),
+    ("Procurement", ("procurement.request", "procurement.quotes", "procurement.select", "procurement.approve", "stores.manage")),
     ("Payments", ("payables.raise", "payables.approve", "payables.pay", "billing.prepare")),
     ("Analytics", ("analytics.view",)),
     ("Registers", ("registers.manage",)),

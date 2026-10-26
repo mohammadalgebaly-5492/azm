@@ -1,0 +1,6 @@
+{# حقول حركة سقالات مشتركة: المكوّن والعدد والتاريخ، والبند عند الحاجة. #}
+{% set date_attrs = 'data-placeholder="' ~ _('Select a date') ~ '" data-today="' ~ _('Today') ~ '" data-clear="' ~ _('Clear') ~ '"' %}
+<div class="field"><label for="{{ fid }}_part" class="req">{{ _('Component') }}</label><select id="{{ fid }}_part" name="material_code" required>{% for c in parts %}<option value="{{ c.code }}">{{ label(c) }} · {{ c.code }}</option>{% endfor %}</select></div>
+<div class="field"><label for="{{ fid }}_qty" class="req">{{ _('Pieces') }}</label><input id="{{ fid }}_qty" name="qty" dir="ltr" inputmode="numeric" required></div>
+<div class="field"><label for="{{ fid }}_on" class="req">{{ _('Date') }}</label><input id="{{ fid }}_on" name="on_date" type="date" required {{ date_attrs|safe }}></div>
+{% if with_item %}<div class="field wide"><label for="{{ fid }}_item" class="req">{{ _('BOQ item') }}</label><select id="{{ fid }}_item" name="boq_item_id" required>{% for b in items.values() %}<option value="{{ b.id }}">{{ b.code }} · {{ b.description }}</option>{% endfor %}</select></div>{% endif %}

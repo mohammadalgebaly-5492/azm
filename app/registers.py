@@ -18,7 +18,10 @@ CATALOGS = {
     "job_title": ("Job titles", "Job titles for people and for positions in a project's organization chart."),
     "equipment_type": ("Equipment types", "The main classes of equipment."),
     "equipment": ("Equipment catalog", "Equipment names. Each name belongs to one equipment type."),
+    "material_type": ("Material types", "The main classes of construction and finishing materials."),
+    "material": ("Materials catalog", "Material names with their unit. Each material belongs to one material type."),
 }
+PARENT = {"equipment": "equipment_type", "material": "material_type"}  # الدليل الفرعي ← دليل أنواعه
 COST_UNITS = {"day": "Daily", "hour": "Hourly"}
 
 # أنواع الجهات: المفتاح ← (الاسم، بادئة الكود)
@@ -62,15 +65,22 @@ def _clean_catalog(db, kind, form, item_id=None):
     if db.execute("SELECT 1 FROM catalog_items WHERE kind = ? AND code = ? AND id != ?",
                   (kind, code, item_id or 0)).fetchone():
         raise AuthError(_("Another entry in this list already uses this code."))
-    data = {"code": code, "name_ar": name_ar, "name_en": name_en, "parent_code": None, "cost_unit": None}
-    if kind == "equipment":
+    data = {"code": code, "name_ar": name_ar, "name_en": name_en, "parent_code": None, "cost_unit": None, "unit_code": None}
+    if kind in PARENT:
         parent = (form.get("parent_code") or "").strip()
-        if parent not in {r["code"] for r in catalog(db, "equipment_type", active_only=True)}:
-            raise AuthError(_("Choose the equipment type."))
+        if parent not in {r["code"] for r in catalog(db, PARENT[kind], active_only=True)}:
+            raise AuthError(_("Choose the equipment type.") if kind == "equipment" else _("Choose the material type."))
+        data["parent_code"] = parent
+    if kind == "equipment":
         cost_unit = form.get("cost_unit") or ""
         if cost_unit not in COST_UNITS:
             raise AuthError(_("Choose the cost unit."))
-        data.update(parent_code=parent, cost_unit=cost_unit)
+        data["cost_unit"] = cost_unit
+    if kind == "material":
+        unit = (form.get("unit_code") or "").strip()
+        if unit not in {r["code"] for r in catalog(db, "unit", active_only=True)}:
+            raise AuthError(_("Choose the unit."))
+        data["unit_code"] = unit
     return data
 
 
@@ -79,9 +89,9 @@ def add_catalog_item(db, kind, form, actor_id) -> int:
     sort = (db.execute("SELECT MAX(sort) FROM catalog_items WHERE kind = ?", (kind,)).fetchone()[0] or 0) + 10
     with tx(db):
         iid = db.execute(
-            "INSERT INTO catalog_items(kind, code, name_ar, name_en, parent_code, cost_unit, sort) "
-            "VALUES (?,?,?,?,?,?,?) RETURNING id",
-            (kind, data["code"], data["name_ar"], data["name_en"], data["parent_code"], data["cost_unit"], sort)
+            "INSERT INTO catalog_items(kind, code, name_ar, name_en, parent_code, cost_unit, unit_code, sort) "
+            "VALUES (?,?,?,?,?,?,?,?) RETURNING id",
+            (kind, data["code"], data["name_ar"], data["name_en"], data["parent_code"], data["cost_unit"], data["unit_code"], sort)
         ).fetchone()[0]
         audit.log(db, actor_id, "catalog_item_added", "catalog", iid, list=kind, **{k: v for k, v in data.items() if v})
     return iid

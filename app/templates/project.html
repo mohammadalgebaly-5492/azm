@@ -77,6 +77,10 @@
       <div><b>{{ _('Project resources') }}</b><br><span class="muted">{{ _('Organization chart, and the people, crews, equipment and subcontractors allocated to each item.') }}</span></div>
       <a class="btn" href="{{ url_for('resources.project', pid=p.id) }}">{{ icon('users', 16) }} {{ _('Open resources') }}</a>
     </div>
+    <div class="boq-summary">
+      <div><b>{{ _('Scaffolding') }}</b><br><span class="muted">{{ _('Components with the project, on site and installed, and their daily rent in the actual cost.') }}</span></div>
+      <a class="btn" href="{{ url_for('stores.project', pid=p.id) }}">{{ icon('table', 16) }} {{ _('Open scaffolding') }}</a>
+    </div>
   </section>
   <section class="card" id="team">
     <div class="card-head"><h2>{{ _('Project team') }}</h2><span class="count">{{ team|length }}</span></div>

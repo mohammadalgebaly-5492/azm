@@ -12,13 +12,14 @@
   <div class="card-head"><div><h2>{{ _(CATALOGS[kind][0]) }}</h2><p>{{ _(CATALOGS[kind][1]) }}</p></div><span class="count">{{ rows|length }}</span></div>
   {% if rows %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Name (Arabic)') }}</th><th>{{ _('Name (English)') }}</th>{% if kind == 'equipment' %}<th>{{ _('Equipment type') }}</th><th>{{ _('Cost unit') }}</th>{% endif %}<th>{{ _('Status') }}</th><th></th></tr></thead>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Name (Arabic)') }}</th><th>{{ _('Name (English)') }}</th>{% if kind == 'equipment' %}<th>{{ _('Equipment type') }}</th><th>{{ _('Cost unit') }}</th>{% elif kind == 'material' %}<th>{{ _('Material type') }}</th><th>{{ _('Unit') }}</th>{% endif %}<th>{{ _('Status') }}</th><th></th></tr></thead>
     <tbody>{% for r in rows %}
       <tr>
         <td class="code">{{ r.code }}</td>
         <td lang="ar" dir="rtl">{{ r.name_ar }}</td>
         <td lang="en" dir="ltr">{{ r.name_en }}</td>
-        {% if kind == 'equipment' %}<td>{{ types.get(r.parent_code, r.parent_code) }}</td><td>{{ _(COST_UNITS[r.cost_unit]) if r.cost_unit in COST_UNITS else '—' }}</td>{% endif %}
+        {% if kind == 'equipment' %}<td>{{ types.get(r.parent_code, r.parent_code) }}</td><td>{{ _(COST_UNITS[r.cost_unit]) if r.cost_unit in COST_UNITS else '—' }}</td>
+        {% elif kind == 'material' %}<td>{{ types.get(r.parent_code, r.parent_code) }}</td><td>{{ units.get(r.unit_code, r.unit_code or '—') }}</td>{% endif %}
         <td>{% if r.active %}<span class="pill ok">{{ _('Active') }}</span>{% else %}<span class="pill bad">{{ _('Stopped') }}</span>{% endif %}</td>
         <td class="cell-actions">
           <a class="btn btn-ghost btn-icon" href="{{ url_for('registers.catalog_edit', iid=r.id) }}" title="{{ _('Edit') }}" aria-label="{{ _('Edit') }}">{{ icon('edit', 16) }}</a>
@@ -39,6 +40,12 @@
       <input name="name_ar" required dir="rtl" lang="ar" placeholder="{{ _('Name (Arabic)') }}" aria-label="{{ _('Name (Arabic)') }}">
       <input name="name_en" required dir="ltr" lang="en" placeholder="{{ _('Name (English)') }}" aria-label="{{ _('Name (English)') }}">
     </div>
+    {% if kind == 'material' %}
+    <div class="searchbar">
+      <select name="parent_code" required aria-label="{{ _('Material type') }}">{% for t in active_types %}<option value="{{ t.code }}">{{ label(t) }}</option>{% endfor %}</select>
+      <select name="unit_code" required aria-label="{{ _('Unit') }}">{% for u in active_units %}<option value="{{ u.code }}">{{ label(u) }}</option>{% endfor %}</select>
+    </div>
+    {% endif %}
     {% if kind == 'equipment' %}
     <div class="searchbar">
       <select name="parent_code" required aria-label="{{ _('Equipment type') }}">{% for t in active_types %}<option value="{{ t.code }}">{{ label(t) }}</option>{% endfor %}</select>

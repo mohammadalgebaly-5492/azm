@@ -23,7 +23,8 @@ sys.path.insert(0, ".")
 from wsgi import app  # noqa: E402
 from app import (attachments as AT, authority as AU, billing as B, boq, changes as CH, contracts as C, daily as Y, documents as D,  # noqa: E402
                  files, governance as G, payables as X, pricing as PRC, procurement as Q, projects, registers as R,
-                 resources as S, schedule as T, scope as W, signed as SG)
+                 resources as S, schedule as T, scope as W, signed as SG,
+                 stores as ST)
 from app.db import connect, tx  # noqa: E402
 
 TAG = "(بيانات تجريبية)"
@@ -706,6 +707,33 @@ with app.test_request_context():
         "ele": bought("D-02", "subcontract", 1200, "تمديدات الإنارة والقوى للطوابق الثلاثة", ["ele"],
                       [(SUB_ELE, 90, C_), (SUB_ELE2, 96, C_)], 155),
     }
+
+    # ---------- السقالات: المخزن الرئيسي والموقع (طلب م. محمد 2026-10-26) ----------
+    def scf(kind, code, qty, day, ref=None, place=None, reason=None):
+        ST.record(db, {"kind": kind, "material_code": code, "qty": str(qty), "on_date": d(day), "place": place or "",
+                       "boq_item_id": str(I[ref]) if ref else "", "reason": reason or ""},
+                  eng if kind in ("install", "dismantle") or place in ("site", "use") else buyer, pid if ref else None)
+
+    OPENING = {"STD": 800, "ST2": 300, "ST1": 200, "LDG": 1200, "LD8": 500, "LD2": 400, "TRS": 600, "BRC": 300, "BJK": 500,
+               "UHD": 400, "BWD": 600, "SBD": 200, "TBD": 300, "TUB": 200, "FXC": 600, "SWC": 300, "LAD": 20}
+    for code, n in OPENING.items():
+        scf("receive", code, n, -30, reason=f"رصيد افتتاحي للمخزن الرئيسي {TAG}")
+    scf("loss", "BWD", 15, -10, place="store", reason="تلف ألواح خشبية بسبب الرطوبة في المخزن")
+    SHORING = {"STD": 400, "ST2": 150, "LDG": 500, "BJK": 300, "UHD": 300, "BRC": 120}  # دعم شدات البلاطات
+    for code, n in SHORING.items():
+        scf("issue", code, n, 100, "B-04")
+        scf("install", code, n, 101, "B-04")
+        scf("dismantle", code, n, 160, "B-04")
+    for code, n in {"STD": 250, "ST2": 100, "LDG": 300, "BJK": 200, "UHD": 300, "BRC": 80}.items():
+        scf("return", code, n, 165, "B-04")
+    FACADE = {"STD": (200, 180), "LDG": (350, 300), "TRS": (250, 220), "BRC": (80, 70), "BJK": (100, 90), "BWD": (300, 260),
+              "TBD": (150, 140), "LAD": (6, 6)}  # سقالة الواجهات لأعمال البلوك الخارجي
+    for code, (n, used) in FACADE.items():
+        scf("issue", code, n, 126, "C-01")
+        scf("install", code, used, 128, "C-01")
+    scf("loss", "BWD", 12, 150, "C-01", place="use", reason="تكسر ألواح ممرات أثناء نقل البلوك على السقالة")
+    print("scaffolding moves:", one("SELECT COUNT(*) FROM stock_moves WHERE project_id = ?", pid),
+          "| rent to date:", sum(ST.cost_by_item(db, pid).values()) / 100)
 
     # ---------- الاستلام والفواتير والمستخلصات والصرف (4.7) ----------
     GRN = []

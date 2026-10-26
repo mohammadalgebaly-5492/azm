@@ -43,6 +43,7 @@
            ('admin.project_new', _('New project'), 'projects.create', ())]) }}
       {{ nav_item('changes.tasks', _('My tasks'), 'check') }}
       {% if can('projects.manage') or can('changes.approve') %}{{ nav_item('daily.engineers', _('Engineer performance'), 'activity') }}{% endif %}
+      {% if can('stores.manage') or can('projects.manage') or can('changes.approve') %}{{ nav_item('stores.page', _('Main store'), 'table') }}{% endif %}
       {% if can('analytics.view') %}{{ nav_item('main.analytics', _('Analytics'), 'chart') }}{% endif %}
       {{ nav_tree('registers', _('Registers'), 'building', [
            ('registers.entities', _('Entities'), 'registers.manage', ('registers.entity_new', 'registers.entity_edit', 'registers.person_edit')),

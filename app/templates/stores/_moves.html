@@ -1,0 +1,14 @@
+{# سجل حركات السقالات. #}
+<section class="card flush" id="moves">
+  <div class="card-head"><div><h2>{{ _('Movements') }}</h2><p>{{ _('Every movement is recorded with the name of whoever made it.') }}</p></div><span class="count">{{ moves|length }}</span></div>
+  {% if moves %}<div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Code') }}</th><th>{{ _('Date') }}</th><th>{{ _('Movement') }}</th><th>{{ _('Component') }}</th><th class="num">{{ _('Pieces') }}</th><th>{{ _('Project and item') }}</th><th>{{ _('Recorded by') }}</th></tr></thead>
+    <tbody>{% for m in moves %}<tr>
+      <td class="code">{{ m.code }}</td><td class="num">{{ m.on_date|string|truncate(10, True, '') }}</td>
+      <td>{{ _(KINDS[m.kind]) }}{% if m.place %}<span class="sub">{{ _(PLACES[m.place]) }}</span>{% endif %}{% if m.reason %}<span class="sub">{{ m.reason }}</span>{% endif %}</td>
+      <td>{{ names.get(m.material_code, m.material_code) }}<span class="sub code">{{ m.material_code }}</span></td><td class="num">{{ m.qty }}</td>
+      <td>{% if m.project_code %}<span class="code">{{ m.project_code }}</span><span class="sub code">{{ m.item_code }}</span>{% else %}{{ _('Main store') }}{% endif %}</td>
+      <td>{{ m.full_name }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+  {% else %}<div class="empty"><p>{{ _('No movements yet.') }}</p></div>{% endif %}
+</section>

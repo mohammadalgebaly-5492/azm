@@ -73,8 +73,10 @@ def table_strings():
     out |= set(LEVELS.values())
     from app.periodic import KINDS as REPORT_KINDS
     from app.attachments import DOCS as REPORT_DOCS
+    from app.stores import KINDS as STOCK_KINDS, PLACES as STOCK_PLACES
     from app.signed import STATUS as SIGNED_STATUS
     out |= set(REPORT_KINDS.values()) | set(SIGNED_STATUS.values()) | {v[2] for v in REPORT_DOCS.values()}
+    out |= set(STOCK_KINDS.values()) | set(STOCK_PLACES.values())
     return out
 
 

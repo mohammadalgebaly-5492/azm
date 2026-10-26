@@ -43,10 +43,12 @@ def _measure(bac, pv, ev, ac):
 
 
 def actual_cost(db, pid, until=None) -> dict[int, int]:
-    """التكلفة الفعلية لكل بند: الموارد من التقارير اليومية المعتمدة، والمستخلصات والفواتير المعتمدة."""
+    """التكلفة الفعلية لكل بند: الموارد من التقارير اليومية المعتمدة، والمستخلصات والفواتير المعتمدة، وإيجار السقالات."""
+    from .stores import cost_by_item as scaffolding
     ac = daily.actual_cost(db, pid, until)
-    for iid, v in payables.cost_by_item(db, pid, until).items():
-        ac[iid] = ac.get(iid, 0) + v
+    for part in (payables.cost_by_item(db, pid, until), scaffolding(db, pid, until)):
+        for iid, v in part.items():
+            ac[iid] = ac.get(iid, 0) + v
     return ac
 
 

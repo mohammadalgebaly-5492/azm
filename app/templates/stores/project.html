@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Scaffolding') }} · {{ p.code }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="eyebrow"><a class="crumb" href="{{ url_for('main.project', pid=p.id) }}">{{ icon('back', 15) }} {{ p.name }}</a><span class="code">{{ p.code }}</span></div>
+    <h1>{{ _('Scaffolding') }}</h1>
+    <p class="lead">{{ _('The store issues pieces to the site and takes them back; the site engineer records installing and dismantling. The rent of every piece with the project counts in the actual cost of its BOQ item.') }}</p>
+  </div>
+  {% if can('stores.manage') or can('projects.manage') or can('changes.approve') %}<div class="actions"><a class="btn" href="{{ url_for('stores.page') }}">{{ icon('table', 16) }} {{ _('Main store') }}</a></div>{% endif %}
+</header>
+<div class="stats">
+  <div class="stat"><div class="stat-top"><span>{{ _('With the project') }}</span></div><b class="num">{{ totals.values()|sum(attribute='out') }}</b><span>{{ _('Pieces') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Installed') }}</span></div><b class="num">{{ totals.values()|sum(attribute='use') }}</b><span>{{ _('Pieces') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Daily rent now') }}</span></div><b class="num">{{ money(rent) }}</b><span>{{ _('SAR') }}</span></div>
+  <div class="stat"><div class="stat-top"><span>{{ _('Rent to date') }}</span></div><b class="num">{{ money(cost) }}</b><span>{{ _('In the actual cost') }}</span></div>
+</div>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Components') }}</h2><p>{{ _('On site means delivered and not installed.') }}</p></div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Component') }}</th><th class="num">{{ _('In the main store') }}</th><th class="num">{{ _('With the project') }}</th><th class="num">{{ _('On site') }}</th><th class="num">{{ _('Installed') }}</th><th class="num">{{ _('Daily rent') }}</th></tr></thead>
+    <tbody>{% for c in parts %}{% set t = totals.get(c.code, {'out': 0, 'use': 0, 'site': 0}) %}<tr class="{{ 'faint' if not t.out }}">
+      <td>{{ label(c) }}<span class="sub code">{{ c.code }}</span></td><td class="num">{{ store.get(c.code, {}).get('store', 0) }}</td>
+      <td class="num"><b>{{ t.out }}</b></td><td class="num">{{ t.site }}</td><td class="num">{{ t.use }}</td><td class="num">{{ money(t.out * rates.get(c.code, 0)) }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+</section>
+{% if by_item %}<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('By BOQ item') }}</h2><p>{{ _('Each issue to the site is for one item, and its rent goes to that item.') }}</p></div></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Item') }}</th><th>{{ _('Component') }}</th><th class="num">{{ _('With the project') }}</th><th class="num">{{ _('On site') }}</th><th class="num">{{ _('Installed') }}</th></tr></thead>
+    <tbody>{% for b in by_item %}<tr>
+      <td><span class="code">{{ b.item.code }}</span><span class="sub">{{ b.item.description }}</span></td><td>{{ names.get(b.code, b.code) }}</td>
+      <td class="num">{{ b.out }}</td><td class="num">{{ b.site }}</td><td class="num">{{ b.use }}</td></tr>{% endfor %}</tbody></table></div>
+</section>{% endif %}
+<div class="grid-2">
+  {% if can('stores.manage') %}<section class="card">
+    <div class="card-head"><div><h2>{{ _('Issue or return') }}</h2><p>{{ _('From the main store to the site, or back to the store.') }}</p></div></div>
+    <form method="post" action="{{ url_for('stores.project_move', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div class="field"><label for="io_kind" class="req">{{ _('Movement') }}</label><select id="io_kind" name="kind" required><option value="issue">{{ _(KINDS['issue']) }}</option><option value="return">{{ _(KINDS['return']) }}</option></select></div>
+        {% set fid, with_item = 'io', True %}{% include "stores/_move_fields.html" %}
+        <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Record') }}</button></div></div>
+    </form>
+  </section>{% endif %}
+  {% if can('schedule.manage') %}<section class="card">
+    <div class="card-head"><div><h2>{{ _('Install or dismantle') }}</h2><p>{{ _('Pieces on site that were installed, or installed pieces that were taken down.') }}</p></div></div>
+    <form method="post" action="{{ url_for('stores.project_move', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}">
+      <div class="form-grid">
+        <div class="field"><label for="id_kind" class="req">{{ _('Movement') }}</label><select id="id_kind" name="kind" required><option value="install">{{ _(KINDS['install']) }}</option><option value="dismantle">{{ _(KINDS['dismantle']) }}</option></select></div>
+        {% set fid, with_item = 'id', True %}{% include "stores/_move_fields.html" %}
+        <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Record') }}</button></div></div>
+    </form>
+  </section>{% endif %}
+</div>
+{% if can('stores.manage') or can('schedule.manage') %}<section class="card">
+  <div class="card-head"><div><h2>{{ _('Damaged or lost on site') }}</h2><p>{{ _('Recorded with a reason and deducted from the project, and its rent stops.') }}</p></div></div>
+  <form method="post" action="{{ url_for('stores.project_move', pid=p.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="kind" value="loss">
+    <div class="form-grid">
+      <div class="field"><label for="lo_place" class="req">{{ _('Where') }}</label><select id="lo_place" name="place" required><option value="site">{{ _(PLACES['site']) }}</option><option value="use">{{ _(PLACES['use']) }}</option></select></div>
+      {% set fid, with_item = 'lo', True %}{% include "stores/_move_fields.html" %}
+      <div class="field wide"><label for="lo_reason" class="req">{{ _('Reason') }}</label><input id="lo_reason" name="reason" required></div>
+      <div class="form-foot"><button class="btn btn-danger" type="submit">{{ _('Record') }}</button></div></div>
+  </form>
+</section>{% endif %}
+{% include "stores/_moves.html" %}
+{% endblock %}

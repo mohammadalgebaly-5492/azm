@@ -116,6 +116,7 @@ Rules:
 - **Database:** Supabase Postgres in production (`DATABASE_URL`), or a local SQLite file when it is unset. Every query must work on both.
 - **Hosting:** Vercel auto-detects `wsgi.py`, so there is no `vercel.json`. Pushing to `main` deploys.
 - **Sign-in is our own:** `users` and `sessions` tables, scrypt hashes. Supabase Auth is not used. Accounts are created by admins, or through sign-up links when the System Owner allows them.
+- **Lookup lists** (`catalog_items`): units, document types, professions, specialties, job titles (106), equipment types and equipment (69), material types and materials (146, each with a `unit_code`).
 - **Modules** (`app/`):
   - `auth.py`: accounts and sessions.
   - `rbac.py`: roles and the permission catalog.
@@ -143,6 +144,7 @@ Rules:
   - `files.py`: file storage. Supabase Storage (private bucket) when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set (bucket `SUPABASE_STORAGE_BUCKET`, default `azm-files`), else a local folder (`UPLOAD_DIR`, default `instance/uploads`); disabled on Vercel without the keys. PDF only, up to 4 MB.
   - `signed.py`: signed paper copies (PDF) of purchase orders, subcontracts, certificates and invoices (Muhammad's decision): uploaded with `payables.raise`, accepted by cost control (`payables.approve`) and the Director too above 10,000 SAR, never by the uploader; returned ones get a new revision. Vendors don't sign in.
   - `attachments.py`: engineer reports (Muhammad's decision 2026-10-26): text and/or a PDF on everything the engineer raises (daily reports, purchase requests, change requests, certificates and invoices, goods receipts), added by whoever holds that document's raising permission and never deleted. A section on the daily report and purchase request pages, and a page per document for the rest.
+  - `stores.py`: the company's main store and scaffolding (constitution 4.12.1, Muhammad's decisions 2026-10-26): scaffolding components are materials of type `SCF` with a daily rent per piece (`stock_items`); movements (`STM-00001`: receive, issue, install, dismantle, return, loss with a reason) give the quantities in the store, with each project per BOQ item, and installed. Rent counts from issue to return, owned or rented, in the actual cost of the item. `stores.manage` (procurement role by default) records store movements; `schedule.manage` installs and dismantles; cost control (`projects.manage`) sets the rents.
   - `contracts.py`: the main contract (constitution 3.2): details, guarantees, insurance, change orders (approval: `changes.approve`, never by their preparer). After budget approval, value, start and duration change only through approved change orders.
   - `registers.py`: shared registers (constitution article 2 and 3.9): lookup lists (`catalog_items`), entities (owner, consultant, subcontractor, supplier) with addresses and people, and each project's parties and representatives.
   - `analytics/`: one module per card.

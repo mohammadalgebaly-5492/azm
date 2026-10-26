@@ -52,7 +52,7 @@ class Catalogs(RegistersBase):
         ssl = self.db.execute("SELECT * FROM catalog_items WHERE kind = 'equipment' AND code = 'SSL'").fetchone()
         self.assertEqual((ssl["name_ar"], ssl["parent_code"], ssl["cost_unit"]), ("محمّلة صغيرة", "LGT", "day"))
         types = {r["code"] for r in R.catalog(self.db, "equipment_type")}
-        self.assertEqual(types, {"HVY", "LGT", "TRN", "PWR", "TLS"})
+        self.assertEqual(types, {"HVY", "LGT", "TRN", "PWR", "TLS", "LFT", "CNQ", "FNQ", "SVQ"})
         self.assertIn("CCE", {r["code"] for r in R.catalog(self.db, "job_title")})
 
     def test_codes_are_validated_permanent_and_entries_are_stopped_not_deleted(self):
@@ -64,18 +64,18 @@ class Catalogs(RegistersBase):
                 R.add_catalog_item(self.db, "equipment", {"code": "ssl", "name_ar": "مكرر", "name_en": "Dup",
                                                           "parent_code": "LGT", "cost_unit": "day"}, self.cost)
             with self.assertRaises(AuthError):  # المعدة تحتاج نوعًا صحيحًا
-                R.add_catalog_item(self.db, "equipment", {"code": "FRK", "name_ar": "رافعة شوكية",
+                R.add_catalog_item(self.db, "equipment", {"code": "XLF", "name_ar": "رافعة شوكية صغيرة",
                                                           "name_en": "Forklift", "parent_code": "XXX",
                                                           "cost_unit": "day"}, self.cost)
-            iid = R.add_catalog_item(self.db, "equipment", {"code": "frk", "name_ar": "رافعة شوكية",
+            iid = R.add_catalog_item(self.db, "equipment", {"code": "xlf", "name_ar": "رافعة شوكية صغيرة",
                                                             "name_en": "Forklift", "parent_code": "LGT",
                                                             "cost_unit": "hour"}, self.cost)
             with self.assertRaises(AuthError):
                 R.update_catalog_item(self.db, iid, {"code": "FRX", "name_ar": "رافعة", "name_en": "Lift",
                                                      "parent_code": "LGT", "cost_unit": "hour"}, self.cost)
             R.set_catalog_active(self.db, iid, False, self.cost)
-        self.assertNotIn("FRK", {r["code"] for r in R.catalog(self.db, "equipment", active_only=True)})
-        self.assertIn("FRK", {r["code"] for r in R.catalog(self.db, "equipment")})
+        self.assertNotIn("XLF", {r["code"] for r in R.catalog(self.db, "equipment", active_only=True)})
+        self.assertIn("XLF", {r["code"] for r in R.catalog(self.db, "equipment")})
 
 
 class Entities(RegistersBase):

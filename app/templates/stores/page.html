@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ _('Main store') }}{% endblock %}
+{% block content %}
+<header class="page-head"><div>
+  <h1>{{ _('Main store') }}</h1>
+  <p class="lead">{{ _('Scaffolding components in the company store, with the projects and installed on site. Each piece has a daily rent from the day it leaves the store until it returns, whether the company owns it or rents it.') }}</p>
+</div></header>
+<section class="card flush">
+  <div class="card-head"><div><h2>{{ _('Scaffolding components') }}</h2><p>{{ _('The components come from the materials catalog (scaffolding and accessories).') }}</p></div><span class="count">{{ parts|length }}</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{ _('Component') }}</th><th class="num">{{ _('Daily rent per piece') }}</th><th class="num">{{ _('In the store') }}</th><th class="num">{{ _('With the projects') }}</th><th class="num">{{ _('Installed') }}</th><th class="num">{{ _('Total') }}</th></tr></thead>
+    <tbody>{% for c in parts %}{% set b = bal.get(c.code, {'store': 0, 'out': 0, 'use': 0}) %}<tr>
+      <td>{{ label(c) }}<span class="sub code">{{ c.code }}</span></td>
+      <td class="num">{{ money(c.daily_rate) }}
+        {% if can('projects.manage') %}<details class="row-menu"><summary class="btn btn-ghost">{{ _('Change') }}</summary>
+          <form method="post" action="{{ url_for('stores.rate', code=c.code) }}" class="row-form"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input name="daily_rate" dir="ltr" inputmode="decimal" required value="{{ '%.2f'|format(c.daily_rate / 100) }}" aria-label="{{ _('Daily rent per piece') }}"><button class="btn btn-primary" type="submit">{{ _('Save') }}</button></form></details>{% endif %}</td>
+      <td class="num"><b>{{ b.store }}</b></td><td class="num">{{ b.out }}</td><td class="num">{{ b.use }}</td><td class="num">{{ b.store + b.out }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+</section>
+{% if can('stores.manage') %}
+<div class="grid-2">
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('Receive into the store') }}</h2><p>{{ _('New or rented pieces that arrive at the main store.') }}</p></div></div>
+    <form method="post" action="{{ url_for('stores.move') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="kind" value="receive">
+      <div class="form-grid">{% set fid, with_item = 'rc', False %}{% include "stores/_move_fields.html" %}
+        <div class="field wide"><label for="rc_note">{{ _('Notes') }}</label><input id="rc_note" name="reason"></div>
+        <div class="form-foot"><button class="btn" type="submit">{{ icon('plus', 16) }} {{ _('Record') }}</button></div></div>
+    </form>
+  </section>
+  <section class="card">
+    <div class="card-head"><div><h2>{{ _('Damaged or lost in the store') }}</h2><p>{{ _('Recorded with a reason and deducted from the store.') }}</p></div></div>
+    <form method="post" action="{{ url_for('stores.move') }}"><input type="hidden" name="csrf_token" value="{{ csrf }}"><input type="hidden" name="kind" value="loss"><input type="hidden" name="place" value="store">
+      <div class="form-grid">{% set fid, with_item = 'ls', False %}{% include "stores/_move_fields.html" %}
+        <div class="field wide"><label for="ls_reason" class="req">{{ _('Reason') }}</label><input id="ls_reason" name="reason" required></div>
+        <div class="form-foot"><button class="btn btn-danger" type="submit">{{ _('Record') }}</button></div></div>
+    </form>
+  </section>
+</div>
+{% endif %}
+{% include "stores/_moves.html" %}
+{% endblock %}

@@ -105,7 +105,8 @@ ACTION_LABELS = {
     "lessons_saved": "Lessons learned saved", "project_closed": "Project closed and archived",
     "price_line_added": "Price analysis line added", "price_line_removed": "Price analysis line removed",
     "pricing_rates_set": "Overhead and profit rates set", "schedule_imported": "Schedule activities imported",
-    "report_attached": "Engineer report added", "signed_copy_uploaded": "Signed copy uploaded", "signed_copy_accepted": "Signed copy accepted",
+    "report_attached": "Engineer report added", "stock_moved": "Scaffolding movement recorded",
+    "stock_rate_set": "Scaffolding daily rent set", "signed_copy_uploaded": "Signed copy uploaded", "signed_copy_accepted": "Signed copy accepted",
     "signed_copy_returned": "Signed copy returned", "overhead_set": "Daily indirect cost of the project set",
     "authority_changed": "Engineer authority changed", "dsr_pm_checked": "Daily report checked by the project manager",
 }

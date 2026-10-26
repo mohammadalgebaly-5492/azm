@@ -144,9 +144,11 @@ def catalogs():
     kind = request.args.get("kind", "unit")
     if kind not in R.CATALOGS:
         kind = "unit"
-    types = {r["code"]: R.label(r) for r in R.catalog(db, "equipment_type")}
+    parent = R.PARENT.get(kind, "equipment_type")
+    types = {r["code"]: R.label(r) for r in R.catalog(db, parent)}
     return render_template("registers/catalogs.html", kind=kind, rows=R.catalog(db, kind), CATALOGS=R.CATALOGS,
-                           types=types, active_types=R.catalog(db, "equipment_type", active_only=True),
+                           types=types, active_types=R.catalog(db, parent, active_only=True), units=R.catalog_names(db, "unit"),
+                           active_units=R.catalog(db, "unit", active_only=True),
                            COST_UNITS=R.COST_UNITS, label=R.label, form={})
 
 
@@ -181,7 +183,8 @@ def catalog_edit(iid):
             return redirect(url_for("registers.catalogs", kind=item["kind"]))
     return render_template("registers/catalog_form.html", item=item, form=request.form if error else dict(item), error=error,
                            CATALOGS=R.CATALOGS, COST_UNITS=R.COST_UNITS, label=R.label,
-                           active_types=R.catalog(db, "equipment_type", active_only=True))
+                           active_types=R.catalog(db, R.PARENT.get(item["kind"], "equipment_type"), active_only=True),
+                           active_units=R.catalog(db, "unit", active_only=True))
 
 
 @bp.post("/registers/lists/item/<int:iid>/status")

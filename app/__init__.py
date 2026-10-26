@@ -55,6 +55,7 @@ def create_app(test_config=None):
         SESSION_ABSOLUTE_HOURS=int(os.environ.get("CC_SESSION_ABSOLUTE_HOURS", "12")),
         SESSION_COOKIE_SECURE=os.environ.get("CC_COOKIE_SECURE", "1") == "1",
         MAX_CONTENT_LENGTH=20 * 1024 * 1024,
+        UPLOAD_DIR=os.environ.get("CC_UPLOAD_DIR"),  # مجلد الملفات المحلي (للتجربة)، وإلا instance/uploads
     )
     if test_config:
         app.config.update(test_config)
@@ -167,7 +168,7 @@ def create_app(test_config=None):
         return "ok", 200, {"Content-Type": "text/plain"}
 
     from .views import (admin, attachments, auth_views, boq_views, changes, contracts, daily, documents, governance, main, payables, pricing,
-                        procurement, registers, resources, schedule, scope)
+                        procurement, registers, resources, schedule, scope, stores)
     app.register_blueprint(auth_views.bp)
     app.register_blueprint(main.bp)
     app.register_blueprint(admin.bp)
@@ -185,4 +186,5 @@ def create_app(test_config=None):
     app.register_blueprint(governance.bp)
     app.register_blueprint(pricing.bp)
     app.register_blueprint(attachments.bp)
+    app.register_blueprint(stores.bp)
     return app
