@@ -292,10 +292,10 @@ with app.test_request_context():
                                     "id_no": f"2{len(P) + 1:09d}", "phone": f"05{len(P) + 31:08d}",
                                     "daily_cost": f"{daily * COST_SCALE:.2f}", "status": "active", **kw}, cost)
 
-    person("pm", "م. أحمد الغامدي", "ENG", "PJM", 1200, nationality="سعودي", user_id=str(pm))
-    person("site", "م. خالد المطيري", "ENG", "STE", 750, nationality="سعودي", user_id=str(eng))
+    person("pm", "م. محمد الماجد", "ENG", "PJM", 1200, nationality="سعودي", user_id=str(pm))
+    person("site", "م. أمجد عاصم", "ENG", "STE", 750, nationality="سعودي", user_id=str(eng))
     person("plan", "م. سارة العنزي", "ENG", "PLE", 700, nationality="سعودية")
-    person("cce", "م. ياسر القرني", "ENG", "CCE", 700, nationality="سعودي", user_id=str(cost))
+    person("cce", "م. أحمد خالد سامي", "ENG", "CCE", 700, nationality="سعودي", user_id=str(cost))
     person("srv", "عمر الزهراني", "TEC", "SRV", 400, nationality="سعودي")
     person("saf", "سعيد البلوشي", "SUP", "SAF", 400, nationality="سعودي")
     person("frm", "محمد عبدالرحيم", "SUP", "FRM", 300, nationality="مصري")
