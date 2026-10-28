@@ -1,4 +1,5 @@
 """منصة الكوست كنترول — تطبيق Flask."""
+import hashlib
 import os
 import secrets
 
@@ -120,14 +121,19 @@ def create_app(test_config=None):
             "today": today_label(),
         }
 
-    # الملفات الثابتة تُخزَّن مؤقتًا لمدة طويلة، ورابطها يتغير مع كل تعديل (?v=) فلا تتأخر الصفحات ولا تظهر نسخ قديمة
+    # الملفات الثابتة تُخزَّن مؤقتًا لمدة طويلة، ورابطها يتغير مع كل تعديل (?v=) فلا تتأخر الصفحات ولا تظهر نسخ قديمة.
+    # الإصدار من محتوى الملف لا من وقت تعديله: Vercel يضبط وقت تعديل كل الملفات على تاريخ ثابت، فلا يتغير الرابط بعد النشر
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000
     versions = {}
 
     def asset(filename):
         if filename not in versions or app.debug:
             path = os.path.join(app.static_folder, filename)
-            versions[filename] = int(os.path.getmtime(path)) if os.path.exists(path) else 0
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    versions[filename] = hashlib.sha256(f.read()).hexdigest()[:12]
+            else:
+                versions[filename] = 0
         return url_for("static", filename=filename, v=versions[filename])
 
     app.jinja_env.globals["asset"] = asset
