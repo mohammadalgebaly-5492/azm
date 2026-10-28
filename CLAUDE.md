@@ -196,7 +196,7 @@ Rules:
 ## Roadmap and open decisions
 
 - **Next foundation: the pipeline engine** for the 11-stage item execution chain. It covers stages with a responsible role, approve or return with a reason, fixed return paths, history, a drag-and-drop board per project, and a "My tasks" page. Confirm the details with the programmer before building it.
-- **Then:** file storage (Supabase Storage, private bucket: the code is ready in `files.py`, the bucket and keys are still to be added on Vercel) and notifications (in-app plus an email provider).
+- **Then:** file storage (Supabase Storage, private bucket: the code is ready in `files.py`; the bucket `azm-files` exists with the files since 2026-10-29, and the keys are in `.env.local` but still to be added on Vercel) and notifications (in-app plus an email provider).
 - **Muhammad's business rules live in `docs/constitution.md`.** Decisions settled there on 2026-10-25:
   - delays between 5% and 10% are yellow (thresholds 5 / 10 / 30%, article 4.3);
   - up to 10,000 SAR the Cost Control engineer approves alone, and above that the Director approves too; this covers contracts and purchase orders, and each payment is judged by its own amount (article 4, approval limits).
