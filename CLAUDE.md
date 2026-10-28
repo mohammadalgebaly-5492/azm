@@ -186,10 +186,11 @@ Rules:
 
 - `.env.local` holds the **live** database URL and secrets. It is gitignored; never commit it or print its values.
 - **Anything run locally with `.env.local` loaded uses real production data,** including `flask run` and `manage.py`. Starting the server applies pending migrations **to the live database**. Tell Muhammad before you do that.
-- To experiment safely, unset `DATABASE_URL` so the app uses a local SQLite file.
+- **There is no local database any more** (programmer's decision, 2026-10-29). Development runs against Supabase. The old trial file `data/azm.sqlite3` is frozen; its contents were copied to production on 2026-10-29.
 - **Tests** use SQLite by default: `python -m unittest discover -s tests`.
   - `CC_TEST_DATABASE_URL` points them at Postgres and **drops the whole schema**. Never point it at production.
-- **Run locally:** `CC_COOKIE_SECURE=0 flask --app wsgi run --port 5000`
+- **Run locally (connected to Supabase), in PowerShell:** `$env:CC_COOKIE_SECURE="0"; .venv\Scripts\python -m flask --app wsgi run --port 5000`, then open `http://127.0.0.1:5000`. Leave out `--debug`: its reloader re-runs the migrations on every file save, so a half-written migration would reach production.
+- **The Supabase pooler (port 6543) is in transaction mode.** A session-level `SET` stays on the shared server connection and reaches the live site. On 2026-10-29, `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY` made sign-ins fail until the backends were ended. For read-only work use `conn.read_only = True` or `BEGIN READ ONLY`, never `SET SESSION`.
 - **Lost access?** `python manage.py create-owner` creates a System Owner account.
 
 ## Roadmap and open decisions
